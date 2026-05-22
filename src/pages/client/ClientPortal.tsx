@@ -1,0 +1,1309 @@
+import { useEffect, useState, useCallback } from 'react'
+import {
+  Users, LogOut, Layers, Search, ChevronRight, ArrowLeft,
+  Laptop, Shield, CreditCard, Phone as PhoneIcon,
+  PackageCheck, BarChart3, History, FileText,
+  Settings, HelpCircle, Building2, MapPin, UserPlus,
+  Plus, Pencil, Trash2,
+  Package, Activity, Archive, XCircle, CheckCircle2, Clock,
+  MoreVertical, UserCog,
+} from 'lucide-react'
+import { useAuthStore } from '@/store/authStore'
+import { useNavigate } from 'react-router-dom'
+import api from '@/lib/axios'
+import { Card, CardContent } from '@/components/ui/Card'
+import { Button } from '@/components/ui/Button'
+import { UserDetailPanel } from '@/components/UserDetailPanel'
+import { AddUserModal } from '@/components/AddUserModal'
+import { HardwareModal } from '@/components/HardwareModal'
+import { LicenseModal } from '@/components/LicenseModal'
+import { AddEmployeeModal } from '@/components/AddEmployeeModal'
+import { PhoneModal } from '@/components/PhoneModal'
+import type { ClientUserListItem, ClientUserDetailResponse } from '@/types/clientUser'
+import { STATUS_LABEL, STATUS_TONE } from '@/types/clientUser'
+import type { HardwareAssetListItem } from '@/types/hardware'
+import { HARDWARE_STATUS_LABEL, HARDWARE_STATUS_TONE, HARDWARE_TYPE_LABEL } from '@/types/hardware'
+import type { LicenseListItem } from '@/types/license'
+import { LICENSE_TYPE_LABEL, LICENSE_TYPE_TONE } from '@/types/license'
+import type { PhoneListItem } from '@/types/phone'
+import { PHONE_STATUS_LABEL, PHONE_STATUS_TONE } from '@/types/phone'
+
+// ── Types ─────────────────────────────────────────────────────────────────────
+
+type View =
+  | 'employees' | 'employee-detail'
+  | 'departments' | 'locations'
+  | 'hardware' | 'software' | 'licenses' | 'phones'
+  | 'starter-checklist' | 'leaver-checklist'
+  | 'overviews' | 'history' | 'contracts'
+  | 'settings' | 'help'
+
+const VIEW_TITLES: Record<View, string> = {
+  employees: 'Medewerkers',
+  'employee-detail': 'Medewerker details',
+  departments: 'Afdelingen',
+  locations: 'Locaties',
+  hardware: 'Hardware',
+  software: 'Software',
+  licenses: 'Licenties',
+  phones: 'Telefoons',
+  'starter-checklist': 'Aantreden checklist',
+  'leaver-checklist': 'Weggaan checklist',
+  overviews: 'Overzichten',
+  history: 'Historie',
+  contracts: 'Contracten',
+  settings: 'Instellingen',
+  help: 'Help',
+}
+
+// ── Sidebar helpers ───────────────────────────────────────────────────────────
+
+function SectionLabel({ label }: { label: string }) {
+  return (
+    <p className="px-3 pt-2 pb-1 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+      {label}
+    </p>
+  )
+}
+
+function NavItem({ icon, label, active, onClick }: {
+  icon: React.ReactNode; label: string; active: boolean; onClick: () => void
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-left text-sm transition-colors ${
+        active ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+      }`}
+    >
+      <span className="flex-shrink-0">{icon}</span>
+      <span className="truncate">{label}</span>
+    </button>
+  )
+}
+
+// ── Shared helpers ────────────────────────────────────────────────────────────
+
+function Avatar({ first, last, size = 32 }: { first: string; last: string; size?: number }) {
+  return (
+    <div
+      className="rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold flex-shrink-0"
+      style={{ width: size, height: size, fontSize: Math.round(size * 0.38) }}
+    >
+      {(first[0] ?? '').toUpperCase()}{(last[0] ?? '').toUpperCase()}
+    </div>
+  )
+}
+
+function PlaceholderView({ title }: { title: string }) {
+  return (
+    <div className="h-full flex items-center justify-center">
+      <div className="text-center">
+        <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-slate-100 flex items-center justify-center">
+          <Layers size={28} className="text-slate-300" />
+        </div>
+        <p className="text-sm font-medium text-slate-600">{title}</p>
+        <p className="text-xs text-slate-400 mt-1">Komt binnenkort beschikbaar</p>
+      </div>
+    </div>
+  )
+}
+
+// ── Stat card ─────────────────────────────────────────────────────────────────
+
+function StatCard({ label, value, icon, tone = 'default' }: {
+  label: string; value: number; icon: React.ReactNode; tone?: string
+}) {
+  const iconTones: Record<string, string> = {
+    default: 'bg-slate-100 text-slate-500',
+    emerald: 'bg-emerald-100 text-emerald-600',
+    blue: 'bg-blue-100 text-blue-600',
+    amber: 'bg-amber-100 text-amber-600',
+    slate: 'bg-slate-100 text-slate-400',
+  }
+  return (
+    <div className="bg-white rounded-2xl px-5 py-4 border border-slate-200 shadow-sm flex items-center gap-4">
+      <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${iconTones[tone] ?? iconTones.default}`}>
+        {icon}
+      </div>
+      <div>
+        <p className="text-2xl font-bold text-slate-900 leading-tight">{value}</p>
+        <p className="text-xs text-slate-400 mt-0.5">{label}</p>
+      </div>
+    </div>
+  )
+}
+
+// ── Hardware detail panel ─────────────────────────────────────────────────────
+
+function HardwareDetailPanel({ asset, onEdit, onDelete }: {
+  asset: HardwareAssetListItem
+  onEdit: () => void
+  onDelete: () => void
+}) {
+  const [confirmDelete, setConfirmDelete] = useState(false)
+
+  function fmt(d: string | null | undefined) {
+    if (!d) return '—'
+    return new Date(d).toLocaleDateString('nl-NL', { day: '2-digit', month: '2-digit', year: 'numeric' })
+  }
+
+  return (
+    <Card className="h-full overflow-y-auto">
+      <CardContent className="p-5">
+        <div className="flex items-start justify-between mb-5 gap-3">
+          <div>
+            <h2 className="text-base font-bold text-slate-900">{asset.name}</h2>
+            <p className="text-sm text-slate-500 mt-0.5">
+              {asset.brand || '—'} • {HARDWARE_TYPE_LABEL[asset.type] ?? asset.type}
+            </p>
+          </div>
+          <span className={`text-xs px-2.5 py-1 rounded-full font-medium flex-shrink-0 ${HARDWARE_STATUS_TONE[asset.status] ?? 'bg-slate-100 text-slate-600'}`}>
+            {HARDWARE_STATUS_LABEL[asset.status] ?? asset.status}
+          </span>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          {[
+            { label: 'Assetnummer', value: asset.assetNumber || '—' },
+            { label: 'Serienummer', value: asset.serialNumber || '—' },
+            { label: 'Locatie', value: asset.location || '—' },
+            {
+              label: 'Aanschafwaarde',
+              value: asset.purchaseValue != null ? `€ ${asset.purchaseValue.toFixed(2)}` : '—',
+            },
+            { label: 'Toegewezen aan', value: asset.assignedToName || '—' },
+            { label: 'Uitgiftedatum', value: fmt(asset.issuedAt) },
+            ...(asset.returnedAt ? [{ label: 'Inleverdatum', value: fmt(asset.returnedAt) }] : []),
+          ].map(row => (
+            <div key={row.label} className="rounded-xl bg-slate-50 p-3">
+              <p className="text-xs text-slate-400 mb-0.5">{row.label}</p>
+              <p className="text-sm font-medium text-slate-800 truncate">{row.value}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-5 flex flex-wrap gap-2">
+          <Button size="sm" variant="secondary" onClick={onEdit}>
+            <Pencil size={13} /> Wijzigen
+          </Button>
+          {!confirmDelete ? (
+            <Button size="sm" variant="danger" onClick={() => setConfirmDelete(true)}>
+              <Trash2 size={13} /> Verwijderen
+            </Button>
+          ) : (
+            <>
+              <span className="flex items-center text-xs text-red-700 font-medium">Zeker weten?</span>
+              <Button size="sm" variant="danger" onClick={() => { setConfirmDelete(false); onDelete() }}>
+                Ja, verwijder
+              </Button>
+              <Button size="sm" variant="secondary" onClick={() => setConfirmDelete(false)}>
+                Nee
+              </Button>
+            </>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+// ── Hardware view ─────────────────────────────────────────────────────────────
+
+function HardwareView({ teammates }: { teammates: ClientUserListItem[] }) {
+  const [assets, setAssets] = useState<HardwareAssetListItem[]>([])
+  const [loading, setLoading] = useState(true)
+  const [search, setSearch] = useState('')
+  const [selected, setSelected] = useState<HardwareAssetListItem | null>(null)
+  const [showModal, setShowModal] = useState(false)
+  const [editTarget, setEditTarget] = useState<HardwareAssetListItem | null>(null)
+
+  const fetchAssets = useCallback(async () => {
+    try {
+      const { data } = await api.get<HardwareAssetListItem[]>('/portal/hardware')
+      setAssets(data)
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => { fetchAssets() }, [fetchAssets])
+
+  const filtered = assets.filter(a =>
+    `${a.name} ${a.brand} ${a.assetNumber} ${a.serialNumber} ${a.assignedToName ?? ''} ${a.location}`
+      .toLowerCase().includes(search.toLowerCase())
+  )
+
+  const totaal = assets.length
+  const inGebruik = assets.filter(a => a.status === 'InUse').length
+  const opVoorraad = assets.filter(a => a.status === 'InStock').length
+  const afgeschreven = assets.filter(a => a.status === 'Decommissioned').length
+
+  const handleDelete = async (id: string) => {
+    await api.delete(`/portal/hardware/${id}`)
+    setAssets(prev => prev.filter(a => a.id !== id))
+    if (selected?.id === id) setSelected(null)
+  }
+
+  const handleOpenAdd = () => { setEditTarget(null); setShowModal(true) }
+  const handleOpenEdit = (asset: HardwareAssetListItem) => { setEditTarget(asset); setShowModal(true) }
+  const handleSaved = async () => { await fetchAssets(); setShowModal(false) }
+
+  return (
+    <div className="flex flex-col gap-4 h-full">
+      {/* Stat cards */}
+      <div className="grid grid-cols-4 gap-3 flex-shrink-0">
+        <StatCard label="Totaal" value={totaal} icon={<Package size={18} />} />
+        <StatCard label="In gebruik" value={inGebruik} icon={<Activity size={18} />} tone="emerald" />
+        <StatCard label="Op voorraad" value={opVoorraad} icon={<Archive size={18} />} tone="blue" />
+        <StatCard label="Afgeschreven" value={afgeschreven} icon={<XCircle size={18} />} tone="slate" />
+      </div>
+
+      {/* List + Detail split */}
+      <div className="flex gap-4 flex-1 min-h-0">
+        {/* Left: list */}
+        <div className="flex flex-col flex-1 min-h-0 min-w-0">
+          <div className="flex items-center gap-2 mb-3 flex-shrink-0">
+            <div className="relative flex-1">
+              <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder="Zoek hardware…"
+                className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-200 bg-white focus:outline-none focus:border-indigo-400"
+              />
+            </div>
+            <Button size="sm" onClick={handleOpenAdd}>
+              <Plus size={13} /> Toevoegen
+            </Button>
+          </div>
+
+          <Card className="flex-1 overflow-hidden flex flex-col">
+            <div className="flex-1 overflow-y-auto">
+              {loading ? (
+                <div className="p-10 text-center text-sm text-slate-400">Laden…</div>
+              ) : filtered.length === 0 ? (
+                <div className="p-10 text-center">
+                  <Laptop size={36} className="mx-auto mb-3 text-slate-200" />
+                  <p className="text-sm text-slate-400">
+                    {search ? 'Geen resultaten gevonden.' : 'Nog geen hardware toegevoegd.'}
+                  </p>
+                </div>
+              ) : (
+                <ul className="divide-y divide-slate-100">
+                  {filtered.map(a => (
+                    <li key={a.id}>
+                      <button
+                        onClick={() => setSelected(a)}
+                        className={`w-full text-left px-4 py-3.5 transition-colors hover:bg-slate-50 ${
+                          selected?.id === a.id ? 'bg-indigo-50 border-l-2 border-indigo-500' : ''
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold text-slate-800 truncate">{a.name}</p>
+                            <p className="text-xs text-slate-500 truncate">
+                              {a.brand || '—'} • {HARDWARE_TYPE_LABEL[a.type] ?? a.type}
+                            </p>
+                          </div>
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${HARDWARE_STATUS_TONE[a.status] ?? 'bg-slate-100 text-slate-600'}`}>
+                            {HARDWARE_STATUS_LABEL[a.status] ?? a.status}
+                          </span>
+                        </div>
+                        {a.assignedToName && (
+                          <p className="mt-1 text-xs text-slate-400 truncate">{a.assignedToName}</p>
+                        )}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </Card>
+        </div>
+
+        {/* Right: detail */}
+        <div className="w-[20%] flex-shrink-0 min-h-0">
+          {selected ? (
+            <HardwareDetailPanel
+              asset={selected}
+              onEdit={() => handleOpenEdit(selected)}
+              onDelete={() => handleDelete(selected.id)}
+            />
+          ) : (
+            <div className="h-full flex items-center justify-center">
+              <div className="text-center">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-slate-100 flex items-center justify-center">
+                  <Laptop size={28} className="text-slate-300" />
+                </div>
+                <p className="text-sm text-slate-400">Selecteer een item om de details te zien</p>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <HardwareModal
+        open={showModal}
+        onClose={() => setShowModal(false)}
+        onSuccess={handleSaved}
+        teammates={teammates}
+        asset={editTarget}
+      />
+    </div>
+  )
+}
+
+// ── License detail panel ──────────────────────────────────────────────────────
+
+function LicenseDetailPanel({ license, teammates, onEdit, onDelete, onAssign, onRevoke }: {
+  license: LicenseListItem
+  teammates: ClientUserListItem[]
+  onEdit: () => void
+  onDelete: () => void
+  onAssign: (userId: string) => void
+  onRevoke: (userId: string) => void
+}) {
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [assignUserId, setAssignUserId] = useState('')
+
+  const assignableUsers = teammates.filter(t => !license.users.some(u => u.userId === t.id))
+  const seatsLeft = license.maxUsers - license.assignedUsers
+  const isExpired = license.expiresAt ? new Date(license.expiresAt) < new Date() : false
+
+  function fmt(d: string | null | undefined) {
+    if (!d) return '—'
+    return new Date(d).toLocaleDateString('nl-NL', { day: '2-digit', month: '2-digit', year: 'numeric' })
+  }
+
+  return (
+    <Card className="h-full overflow-y-auto">
+      <CardContent className="p-5 space-y-5">
+        {/* Header */}
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h2 className="text-base font-bold text-slate-900">{license.name}</h2>
+            <p className="text-sm text-slate-500 mt-0.5">{license.vendor || '—'}</p>
+          </div>
+          <div className="flex flex-col items-end gap-1.5">
+            <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${LICENSE_TYPE_TONE[license.type] ?? 'bg-slate-100 text-slate-600'}`}>
+              {LICENSE_TYPE_LABEL[license.type] ?? license.type}
+            </span>
+            {!license.isActive && (
+              <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700 font-medium">Inactief</span>
+            )}
+            {isExpired && (
+              <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-medium">Verlopen</span>
+            )}
+          </div>
+        </div>
+
+        {/* Seats bar */}
+        <div>
+          <div className="flex justify-between text-xs text-slate-500 mb-1">
+            <span>Seats gebruikt</span>
+            <span className="font-semibold">{license.assignedUsers} / {license.maxUsers}</span>
+          </div>
+          <div className="h-2 rounded-full bg-slate-200">
+            <div
+              className={`h-2 rounded-full transition-all ${license.assignedUsers >= license.maxUsers ? 'bg-red-500' : 'bg-indigo-500'}`}
+              style={{ width: `${Math.min(100, (license.assignedUsers / license.maxUsers) * 100)}%` }}
+            />
+          </div>
+        </div>
+
+        {/* Info grid */}
+        <div className="grid grid-cols-2 gap-2">
+          <div className="rounded-xl bg-slate-50 p-3">
+            <p className="text-xs text-slate-400 mb-0.5">Startdatum</p>
+            <p className="text-sm font-medium text-slate-800">{fmt(license.startsAt)}</p>
+          </div>
+          <div className="rounded-xl bg-slate-50 p-3">
+            <p className="text-xs text-slate-400 mb-0.5">Vervaldatum</p>
+            <p className={`text-sm font-medium ${isExpired ? 'text-red-600' : 'text-slate-800'}`}>{fmt(license.expiresAt)}</p>
+          </div>
+        </div>
+
+        {/* Assign user */}
+        {seatsLeft > 0 && assignableUsers.length > 0 && (
+          <div>
+            <p className="text-xs font-medium text-slate-600 mb-1.5">Gebruiker toewijzen</p>
+            <div className="flex gap-2">
+              <select
+                value={assignUserId}
+                onChange={e => setAssignUserId(e.target.value)}
+                className="flex-1 px-3 py-2 rounded-lg border border-slate-300 text-sm text-slate-900 focus:outline-none focus:border-indigo-500"
+              >
+                <option value="">— Selecteer medewerker —</option>
+                {assignableUsers.map(u => (
+                  <option key={u.id} value={u.id}>{u.firstName} {u.lastName}</option>
+                ))}
+              </select>
+              <Button
+                size="sm"
+                disabled={!assignUserId}
+                onClick={() => { if (assignUserId) { onAssign(assignUserId); setAssignUserId('') } }}
+              >
+                <Plus size={13} /> Toewijzen
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Assigned users */}
+        {license.users.length > 0 && (
+          <div>
+            <p className="text-xs font-medium text-slate-600 mb-1.5">Toegewezen gebruikers ({license.users.length})</p>
+            <ul className="space-y-1.5">
+              {license.users.map(u => (
+                <li key={u.userLicenseId} className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-slate-800 truncate">{u.fullName}</p>
+                    <p className="text-xs text-slate-400 truncate">{u.email}</p>
+                  </div>
+                  <button
+                    onClick={() => onRevoke(u.userId)}
+                    className="ml-2 flex-shrink-0 text-xs text-red-600 hover:text-red-800 font-medium"
+                  >
+                    Intrekken
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {license.users.length === 0 && (
+          <p className="text-sm text-slate-400">Nog geen gebruikers toegewezen.</p>
+        )}
+
+        {/* Actions */}
+        <div className="flex flex-wrap gap-2 pt-1">
+          <Button size="sm" variant="secondary" onClick={onEdit}>
+            <Pencil size={13} /> Wijzigen
+          </Button>
+          {!confirmDelete ? (
+            <Button size="sm" variant="danger" onClick={() => setConfirmDelete(true)}>
+              <Trash2 size={13} /> Verwijderen
+            </Button>
+          ) : (
+            <>
+              <span className="flex items-center text-xs text-red-700 font-medium">Zeker weten?</span>
+              <Button size="sm" variant="danger" onClick={() => { setConfirmDelete(false); onDelete() }}>
+                Ja, verwijder
+              </Button>
+              <Button size="sm" variant="secondary" onClick={() => setConfirmDelete(false)}>
+                Nee
+              </Button>
+            </>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+// ── License view ──────────────────────────────────────────────────────────────
+
+function LicenseView({ teammates }: { teammates: ClientUserListItem[] }) {
+  const [licenses, setLicenses] = useState<LicenseListItem[]>([])
+  const [loading, setLoading] = useState(true)
+  const [search, setSearch] = useState('')
+  const [selected, setSelected] = useState<LicenseListItem | null>(null)
+  const [showModal, setShowModal] = useState(false)
+  const [editTarget, setEditTarget] = useState<LicenseListItem | null>(null)
+
+  const fetchLicenses = useCallback(async () => {
+    try {
+      const { data } = await api.get<LicenseListItem[]>('/portal/licenses')
+      setLicenses(data)
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => { fetchLicenses() }, [fetchLicenses])
+
+  // Keep selected in sync after refresh
+  useEffect(() => {
+    if (selected) {
+      const updated = licenses.find(l => l.id === selected.id)
+      if (updated) setSelected(updated)
+    }
+  }, [licenses])
+
+  const filtered = licenses.filter(l =>
+    `${l.name} ${l.vendor} ${l.type}`.toLowerCase().includes(search.toLowerCase())
+  )
+
+  const totaal = licenses.length
+  const actief = licenses.filter(l => l.isActive).length
+  const verlopen = licenses.filter(l => l.expiresAt && new Date(l.expiresAt) < new Date()).length
+  const beschikbaar = licenses.reduce((sum, l) => sum + Math.max(0, l.maxUsers - l.assignedUsers), 0)
+
+  const handleDelete = async (id: string) => {
+    await api.delete(`/portal/licenses/${id}`)
+    setLicenses(prev => prev.filter(l => l.id !== id))
+    if (selected?.id === id) setSelected(null)
+  }
+
+  const handleAssign = async (licenseId: string, userId: string) => {
+    await api.post(`/portal/licenses/${licenseId}/assign`, { userId })
+    await fetchLicenses()
+  }
+
+  const handleRevoke = async (licenseId: string, userId: string) => {
+    await api.delete(`/portal/licenses/${licenseId}/users/${userId}`)
+    await fetchLicenses()
+  }
+
+  const handleOpenAdd = () => { setEditTarget(null); setShowModal(true) }
+  const handleOpenEdit = (l: LicenseListItem) => { setEditTarget(l); setShowModal(true) }
+  const handleSaved = async () => { await fetchLicenses(); setShowModal(false) }
+
+  return (
+    <div className="flex flex-col gap-4 h-full">
+      {/* Stat cards */}
+      <div className="grid grid-cols-4 gap-3 flex-shrink-0">
+        <StatCard label="Totaal" value={totaal} icon={<CreditCard size={18} />} />
+        <StatCard label="Actief" value={actief} icon={<CheckCircle2 size={18} />} tone="emerald" />
+        <StatCard label="Verlopen" value={verlopen} icon={<Clock size={18} />} tone="amber" />
+        <StatCard label="Seats beschikbaar" value={beschikbaar} icon={<Users size={18} />} tone="blue" />
+      </div>
+
+      {/* List + Detail split */}
+      <div className="flex gap-4 flex-1 min-h-0">
+        {/* Left: list */}
+        <div className="flex flex-col flex-1 min-h-0 min-w-0">
+          <div className="flex items-center gap-2 mb-3 flex-shrink-0">
+            <div className="relative flex-1">
+              <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder="Zoek licenties…"
+                className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-200 bg-white focus:outline-none focus:border-indigo-400"
+              />
+            </div>
+            <Button size="sm" onClick={handleOpenAdd}>
+              <Plus size={13} /> Toevoegen
+            </Button>
+          </div>
+
+          <Card className="flex-1 overflow-hidden flex flex-col">
+            <div className="grid grid-cols-[2fr_1.5fr_0.8fr_1fr_0.7fr] gap-3 px-4 py-2.5 border-b border-slate-100 bg-slate-50 flex-shrink-0">
+              {['Naam', 'Seats', 'Beschikbaar', 'Vervaldatum', 'Status'].map(h => (
+                <span key={h} className="text-xs font-semibold text-slate-500 uppercase tracking-wider truncate">{h}</span>
+              ))}
+            </div>
+            <div className="flex-1 overflow-y-auto">
+              {loading ? (
+                <div className="p-10 text-center text-sm text-slate-400">Laden…</div>
+              ) : filtered.length === 0 ? (
+                <div className="p-10 text-center">
+                  <CreditCard size={36} className="mx-auto mb-3 text-slate-200" />
+                  <p className="text-sm text-slate-400">
+                    {search ? 'Geen resultaten gevonden.' : 'Nog geen licenties toegevoegd.'}
+                  </p>
+                </div>
+              ) : (
+                <ul className="divide-y divide-slate-100">
+                  {filtered.map(l => {
+                    const isExpired = l.expiresAt ? new Date(l.expiresAt) < new Date() : false
+                    const seatsLeft = l.maxUsers - l.assignedUsers
+                    const pct = l.maxUsers > 0 ? Math.min(100, (l.assignedUsers / l.maxUsers) * 100) : 0
+                    const barColor = pct >= 100 ? 'bg-red-500' : pct >= 80 ? 'bg-amber-400' : 'bg-indigo-500'
+                    return (
+                      <li
+                        key={l.id}
+                        onClick={() => setSelected(l)}
+                        className={`grid grid-cols-[2fr_1.5fr_0.8fr_1fr_0.7fr] gap-3 px-4 py-3 items-center cursor-pointer transition-colors hover:bg-slate-50 ${
+                          selected?.id === l.id ? 'bg-indigo-50 border-l-2 border-indigo-500' : ''
+                        }`}
+                      >
+                        {/* Naam + vendor */}
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-slate-800 truncate">{l.name}</p>
+                          <p className="text-xs text-slate-400 truncate">{l.vendor || '—'}</p>
+                        </div>
+
+                        {/* Seats bar */}
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <div className="flex-1 h-1.5 rounded-full bg-slate-200 overflow-hidden">
+                            <div className={`h-1.5 rounded-full ${barColor}`} style={{ width: `${pct}%` }} />
+                          </div>
+                        </div>
+
+                        {/* Beschikbaar */}
+                        <p className={`text-xs tabular-nums font-medium ${seatsLeft === 0 ? 'text-red-600' : 'text-slate-700'}`}>
+                          {seatsLeft} / {l.maxUsers}
+                        </p>
+
+                        {/* Vervaldatum */}
+                        <p className={`text-xs tabular-nums ${isExpired ? 'text-red-500' : 'text-slate-500'}`}>
+                          {l.expiresAt
+                            ? new Date(l.expiresAt).toLocaleDateString('nl-NL', { day: '2-digit', month: '2-digit', year: 'numeric' })
+                            : '—'}
+                        </p>
+
+                        {/* Status */}
+                        {!l.isActive
+                          ? <span className="text-xs px-1.5 py-0.5 rounded-full bg-red-100 text-red-700 font-medium w-fit">Inactief</span>
+                          : isExpired
+                            ? <span className="text-xs px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 font-medium w-fit">Verlopen</span>
+                            : <span className="text-xs px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-medium w-fit">Actief</span>
+                        }
+                      </li>
+                    )
+                  })}
+                </ul>
+              )}
+            </div>
+          </Card>
+        </div>
+
+        {/* Right: detail */}
+        <div className="w-[20%] flex-shrink-0 min-h-0">
+          {selected ? (
+            <LicenseDetailPanel
+              license={selected}
+              teammates={teammates}
+              onEdit={() => handleOpenEdit(selected)}
+              onDelete={() => handleDelete(selected.id)}
+              onAssign={userId => handleAssign(selected.id, userId)}
+              onRevoke={userId => handleRevoke(selected.id, userId)}
+            />
+          ) : (
+            <div className="h-full flex items-center justify-center">
+              <div className="text-center">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-slate-100 flex items-center justify-center">
+                  <CreditCard size={28} className="text-slate-300" />
+                </div>
+                <p className="text-sm text-slate-400">Selecteer een licentie</p>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <LicenseModal
+        open={showModal}
+        onClose={() => setShowModal(false)}
+        onSuccess={handleSaved}
+        teammates={teammates}
+        license={editTarget}
+      />
+    </div>
+  )
+}
+
+// ── Phone view ────────────────────────────────────────────────────────────────
+
+function PhoneView({ teammates }: { teammates: ClientUserListItem[] }) {
+  const [phones, setPhones] = useState<PhoneListItem[]>([])
+  const [loading, setLoading] = useState(true)
+  const [search, setSearch] = useState('')
+  const [selected, setSelected] = useState<PhoneListItem | null>(null)
+  const [showModal, setShowModal] = useState(false)
+  const [editTarget, setEditTarget] = useState<PhoneListItem | null>(null)
+  const [confirmDelete, setConfirmDelete] = useState(false)
+
+  const fetchPhones = useCallback(async () => {
+    try {
+      const { data } = await api.get<PhoneListItem[]>('/portal/phones')
+      setPhones(data)
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => { fetchPhones() }, [fetchPhones])
+
+  const filtered = phones.filter(p =>
+    `${p.brand} ${p.model} ${p.phoneNumber} ${p.serialNumber} ${p.imeiNumber} ${p.assignedToName ?? ''}`
+      .toLowerCase().includes(search.toLowerCase())
+  )
+
+  const totaal = phones.length
+  const inGebruik = phones.filter(p => p.status === 'InUse').length
+  const opVoorraad = phones.filter(p => p.status === 'InStock').length
+  const afgeschreven = phones.filter(p => p.status === 'Decommissioned').length
+
+  const handleDelete = async (id: string) => {
+    await api.delete(`/portal/phones/${id}`)
+    setPhones(prev => prev.filter(p => p.id !== id))
+    setSelected(null)
+    setConfirmDelete(false)
+  }
+
+  const handleOpenAdd = () => { setEditTarget(null); setShowModal(true) }
+  const handleOpenEdit = (p: PhoneListItem) => { setEditTarget(p); setShowModal(true) }
+  const handleSaved = async () => { await fetchPhones(); setShowModal(false) }
+
+  function fmt(d: string | null | undefined) {
+    if (!d) return '—'
+    return new Date(d).toLocaleDateString('nl-NL', { day: '2-digit', month: '2-digit', year: 'numeric' })
+  }
+
+  return (
+    <div className="flex flex-col gap-4 h-full">
+      {/* Stat cards */}
+      <div className="grid grid-cols-4 gap-3 flex-shrink-0">
+        <StatCard label="Totaal" value={totaal} icon={<PhoneIcon size={18} />} />
+        <StatCard label="In gebruik" value={inGebruik} icon={<Activity size={18} />} tone="emerald" />
+        <StatCard label="Op voorraad" value={opVoorraad} icon={<Archive size={18} />} tone="blue" />
+        <StatCard label="Afgeschreven" value={afgeschreven} icon={<XCircle size={18} />} tone="slate" />
+      </div>
+
+      {/* List + Detail */}
+      <div className="flex gap-4 flex-1 min-h-0">
+        {/* Left: list */}
+        <div className="flex flex-col flex-1 min-h-0 min-w-0">
+          <div className="flex items-center gap-2 mb-3 flex-shrink-0">
+            <div className="relative flex-1">
+              <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder="Zoek telefoons…"
+                className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-200 bg-white focus:outline-none focus:border-indigo-400"
+              />
+            </div>
+            <Button size="sm" onClick={handleOpenAdd}>
+              <Plus size={13} /> Toevoegen
+            </Button>
+          </div>
+
+          <Card className="flex-1 overflow-hidden flex flex-col">
+            <div className="flex-1 overflow-y-auto">
+              {loading ? (
+                <div className="p-10 text-center text-sm text-slate-400">Laden…</div>
+              ) : filtered.length === 0 ? (
+                <div className="p-10 text-center">
+                  <PhoneIcon size={36} className="mx-auto mb-3 text-slate-200" />
+                  <p className="text-sm text-slate-400">
+                    {search ? 'Geen resultaten gevonden.' : 'Nog geen telefoons toegevoegd.'}
+                  </p>
+                </div>
+              ) : (
+                <ul className="divide-y divide-slate-100">
+                  {filtered.map(p => (
+                    <li key={p.id}>
+                      <button
+                        onClick={() => { setSelected(p); setConfirmDelete(false) }}
+                        className={`w-full text-left px-4 py-3.5 transition-colors hover:bg-slate-50 ${
+                          selected?.id === p.id ? 'bg-indigo-50 border-l-2 border-indigo-500' : ''
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold text-slate-800 truncate">
+                              {p.brand} {p.model || ''}
+                            </p>
+                            <p className="text-xs text-slate-400 truncate">
+                              {p.phoneNumber || p.serialNumber || '—'}
+                            </p>
+                          </div>
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${PHONE_STATUS_TONE[p.status] ?? 'bg-slate-100 text-slate-500'}`}>
+                            {PHONE_STATUS_LABEL[p.status] ?? p.status}
+                          </span>
+                        </div>
+                        {p.assignedToName && (
+                          <p className="mt-1 text-xs text-slate-400 truncate">{p.assignedToName}</p>
+                        )}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </Card>
+        </div>
+
+        {/* Right: detail */}
+        <div className="w-[20%] flex-shrink-0 min-h-0">
+          {selected ? (
+            <Card className="h-full overflow-y-auto">
+              <CardContent className="p-5">
+                <div className="flex items-start justify-between mb-4 gap-3">
+                  <div>
+                    <h2 className="text-base font-bold text-slate-900">{selected.brand} {selected.model}</h2>
+                    <p className="text-xs text-slate-400 mt-0.5">{selected.phoneNumber || '—'}</p>
+                  </div>
+                  <span className={`text-xs px-2.5 py-1 rounded-full font-medium flex-shrink-0 ${PHONE_STATUS_TONE[selected.status] ?? ''}`}>
+                    {PHONE_STATUS_LABEL[selected.status] ?? selected.status}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { label: 'Simkaart', value: selected.simCard || '—' },
+                    { label: 'Serienummer', value: selected.serialNumber || '—' },
+                    { label: 'IMEI', value: selected.imeiNumber || '—' },
+                    { label: 'Toegewezen aan', value: selected.assignedToName || '—' },
+                    { label: 'Uitgiftedatum', value: fmt(selected.issuedAt) },
+                    { label: 'Inleverdatum', value: fmt(selected.returnedAt) },
+                  ].map(row => (
+                    <div key={row.label} className="rounded-xl bg-slate-50 p-3">
+                      <p className="text-xs text-slate-400 mb-0.5">{row.label}</p>
+                      <p className="text-sm font-medium text-slate-800 truncate">{row.value}</p>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <Button size="sm" variant="secondary" onClick={() => handleOpenEdit(selected)}>
+                    <Pencil size={13} /> Wijzigen
+                  </Button>
+                  {!confirmDelete ? (
+                    <Button size="sm" variant="danger" onClick={() => setConfirmDelete(true)}>
+                      <Trash2 size={13} /> Verwijderen
+                    </Button>
+                  ) : (
+                    <>
+                      <span className="flex items-center text-xs text-red-700 font-medium">Zeker weten?</span>
+                      <Button size="sm" variant="danger" onClick={() => handleDelete(selected.id)}>Ja</Button>
+                      <Button size="sm" variant="secondary" onClick={() => setConfirmDelete(false)}>Nee</Button>
+                    </>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="h-full flex items-center justify-center">
+              <div className="text-center">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-slate-100 flex items-center justify-center">
+                  <PhoneIcon size={28} className="text-slate-300" />
+                </div>
+                <p className="text-sm text-slate-400">Selecteer een telefoon</p>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <PhoneModal
+        open={showModal}
+        onClose={() => setShowModal(false)}
+        onSuccess={handleSaved}
+        teammates={teammates}
+        phone={editTarget}
+      />
+    </div>
+  )
+}
+
+// ── Employee list view (full-width) ───────────────────────────────────────────
+
+function fmtDate(d: string | null | undefined) {
+  if (!d) return '—'
+  return new Date(d).toLocaleDateString('nl-NL', { day: '2-digit', month: '2-digit', year: 'numeric' })
+}
+
+function EmployeeListView({ teammates, loading, search, currentUserId, onSearch, onSelect, onAddEmployee }: {
+  teammates: ClientUserListItem[]
+  loading: boolean
+  search: string
+  currentUserId: string | undefined
+  onSearch: (v: string) => void
+  onSelect: (id: string) => void
+  onAddEmployee: () => void
+}) {
+  const [openMenu, setOpenMenu] = useState<string | null>(null)
+
+  const filtered = teammates.filter(t =>
+    `${t.firstName} ${t.lastName} ${t.email} ${t.department} ${t.jobTitle}`
+      .toLowerCase().includes(search.toLowerCase())
+  )
+
+  const cols = 'grid-cols-[2.5fr_1fr_1fr_1fr_1fr_80px_90px_40px]'
+
+  return (
+    <div className="flex flex-col gap-4 h-full">
+      {/* Toolbar */}
+      <div className="flex items-center gap-3">
+        <div className="relative flex-1 max-w-sm">
+          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input
+            value={search}
+            onChange={e => onSearch(e.target.value)}
+            placeholder="Zoek op naam, e-mail of afdeling…"
+            className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-200 bg-white focus:outline-none focus:border-indigo-400"
+          />
+        </div>
+        <span className="text-xs text-slate-400 flex-1">{filtered.length} medewerker{filtered.length !== 1 ? 's' : ''}</span>
+        <Button size="sm" onClick={onAddEmployee}>
+          <UserPlus size={13} /> Medewerker toevoegen
+        </Button>
+      </div>
+
+      {/* Table card */}
+      <Card className="flex-1 overflow-hidden flex flex-col">
+        <div className={`grid ${cols} gap-3 px-5 py-3 border-b border-slate-100 bg-slate-50`}>
+          {['Naam', 'Afdeling', 'Functie', 'Startdatum', 'Status', 'Assets', 'Licenties', ''].map(h => (
+            <span key={h} className="text-xs font-semibold text-slate-500 uppercase tracking-wider truncate">{h}</span>
+          ))}
+        </div>
+
+        <div className="flex-1 overflow-y-auto">
+          {loading ? (
+            <div className="p-10 text-center text-sm text-slate-400">Laden…</div>
+          ) : filtered.length === 0 ? (
+            <div className="p-10 text-center">
+              <Users size={36} className="mx-auto mb-3 text-slate-200" />
+              <p className="text-sm text-slate-400">Geen medewerkers gevonden.</p>
+            </div>
+          ) : (
+            <ul className="divide-y divide-slate-100">
+              {filtered.map(u => (
+                <li key={u.id} className={`grid ${cols} gap-3 px-5 py-3.5 hover:bg-slate-50 transition-colors items-center`}>
+                  {/* Naam + email */}
+                  <button className="flex items-center gap-3 min-w-0 text-left" onClick={() => onSelect(u.id)}>
+                    <Avatar first={u.firstName} last={u.lastName} size={48} />
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <p className="text-sm font-semibold text-slate-800 truncate">
+                          {u.firstName} {u.lastName}
+                        </p>
+                        {u.id === currentUserId && (
+                          <span className="text-xs px-1.5 py-0.5 bg-indigo-100 text-indigo-600 rounded-full font-medium">Jij</span>
+                        )}
+                        {!u.isPortalUser && (
+                          <span className="text-xs px-1.5 py-0.5 bg-slate-100 text-slate-500 rounded-full font-medium flex items-center gap-0.5">
+                            <UserCog size={9} /> Geen login
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-slate-400 truncate">{u.email || '—'}</p>
+                    </div>
+                  </button>
+
+                  {/* Afdeling */}
+                  <p className="text-sm text-slate-500 truncate">{u.department || '—'}</p>
+
+                  {/* Functie */}
+                  <p className="text-sm text-slate-500 truncate">{u.jobTitle || '—'}</p>
+
+                  {/* Startdatum */}
+                  <p className="text-sm text-slate-500">{fmtDate(u.startDate)}</p>
+
+                  {/* Status */}
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium w-fit ${STATUS_TONE[u.status]}`}>
+                    {STATUS_LABEL[u.status]}
+                  </span>
+
+                  {/* Hardware count */}
+                  <div className="flex items-center gap-1 text-xs text-slate-500">
+                    <Laptop size={12} className="text-slate-400 flex-shrink-0" />
+                    <span>{u.hardwareCount}</span>
+                  </div>
+
+                  {/* License count */}
+                  <div className="flex items-center gap-1 text-xs text-slate-500">
+                    <CreditCard size={12} className="text-slate-400 flex-shrink-0" />
+                    <span>{u.licenseCount}</span>
+                  </div>
+
+                  {/* 3-dot menu */}
+                  <div className="relative flex justify-end">
+                    <button
+                      onClick={() => setOpenMenu(openMenu === u.id ? null : u.id)}
+                      onBlur={() => setTimeout(() => setOpenMenu(null), 150)}
+                      className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+                    >
+                      <MoreVertical size={15} />
+                    </button>
+                    {openMenu === u.id && (
+                      <div className="absolute right-0 top-7 z-20 w-44 bg-white rounded-xl shadow-lg border border-slate-200 py-1 text-sm">
+                        <button
+                          onClick={() => { setOpenMenu(null); onSelect(u.id) }}
+                          className="w-full text-left px-4 py-2 text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                        >
+                          <ChevronRight size={13} className="text-slate-400" /> Details bekijken
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </Card>
+    </div>
+  )
+}
+
+// ── Employee detail view (full-page) ──────────────────────────────────────────
+
+function EmployeeDetailView({ user, loading, onBack }: {
+  user: ClientUserDetailResponse | null
+  loading: boolean
+  onBack: () => void
+}) {
+  return (
+    <div className="flex flex-col gap-4 h-full">
+      <div>
+        <button
+          onClick={onBack}
+          className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-800 transition-colors"
+        >
+          <ArrowLeft size={15} />
+          Terug naar medewerkers
+        </button>
+      </div>
+
+      <div className="flex-1 overflow-y-auto">
+        {loading ? (
+          <Card className="h-40 flex items-center justify-center">
+            <p className="text-sm text-slate-400">Laden…</p>
+          </Card>
+        ) : !user ? null : (
+          <UserDetailPanel
+            user={user}
+            canEdit={false}
+            checklistBasePath={`/portal/users/${user.id}`}
+          />
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ── Settings view ─────────────────────────────────────────────────────────────
+
+function SettingsView({ teammates, tenantName, onAddUser }: {
+  teammates: ClientUserListItem[]
+  tenantName: string
+  onAddUser: () => void
+}) {
+  return (
+    <div className="max-w-2xl space-y-6">
+      <Card>
+        <CardContent className="p-5">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-sm font-bold text-slate-800">Gebruikersbeheer</h2>
+              <p className="text-xs text-slate-500 mt-0.5">Voeg medewerkers toe aan {tenantName}</p>
+            </div>
+            <Button size="sm" onClick={onAddUser}>
+              <UserPlus size={13} /> Gebruiker toevoegen
+            </Button>
+          </div>
+          <div className="rounded-xl border border-slate-100 overflow-hidden">
+            <div className="px-4 py-2 bg-slate-50 border-b border-slate-100 grid grid-cols-[1fr_1fr_auto] gap-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+              <span>Naam</span>
+              <span>Afdeling</span>
+              <span>Status</span>
+            </div>
+            {teammates.length === 0 ? (
+              <div className="p-6 text-center text-xs text-slate-400">Geen gebruikers gevonden.</div>
+            ) : (
+              <ul className="divide-y divide-slate-100">
+                {teammates.map(u => (
+                  <li key={u.id} className="px-4 py-3 grid grid-cols-[1fr_1fr_auto] gap-4 items-center">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <Avatar first={u.firstName} last={u.lastName} size={28} />
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-slate-800 truncate">{u.firstName} {u.lastName}</p>
+                        <p className="text-xs text-slate-400 truncate">{u.email}</p>
+                      </div>
+                    </div>
+                    <p className="text-sm text-slate-500 truncate">{u.department || '—'}</p>
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_TONE[u.status]}`}>
+                      {STATUS_LABEL[u.status]}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+// ── Main component ────────────────────────────────────────────────────────────
+
+export default function ClientPortal() {
+  const { user, logout } = useAuthStore()
+  const navigate = useNavigate()
+
+  const [view, setView] = useState<View>('employees')
+  const [teammates, setTeammates] = useState<ClientUserListItem[]>([])
+  const [selectedUser, setSelectedUser] = useState<ClientUserDetailResponse | null>(null)
+  const [loadingUsers, setLoadingUsers] = useState(true)
+  const [loadingDetail, setLoadingDetail] = useState(false)
+  const [search, setSearch] = useState('')
+  const [showAddUser, setShowAddUser] = useState(false)
+  const [showAddEmployee, setShowAddEmployee] = useState(false)
+
+  const fetchUsers = useCallback(async () => {
+    try {
+      const { data } = await api.get<ClientUserListItem[]>('/portal/users')
+      setTeammates(data)
+    } finally {
+      setLoadingUsers(false)
+    }
+  }, [])
+
+  const fetchUserDetail = useCallback(async (userId: string) => {
+    setLoadingDetail(true)
+    setSelectedUser(null)
+    try {
+      const { data } = await api.get<ClientUserDetailResponse>(`/portal/users/${userId}`)
+      setSelectedUser(data)
+    } finally {
+      setLoadingDetail(false)
+    }
+  }, [])
+
+  useEffect(() => { fetchUsers() }, [fetchUsers])
+
+  const handleSelectEmployee = (id: string) => {
+    fetchUserDetail(id)
+    setView('employee-detail')
+  }
+
+  const handleBackToList = () => {
+    setView('employees')
+    setSelectedUser(null)
+  }
+
+  const handleNavClick = (v: View) => {
+    setView(v)
+    if (v !== 'employee-detail') setSelectedUser(null)
+  }
+
+  const handleLogout = () => { logout(); navigate('/login') }
+  const tenantName = user?.tenantName ?? 'Portal'
+
+  // "Medewerkers" nav item is active for both list and detail views
+  const employeesActive = view === 'employees' || view === 'employee-detail'
+
+  return (
+    <div className="flex h-screen overflow-hidden bg-slate-50">
+
+      {/* ── Sidebar ─────────────────────────────────────────────────────── */}
+      <aside className="w-56 bg-slate-900 flex flex-col flex-shrink-0">
+
+        <div className="px-4 py-4 border-b border-slate-800 flex-shrink-0">
+          <div className="flex items-center gap-2">
+            <Layers size={16} className="text-indigo-400 flex-shrink-0" />
+            <span className="font-bold text-white text-sm truncate">{tenantName}</span>
+          </div>
+          <p className="text-xs text-slate-500 mt-0.5 ml-6">Portaal</p>
+        </div>
+
+        <nav className="flex-1 px-2 py-3 overflow-y-auto space-y-1">
+          <SectionLabel label="Medewerkers" />
+          <NavItem icon={<Users size={14} />} label="Medewerkers" active={employeesActive} onClick={() => handleNavClick('employees')} />
+          <NavItem icon={<Building2 size={14} />} label="Afdelingen" active={view === 'departments'} onClick={() => handleNavClick('departments')} />
+          <NavItem icon={<MapPin size={14} />} label="Locaties" active={view === 'locations'} onClick={() => handleNavClick('locations')} />
+
+          <SectionLabel label="Assets" />
+          <NavItem icon={<Laptop size={14} />} label="Hardware" active={view === 'hardware'} onClick={() => handleNavClick('hardware')} />
+          <NavItem icon={<Shield size={14} />} label="Software" active={view === 'software'} onClick={() => handleNavClick('software')} />
+          <NavItem icon={<CreditCard size={14} />} label="Licenties" active={view === 'licenses'} onClick={() => handleNavClick('licenses')} />
+          <NavItem icon={<PhoneIcon size={14} />} label="Telefoons" active={view === 'phones'} onClick={() => handleNavClick('phones')} />
+
+          <SectionLabel label="Processen" />
+          <NavItem icon={<PackageCheck size={14} />} label="Aantreden checklist" active={view === 'starter-checklist'} onClick={() => handleNavClick('starter-checklist')} />
+          <NavItem icon={<LogOut size={14} />} label="Weggaan checklist" active={view === 'leaver-checklist'} onClick={() => handleNavClick('leaver-checklist')} />
+
+          <SectionLabel label="Rapportages" />
+          <NavItem icon={<BarChart3 size={14} />} label="Overzichten" active={view === 'overviews'} onClick={() => handleNavClick('overviews')} />
+          <NavItem icon={<History size={14} />} label="Historie" active={view === 'history'} onClick={() => handleNavClick('history')} />
+          <NavItem icon={<FileText size={14} />} label="Contracten" active={view === 'contracts'} onClick={() => handleNavClick('contracts')} />
+        </nav>
+
+        <div className="px-2 pb-3 flex-shrink-0 border-t border-slate-800 pt-2 space-y-1">
+          <NavItem icon={<Settings size={14} />} label="Instellingen" active={view === 'settings'} onClick={() => handleNavClick('settings')} />
+          <NavItem icon={<HelpCircle size={14} />} label="Help" active={view === 'help'} onClick={() => handleNavClick('help')} />
+          <div className="mt-2 px-3 flex items-center gap-2">
+            <div className="w-6 h-6 rounded-full bg-indigo-700 text-white text-xs font-bold flex items-center justify-center flex-shrink-0">
+              {(user?.email?.[0] ?? '').toUpperCase()}
+            </div>
+            <p className="text-xs text-slate-400 truncate flex-1">{user?.email}</p>
+            <button onClick={handleLogout} title="Uitloggen" className="text-slate-500 hover:text-white transition-colors flex-shrink-0">
+              <LogOut size={13} />
+            </button>
+          </div>
+        </div>
+      </aside>
+
+      {/* ── Main content ─────────────────────────────────────────────────── */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+
+        <div className="bg-white border-b border-slate-200 px-6 py-3.5 flex-shrink-0">
+          <h1 className="text-sm font-semibold text-slate-800">{VIEW_TITLES[view]}</h1>
+        </div>
+
+        <div className="flex-1 overflow-hidden p-6">
+          {view === 'employees' && (
+            <EmployeeListView
+              teammates={teammates}
+              loading={loadingUsers}
+              search={search}
+              currentUserId={user?.id}
+              onSearch={setSearch}
+              onSelect={handleSelectEmployee}
+              onAddEmployee={() => setShowAddEmployee(true)}
+            />
+          )}
+
+          {view === 'employee-detail' && (
+            <EmployeeDetailView
+              user={selectedUser}
+              loading={loadingDetail}
+              onBack={handleBackToList}
+            />
+          )}
+
+          {view === 'settings' && (
+            <SettingsView
+              teammates={teammates}
+              tenantName={tenantName}
+              onAddUser={() => setShowAddUser(true)}
+            />
+          )}
+
+          {view === 'hardware' && (
+            <HardwareView teammates={teammates} />
+          )}
+
+          {view === 'licenses' && (
+            <LicenseView teammates={teammates} />
+          )}
+
+          {view === 'phones' && (
+            <PhoneView teammates={teammates} />
+          )}
+
+          {(view === 'departments' || view === 'locations' ||
+            view === 'software' ||
+            view === 'starter-checklist' || view === 'leaver-checklist' ||
+            view === 'overviews' || view === 'history' ||
+            view === 'contracts' || view === 'help') && (
+            <PlaceholderView title={VIEW_TITLES[view]} />
+          )}
+        </div>
+      </div>
+
+      <AddUserModal
+        open={showAddUser}
+        onClose={() => setShowAddUser(false)}
+        onSuccess={() => { fetchUsers(); setShowAddUser(false) }}
+        clientName={tenantName}
+        apiEndpoint="/portal/users"
+      />
+
+      <AddEmployeeModal
+        open={showAddEmployee}
+        onClose={() => setShowAddEmployee(false)}
+        onSuccess={() => { fetchUsers(); setShowAddEmployee(false) }}
+      />
+    </div>
+  )
+}
