@@ -12,8 +12,6 @@ import { PHONE_STATUS_OPTIONS } from '@/types/phone'
 const schema = z.object({
   brand: z.string().min(1, 'Merk is verplicht').max(200),
   model: z.string().max(200),
-  phoneNumber: z.string().max(50),
-  simCard: z.string().max(100),
   serialNumber: z.string().max(100),
   imeiNumber: z.string().max(20),
   status: z.string(),
@@ -51,8 +49,6 @@ export function PhoneModal({ open, onClose, onSuccess, teammates, phone }: Props
       reset(phone ? {
         brand: phone.brand,
         model: phone.model,
-        phoneNumber: phone.phoneNumber,
-        simCard: phone.simCard,
         serialNumber: phone.serialNumber,
         imeiNumber: phone.imeiNumber,
         status: phone.status === 'InStock' ? '0' : phone.status === 'InUse' ? '1' : '2',
@@ -60,9 +56,8 @@ export function PhoneModal({ open, onClose, onSuccess, teammates, phone }: Props
         issuedAt: phone.issuedAt ? phone.issuedAt.substring(0, 10) : '',
         returnedAt: phone.returnedAt ? phone.returnedAt.substring(0, 10) : '',
       } : {
-        brand: '', model: '', phoneNumber: '', simCard: '',
-        serialNumber: '', imeiNumber: '', status: '0',
-        assignedToUserId: '', issuedAt: '', returnedAt: '',
+        brand: '', model: '', serialNumber: '', imeiNumber: '',
+        status: '0', assignedToUserId: '', issuedAt: '', returnedAt: '',
       })
       setApiError(null)
     }
@@ -76,8 +71,6 @@ export function PhoneModal({ open, onClose, onSuccess, teammates, phone }: Props
       const payload = {
         brand: values.brand,
         model: values.model || '',
-        phoneNumber: values.phoneNumber || '',
-        simCard: values.simCard || '',
         serialNumber: values.serialNumber || '',
         imeiNumber: values.imeiNumber || '',
         status: parseInt(values.status, 10),
@@ -108,7 +101,6 @@ export function PhoneModal({ open, onClose, onSuccess, teammates, phone }: Props
       className="max-w-lg"
     >
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        {/* Merk + Model */}
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="block text-xs font-medium text-slate-600 mb-1">Merk *</label>
@@ -121,19 +113,6 @@ export function PhoneModal({ open, onClose, onSuccess, teammates, phone }: Props
           </div>
         </div>
 
-        {/* Telefoonnummer + Simkaart */}
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Telefoonnummer</label>
-            <input {...register('phoneNumber')} className={field} placeholder="+31 6 12345678" />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Simkaart</label>
-            <input {...register('simCard')} className={field} placeholder="89NL…" />
-          </div>
-        </div>
-
-        {/* Serienummer + IMEI */}
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="block text-xs font-medium text-slate-600 mb-1">Serienummer</label>
@@ -145,7 +124,6 @@ export function PhoneModal({ open, onClose, onSuccess, teammates, phone }: Props
           </div>
         </div>
 
-        {/* Status + Toegewezen aan */}
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="block text-xs font-medium text-slate-600 mb-1">Status</label>
@@ -166,7 +144,6 @@ export function PhoneModal({ open, onClose, onSuccess, teammates, phone }: Props
           </div>
         </div>
 
-        {/* Uitgiftedatum + Inleverdatum */}
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="block text-xs font-medium text-slate-600 mb-1">Uitgiftedatum</label>

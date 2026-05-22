@@ -2,13 +2,13 @@ export interface PhoneListItem {
   id: string
   brand: string
   model: string
-  phoneNumber: string
-  simCard: string
   serialNumber: string
   imeiNumber: string
   status: 'InStock' | 'InUse' | 'Decommissioned'
   assignedToUserId: string | null
   assignedToName: string | null
+  simCardNumber: string | null
+  simPhoneNumber: string | null
   issuedAt: string | null
   returnedAt: string | null
   createdAt: string

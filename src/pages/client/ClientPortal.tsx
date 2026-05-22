@@ -19,6 +19,8 @@ import { HardwareModal } from '@/components/HardwareModal'
 import { LicenseModal } from '@/components/LicenseModal'
 import { AddEmployeeModal } from '@/components/AddEmployeeModal'
 import { PhoneModal } from '@/components/PhoneModal'
+import { SimCardModal } from '@/components/SimCardModal'
+import { SubscriptionModal } from '@/components/SubscriptionModal'
 import type { ClientUserListItem, ClientUserDetailResponse } from '@/types/clientUser'
 import { STATUS_LABEL, STATUS_TONE } from '@/types/clientUser'
 import type { HardwareAssetListItem } from '@/types/hardware'
@@ -27,6 +29,10 @@ import type { LicenseListItem } from '@/types/license'
 import { LICENSE_TYPE_LABEL, LICENSE_TYPE_TONE } from '@/types/license'
 import type { PhoneListItem } from '@/types/phone'
 import { PHONE_STATUS_LABEL, PHONE_STATUS_TONE } from '@/types/phone'
+import type { SimCardListItem } from '@/types/simcard'
+import { SIM_STATUS_LABEL, SIM_STATUS_TONE, SIM_TYPE_LABEL } from '@/types/simcard'
+import type { SubscriptionListItem } from '@/types/subscription'
+import { SUB_STATUS_LABEL, SUB_STATUS_TONE, SUB_TYPE_LABEL } from '@/types/subscription'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -46,7 +52,7 @@ const VIEW_TITLES: Record<View, string> = {
   hardware: 'Hardware',
   software: 'Software',
   licenses: 'Licenties',
-  phones: 'Telefoons',
+  phones: 'Telefonie',
   'starter-checklist': 'Aantreden checklist',
   'leaver-checklist': 'Weggaan checklist',
   overviews: 'Overzichten',
@@ -697,9 +703,46 @@ function LicenseView({ teammates }: { teammates: ClientUserListItem[] }) {
   )
 }
 
-// ── Phone view ────────────────────────────────────────────────────────────────
+// ── Telefonie view (3 tabs) ───────────────────────────────────────────────────
 
-function PhoneView({ teammates }: { teammates: ClientUserListItem[] }) {
+type TelefonieTab = 'phones' | 'simcards' | 'subscriptions'
+
+function TelefonieView({ teammates }: { teammates: ClientUserListItem[] }) {
+  const [tab, setTab] = useState<TelefonieTab>('phones')
+
+  return (
+    <div className="flex flex-col gap-4 h-full">
+      {/* Tab bar */}
+      <div className="flex gap-1 flex-shrink-0 bg-slate-100 p-1 rounded-xl w-fit">
+        {([
+          { key: 'phones', label: 'Mobiele telefoons' },
+          { key: 'simcards', label: 'Simkaarten' },
+          { key: 'subscriptions', label: 'Abonnementen' },
+        ] as { key: TelefonieTab; label: string }[]).map(t => (
+          <button
+            key={t.key}
+            onClick={() => setTab(t.key)}
+            className={`px-4 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+              tab === t.key
+                ? 'bg-white text-slate-900 shadow-sm'
+                : 'text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'phones' && <PhonesTab teammates={teammates} />}
+      {tab === 'simcards' && <SimCardsTab teammates={teammates} />}
+      {tab === 'subscriptions' && <SubscriptionsTab />}
+    </div>
+  )
+}
+
+// ── Phones tab ────────────────────────────────────────────────────────────────
+
+function PhonesTab({ teammates }: { teammates: ClientUserListItem[] }) {
   const [phones, setPhones] = useState<PhoneListItem[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -720,7 +763,7 @@ function PhoneView({ teammates }: { teammates: ClientUserListItem[] }) {
   useEffect(() => { fetchPhones() }, [fetchPhones])
 
   const filtered = phones.filter(p =>
-    `${p.brand} ${p.model} ${p.phoneNumber} ${p.serialNumber} ${p.imeiNumber} ${p.assignedToName ?? ''}`
+    `${p.brand} ${p.model} ${p.serialNumber} ${p.imeiNumber} ${p.assignedToName ?? ''}`
       .toLowerCase().includes(search.toLowerCase())
   )
 
@@ -736,8 +779,6 @@ function PhoneView({ teammates }: { teammates: ClientUserListItem[] }) {
     setConfirmDelete(false)
   }
 
-  const handleOpenAdd = () => { setEditTarget(null); setShowModal(true) }
-  const handleOpenEdit = (p: PhoneListItem) => { setEditTarget(p); setShowModal(true) }
   const handleSaved = async () => { await fetchPhones(); setShowModal(false) }
 
   function fmt(d: string | null | undefined) {
@@ -746,8 +787,7 @@ function PhoneView({ teammates }: { teammates: ClientUserListItem[] }) {
   }
 
   return (
-    <div className="flex flex-col gap-4 h-full">
-      {/* Stat cards */}
+    <div className="flex flex-col gap-4 flex-1 min-h-0">
       <div className="grid grid-cols-4 gap-3 flex-shrink-0">
         <StatCard label="Totaal" value={totaal} icon={<PhoneIcon size={18} />} />
         <StatCard label="In gebruik" value={inGebruik} icon={<Activity size={18} />} tone="emerald" />
@@ -755,9 +795,7 @@ function PhoneView({ teammates }: { teammates: ClientUserListItem[] }) {
         <StatCard label="Afgeschreven" value={afgeschreven} icon={<XCircle size={18} />} tone="slate" />
       </div>
 
-      {/* List + Detail */}
       <div className="flex gap-4 flex-1 min-h-0">
-        {/* Left: list */}
         <div className="flex flex-col flex-1 min-h-0 min-w-0">
           <div className="flex items-center gap-2 mb-3 flex-shrink-0">
             <div className="relative flex-1">
@@ -769,7 +807,7 @@ function PhoneView({ teammates }: { teammates: ClientUserListItem[] }) {
                 className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-200 bg-white focus:outline-none focus:border-indigo-400"
               />
             </div>
-            <Button size="sm" onClick={handleOpenAdd}>
+            <Button size="sm" onClick={() => { setEditTarget(null); setShowModal(true) }}>
               <Plus size={13} /> Toevoegen
             </Button>
           </div>
@@ -781,9 +819,7 @@ function PhoneView({ teammates }: { teammates: ClientUserListItem[] }) {
               ) : filtered.length === 0 ? (
                 <div className="p-10 text-center">
                   <PhoneIcon size={36} className="mx-auto mb-3 text-slate-200" />
-                  <p className="text-sm text-slate-400">
-                    {search ? 'Geen resultaten gevonden.' : 'Nog geen telefoons toegevoegd.'}
-                  </p>
+                  <p className="text-sm text-slate-400">{search ? 'Geen resultaten.' : 'Nog geen telefoons.'}</p>
                 </div>
               ) : (
                 <ul className="divide-y divide-slate-100">
@@ -791,25 +827,20 @@ function PhoneView({ teammates }: { teammates: ClientUserListItem[] }) {
                     <li key={p.id}>
                       <button
                         onClick={() => { setSelected(p); setConfirmDelete(false) }}
-                        className={`w-full text-left px-4 py-3.5 transition-colors hover:bg-slate-50 ${
-                          selected?.id === p.id ? 'bg-indigo-50 border-l-2 border-indigo-500' : ''
-                        }`}
+                        className={`w-full text-left px-4 py-3.5 transition-colors hover:bg-slate-50 ${selected?.id === p.id ? 'bg-indigo-50 border-l-2 border-indigo-500' : ''}`}
                       >
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0">
-                            <p className="text-sm font-semibold text-slate-800 truncate">
-                              {p.brand} {p.model || ''}
-                            </p>
-                            <p className="text-xs text-slate-400 truncate">
-                              {p.phoneNumber || p.serialNumber || '—'}
-                            </p>
+                            <p className="text-sm font-semibold text-slate-800 truncate">{p.brand} {p.model || ''}</p>
+                            <p className="text-xs text-slate-400 truncate">{p.simPhoneNumber || p.serialNumber || '—'}</p>
                           </div>
                           <span className={`text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${PHONE_STATUS_TONE[p.status] ?? 'bg-slate-100 text-slate-500'}`}>
                             {PHONE_STATUS_LABEL[p.status] ?? p.status}
                           </span>
                         </div>
-                        {p.assignedToName && (
-                          <p className="mt-1 text-xs text-slate-400 truncate">{p.assignedToName}</p>
+                        {p.assignedToName && <p className="mt-1 text-xs text-slate-400 truncate">{p.assignedToName}</p>}
+                        {p.simCardNumber && (
+                          <p className="mt-0.5 text-xs text-indigo-500 truncate">Simkaart: {p.simPhoneNumber || p.simCardNumber}</p>
                         )}
                       </button>
                     </li>
@@ -820,24 +851,21 @@ function PhoneView({ teammates }: { teammates: ClientUserListItem[] }) {
           </Card>
         </div>
 
-        {/* Right: detail */}
-        <div className="w-[20%] flex-shrink-0 min-h-0">
+        <div className="w-[22%] flex-shrink-0 min-h-0">
           {selected ? (
             <Card className="h-full overflow-y-auto">
               <CardContent className="p-5">
                 <div className="flex items-start justify-between mb-4 gap-3">
                   <div>
                     <h2 className="text-base font-bold text-slate-900">{selected.brand} {selected.model}</h2>
-                    <p className="text-xs text-slate-400 mt-0.5">{selected.phoneNumber || '—'}</p>
+                    <p className="text-xs text-slate-400 mt-0.5">{selected.simPhoneNumber || selected.serialNumber || '—'}</p>
                   </div>
                   <span className={`text-xs px-2.5 py-1 rounded-full font-medium flex-shrink-0 ${PHONE_STATUS_TONE[selected.status] ?? ''}`}>
                     {PHONE_STATUS_LABEL[selected.status] ?? selected.status}
                   </span>
                 </div>
-
                 <div className="grid grid-cols-2 gap-2">
                   {[
-                    { label: 'Simkaart', value: selected.simCard || '—' },
                     { label: 'Serienummer', value: selected.serialNumber || '—' },
                     { label: 'IMEI', value: selected.imeiNumber || '—' },
                     { label: 'Toegewezen aan', value: selected.assignedToName || '—' },
@@ -850,9 +878,17 @@ function PhoneView({ teammates }: { teammates: ClientUserListItem[] }) {
                     </div>
                   ))}
                 </div>
-
+                {selected.simCardNumber && (
+                  <div className="mt-3 rounded-xl bg-indigo-50 border border-indigo-100 px-3 py-2.5">
+                    <p className="text-xs text-indigo-400 mb-0.5">Gekoppelde simkaart</p>
+                    <p className="text-sm font-medium text-indigo-700 truncate">
+                      {selected.simCardNumber}
+                      {selected.simPhoneNumber ? ` · ${selected.simPhoneNumber}` : ''}
+                    </p>
+                  </div>
+                )}
                 <div className="mt-4 flex flex-wrap gap-2">
-                  <Button size="sm" variant="secondary" onClick={() => handleOpenEdit(selected)}>
+                  <Button size="sm" variant="secondary" onClick={() => { setEditTarget(selected); setShowModal(true) }}>
                     <Pencil size={13} /> Wijzigen
                   </Button>
                   {!confirmDelete ? (
@@ -888,6 +924,381 @@ function PhoneView({ teammates }: { teammates: ClientUserListItem[] }) {
         onSuccess={handleSaved}
         teammates={teammates}
         phone={editTarget}
+      />
+    </div>
+  )
+}
+
+// ── SimCards tab ──────────────────────────────────────────────────────────────
+
+function SimCardsTab({ teammates }: { teammates: ClientUserListItem[] }) {
+  const [simCards, setSimCards] = useState<SimCardListItem[]>([])
+  const [phones, setPhones] = useState<PhoneListItem[]>([])
+  const [loading, setLoading] = useState(true)
+  const [search, setSearch] = useState('')
+  const [selected, setSelected] = useState<SimCardListItem | null>(null)
+  const [showModal, setShowModal] = useState(false)
+  const [editTarget, setEditTarget] = useState<SimCardListItem | null>(null)
+  const [confirmDelete, setConfirmDelete] = useState(false)
+
+  const fetchData = useCallback(async () => {
+    try {
+      const [simRes, phoneRes] = await Promise.all([
+        api.get<SimCardListItem[]>('/portal/simcards'),
+        api.get<PhoneListItem[]>('/portal/phones'),
+      ])
+      setSimCards(simRes.data)
+      setPhones(phoneRes.data)
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => { fetchData() }, [fetchData])
+
+  const filtered = simCards.filter(s =>
+    `${s.kaartNummer} ${s.phoneNumber} ${s.provider} ${s.assignedToName ?? ''} ${s.phoneName ?? ''}`
+      .toLowerCase().includes(search.toLowerCase())
+  )
+
+  const handleDelete = async (id: string) => {
+    await api.delete(`/portal/simcards/${id}`)
+    setSimCards(prev => prev.filter(s => s.id !== id))
+    setSelected(null)
+    setConfirmDelete(false)
+  }
+
+  const handleSaved = async () => { await fetchData(); setShowModal(false) }
+
+  return (
+    <div className="flex gap-4 flex-1 min-h-0">
+      <div className="flex flex-col flex-1 min-h-0 min-w-0">
+        <div className="flex items-center gap-2 mb-3 flex-shrink-0">
+          <div className="relative flex-1">
+            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Zoek simkaarten…"
+              className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-200 bg-white focus:outline-none focus:border-indigo-400"
+            />
+          </div>
+          <Button size="sm" onClick={() => { setEditTarget(null); setShowModal(true) }}>
+            <Plus size={13} /> Toevoegen
+          </Button>
+        </div>
+
+        <Card className="flex-1 overflow-hidden flex flex-col">
+          <div className="flex-1 overflow-y-auto">
+            {loading ? (
+              <div className="p-10 text-center text-sm text-slate-400">Laden…</div>
+            ) : filtered.length === 0 ? (
+              <div className="p-10 text-center">
+                <CreditCard size={36} className="mx-auto mb-3 text-slate-200" />
+                <p className="text-sm text-slate-400">{search ? 'Geen resultaten.' : 'Nog geen simkaarten.'}</p>
+              </div>
+            ) : (
+              <ul className="divide-y divide-slate-100">
+                {filtered.map(s => (
+                  <li key={s.id}>
+                    <button
+                      onClick={() => { setSelected(s); setConfirmDelete(false) }}
+                      className={`w-full text-left px-4 py-3.5 transition-colors hover:bg-slate-50 ${selected?.id === s.id ? 'bg-indigo-50 border-l-2 border-indigo-500' : ''}`}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-slate-800 truncate">{s.kaartNummer}</p>
+                          <p className="text-xs text-slate-400 truncate">
+                            {s.phoneNumber || '—'} · {SIM_TYPE_LABEL[s.type] ?? s.type}
+                          </p>
+                        </div>
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${SIM_STATUS_TONE[s.status] ?? 'bg-slate-100 text-slate-500'}`}>
+                          {SIM_STATUS_LABEL[s.status] ?? s.status}
+                        </span>
+                      </div>
+                      {(s.assignedToName || s.phoneName) && (
+                        <p className="mt-1 text-xs text-slate-400 truncate">
+                          {[s.assignedToName, s.phoneName].filter(Boolean).join(' · ')}
+                        </p>
+                      )}
+                      {s.subscriptionName && (
+                        <p className="mt-0.5 text-xs text-indigo-500 truncate">Abonnement: {s.subscriptionName}</p>
+                      )}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </Card>
+      </div>
+
+      <div className="w-[22%] flex-shrink-0 min-h-0">
+        {selected ? (
+          <Card className="h-full overflow-y-auto">
+            <CardContent className="p-5">
+              <div className="flex items-start justify-between mb-4 gap-3">
+                <div>
+                  <h2 className="text-base font-bold text-slate-900">{selected.kaartNummer}</h2>
+                  <p className="text-xs text-slate-400 mt-0.5">{selected.provider || '—'}</p>
+                </div>
+                <span className={`text-xs px-2.5 py-1 rounded-full font-medium flex-shrink-0 ${SIM_STATUS_TONE[selected.status] ?? ''}`}>
+                  {SIM_STATUS_LABEL[selected.status] ?? selected.status}
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { label: 'Type', value: SIM_TYPE_LABEL[selected.type] ?? selected.type },
+                  { label: 'Telefoonnummer', value: selected.phoneNumber || '—' },
+                  { label: 'Toegewezen aan', value: selected.assignedToName || '—' },
+                ].map(row => (
+                  <div key={row.label} className="rounded-xl bg-slate-50 p-3">
+                    <p className="text-xs text-slate-400 mb-0.5">{row.label}</p>
+                    <p className="text-sm font-medium text-slate-800 truncate">{row.value}</p>
+                  </div>
+                ))}
+              </div>
+              {selected.phoneName && (
+                <div className="mt-3 rounded-xl bg-indigo-50 border border-indigo-100 px-3 py-2.5">
+                  <p className="text-xs text-indigo-400 mb-0.5">Gekoppelde telefoon</p>
+                  <p className="text-sm font-medium text-indigo-700 truncate">{selected.phoneName}</p>
+                </div>
+              )}
+              {selected.subscriptionName && (
+                <div className="mt-2 rounded-xl bg-indigo-50 border border-indigo-100 px-3 py-2.5">
+                  <p className="text-xs text-indigo-400 mb-0.5">Gekoppeld abonnement</p>
+                  <p className="text-sm font-medium text-indigo-700 truncate">{selected.subscriptionName}</p>
+                </div>
+              )}
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Button size="sm" variant="secondary" onClick={() => { setEditTarget(selected); setShowModal(true) }}>
+                  <Pencil size={13} /> Wijzigen
+                </Button>
+                {!confirmDelete ? (
+                  <Button size="sm" variant="danger" onClick={() => setConfirmDelete(true)}>
+                    <Trash2 size={13} /> Verwijderen
+                  </Button>
+                ) : (
+                  <>
+                    <span className="flex items-center text-xs text-red-700 font-medium">Zeker weten?</span>
+                    <Button size="sm" variant="danger" onClick={() => handleDelete(selected.id)}>Ja</Button>
+                    <Button size="sm" variant="secondary" onClick={() => setConfirmDelete(false)}>Nee</Button>
+                  </>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="h-full flex items-center justify-center">
+            <div className="text-center">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-slate-100 flex items-center justify-center">
+                <CreditCard size={28} className="text-slate-300" />
+              </div>
+              <p className="text-sm text-slate-400">Selecteer een simkaart</p>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <SimCardModal
+        open={showModal}
+        onClose={() => setShowModal(false)}
+        onSuccess={handleSaved}
+        teammates={teammates}
+        phones={phones}
+        simCard={editTarget}
+      />
+    </div>
+  )
+}
+
+// ── Subscriptions tab ─────────────────────────────────────────────────────────
+
+function SubscriptionsTab() {
+  const [subscriptions, setSubscriptions] = useState<SubscriptionListItem[]>([])
+  const [simCards, setSimCards] = useState<SimCardListItem[]>([])
+  const [loading, setLoading] = useState(true)
+  const [search, setSearch] = useState('')
+  const [selected, setSelected] = useState<SubscriptionListItem | null>(null)
+  const [showModal, setShowModal] = useState(false)
+  const [editTarget, setEditTarget] = useState<SubscriptionListItem | null>(null)
+  const [confirmDelete, setConfirmDelete] = useState(false)
+
+  const fetchData = useCallback(async () => {
+    try {
+      const [subRes, simRes] = await Promise.all([
+        api.get<SubscriptionListItem[]>('/portal/subscriptions'),
+        api.get<SimCardListItem[]>('/portal/simcards'),
+      ])
+      setSubscriptions(subRes.data)
+      setSimCards(simRes.data)
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => { fetchData() }, [fetchData])
+
+  const filtered = subscriptions.filter(s =>
+    `${s.name} ${s.provider} ${s.bundle} ${s.simCardNumber ?? ''} ${s.assignedToName ?? ''}`
+      .toLowerCase().includes(search.toLowerCase())
+  )
+
+  const handleDelete = async (id: string) => {
+    await api.delete(`/portal/subscriptions/${id}`)
+    setSubscriptions(prev => prev.filter(s => s.id !== id))
+    setSelected(null)
+    setConfirmDelete(false)
+  }
+
+  const handleSaved = async () => { await fetchData(); setShowModal(false) }
+
+  function fmt(d: string | null | undefined) {
+    if (!d) return '—'
+    return new Date(d).toLocaleDateString('nl-NL', { day: '2-digit', month: '2-digit', year: 'numeric' })
+  }
+
+  function fmtCost(cost: number | null) {
+    if (cost == null) return '—'
+    return `€ ${cost.toFixed(2)}`
+  }
+
+  return (
+    <div className="flex gap-4 flex-1 min-h-0">
+      <div className="flex flex-col flex-1 min-h-0 min-w-0">
+        <div className="flex items-center gap-2 mb-3 flex-shrink-0">
+          <div className="relative flex-1">
+            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Zoek abonnementen…"
+              className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-200 bg-white focus:outline-none focus:border-indigo-400"
+            />
+          </div>
+          <Button size="sm" onClick={() => { setEditTarget(null); setShowModal(true) }}>
+            <Plus size={13} /> Toevoegen
+          </Button>
+        </div>
+
+        <Card className="flex-1 overflow-hidden flex flex-col">
+          <div className="flex-1 overflow-y-auto">
+            {loading ? (
+              <div className="p-10 text-center text-sm text-slate-400">Laden…</div>
+            ) : filtered.length === 0 ? (
+              <div className="p-10 text-center">
+                <Layers size={36} className="mx-auto mb-3 text-slate-200" />
+                <p className="text-sm text-slate-400">{search ? 'Geen resultaten.' : 'Nog geen abonnementen.'}</p>
+              </div>
+            ) : (
+              <ul className="divide-y divide-slate-100">
+                {filtered.map(s => (
+                  <li key={s.id}>
+                    <button
+                      onClick={() => { setSelected(s); setConfirmDelete(false) }}
+                      className={`w-full text-left px-4 py-3.5 transition-colors hover:bg-slate-50 ${selected?.id === s.id ? 'bg-indigo-50 border-l-2 border-indigo-500' : ''}`}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-slate-800 truncate">{s.name}</p>
+                          <p className="text-xs text-slate-400 truncate">
+                            {s.provider} · {SUB_TYPE_LABEL[s.type] ?? s.type}
+                            {s.monthlyCost != null ? ` · €${s.monthlyCost.toFixed(2)}/mnd` : ''}
+                          </p>
+                        </div>
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${SUB_STATUS_TONE[s.status] ?? 'bg-slate-100 text-slate-500'}`}>
+                          {SUB_STATUS_LABEL[s.status] ?? s.status}
+                        </span>
+                      </div>
+                      {s.assignedToName && (
+                        <p className="mt-1 text-xs text-slate-400 truncate">{s.assignedToName}</p>
+                      )}
+                      {s.simCardNumber && (
+                        <p className="mt-0.5 text-xs text-indigo-500 truncate">Simkaart: {s.simPhoneNumber || s.simCardNumber}</p>
+                      )}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </Card>
+      </div>
+
+      <div className="w-[22%] flex-shrink-0 min-h-0">
+        {selected ? (
+          <Card className="h-full overflow-y-auto">
+            <CardContent className="p-5">
+              <div className="flex items-start justify-between mb-4 gap-3">
+                <div>
+                  <h2 className="text-base font-bold text-slate-900">{selected.name}</h2>
+                  <p className="text-xs text-slate-400 mt-0.5">{selected.provider || '—'}</p>
+                </div>
+                <span className={`text-xs px-2.5 py-1 rounded-full font-medium flex-shrink-0 ${SUB_STATUS_TONE[selected.status] ?? ''}`}>
+                  {SUB_STATUS_LABEL[selected.status] ?? selected.status}
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { label: 'Type', value: SUB_TYPE_LABEL[selected.type] ?? selected.type },
+                  { label: 'Bundel', value: selected.bundle || '—' },
+                  { label: 'Maandelijks', value: fmtCost(selected.monthlyCost) },
+                  { label: 'Toegewezen aan', value: selected.assignedToName || '—' },
+                  { label: 'Locatie', value: selected.location || '—' },
+                  { label: 'Startdatum', value: fmt(selected.startsAt) },
+                  { label: 'Einddatum', value: fmt(selected.expiresAt) },
+                ].map(row => (
+                  <div key={row.label} className="rounded-xl bg-slate-50 p-3">
+                    <p className="text-xs text-slate-400 mb-0.5">{row.label}</p>
+                    <p className="text-sm font-medium text-slate-800 truncate">{row.value}</p>
+                  </div>
+                ))}
+              </div>
+              {selected.simCardNumber && (
+                <div className="mt-3 rounded-xl bg-indigo-50 border border-indigo-100 px-3 py-2.5">
+                  <p className="text-xs text-indigo-400 mb-0.5">Gekoppelde simkaart</p>
+                  <p className="text-sm font-medium text-indigo-700 truncate">
+                    {selected.simCardNumber}
+                    {selected.simPhoneNumber ? ` · ${selected.simPhoneNumber}` : ''}
+                  </p>
+                </div>
+              )}
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Button size="sm" variant="secondary" onClick={() => { setEditTarget(selected); setShowModal(true) }}>
+                  <Pencil size={13} /> Wijzigen
+                </Button>
+                {!confirmDelete ? (
+                  <Button size="sm" variant="danger" onClick={() => setConfirmDelete(true)}>
+                    <Trash2 size={13} /> Verwijderen
+                  </Button>
+                ) : (
+                  <>
+                    <span className="flex items-center text-xs text-red-700 font-medium">Zeker weten?</span>
+                    <Button size="sm" variant="danger" onClick={() => handleDelete(selected.id)}>Ja</Button>
+                    <Button size="sm" variant="secondary" onClick={() => setConfirmDelete(false)}>Nee</Button>
+                  </>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="h-full flex items-center justify-center">
+            <div className="text-center">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-slate-100 flex items-center justify-center">
+                <Layers size={28} className="text-slate-300" />
+              </div>
+              <p className="text-sm text-slate-400">Selecteer een abonnement</p>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <SubscriptionModal
+        open={showModal}
+        onClose={() => setShowModal(false)}
+        onSuccess={handleSaved}
+        simCards={simCards}
+        subscription={editTarget}
       />
     </div>
   )
@@ -1206,7 +1617,7 @@ export default function ClientPortal() {
           <NavItem icon={<Laptop size={14} />} label="Hardware" active={view === 'hardware'} onClick={() => handleNavClick('hardware')} />
           <NavItem icon={<Shield size={14} />} label="Software" active={view === 'software'} onClick={() => handleNavClick('software')} />
           <NavItem icon={<CreditCard size={14} />} label="Licenties" active={view === 'licenses'} onClick={() => handleNavClick('licenses')} />
-          <NavItem icon={<PhoneIcon size={14} />} label="Telefoons" active={view === 'phones'} onClick={() => handleNavClick('phones')} />
+          <NavItem icon={<PhoneIcon size={14} />} label="Telefonie" active={view === 'phones'} onClick={() => handleNavClick('phones')} />
 
           <SectionLabel label="Processen" />
           <NavItem icon={<PackageCheck size={14} />} label="Aantreden checklist" active={view === 'starter-checklist'} onClick={() => handleNavClick('starter-checklist')} />
@@ -1278,7 +1689,7 @@ export default function ClientPortal() {
           )}
 
           {view === 'phones' && (
-            <PhoneView teammates={teammates} />
+            <TelefonieView teammates={teammates} />
           )}
 
           {(view === 'departments' || view === 'locations' ||
