@@ -1352,11 +1352,12 @@ function fmtDate(d: string | null | undefined) {
   return new Date(d).toLocaleDateString('nl-NL', { day: '2-digit', month: '2-digit', year: 'numeric' })
 }
 
-function EmployeeListView({ teammates, loading, search, currentUserId, onSearch, onSelect, onAddEmployee }: {
+function EmployeeListView({ teammates, loading, search, currentUserId, departmentOptions, onSearch, onSelect, onAddEmployee }: {
   teammates: ClientUserListItem[]
   loading: boolean
   search: string
   currentUserId: string | undefined
+  departmentOptions: { id: string; name: string; managerName: string }[]
   onSearch: (v: string) => void
   onSelect: (id: string) => void
   onAddEmployee: () => void
@@ -1368,7 +1369,7 @@ function EmployeeListView({ teammates, loading, search, currentUserId, onSearch,
       .toLowerCase().includes(search.toLowerCase())
   )
 
-  const cols = 'grid-cols-[2.5fr_1fr_1fr_1fr_1fr_80px_90px_40px]'
+  const cols = 'grid-cols-[2.5fr_1fr_1fr_1fr_1fr_1fr_80px_90px_40px]'
 
   return (
     <div className="flex flex-col gap-4 h-full">
@@ -1392,7 +1393,7 @@ function EmployeeListView({ teammates, loading, search, currentUserId, onSearch,
       {/* Table card */}
       <Card className="flex-1 overflow-hidden flex flex-col">
         <div className={`grid ${cols} gap-3 px-5 py-3 border-b border-slate-100 bg-slate-50`}>
-          {['Naam', 'Afdeling', 'Functie', 'Startdatum', 'Status', 'Assets', 'Licenties', ''].map(h => (
+          {['Naam', 'Manager', 'Afdeling', 'Functie', 'Startdatum', 'Status', 'Assets', 'Licenties', ''].map(h => (
             <span key={h} className="text-xs font-semibold text-slate-500 uppercase tracking-wider truncate">{h}</span>
           ))}
         </div>
@@ -1407,7 +1408,9 @@ function EmployeeListView({ teammates, loading, search, currentUserId, onSearch,
             </div>
           ) : (
             <ul className="divide-y divide-slate-100">
-              {filtered.map(u => (
+              {filtered.map(u => {
+                const dept = u.departmentId ? departmentOptions.find(d => d.id === u.departmentId) : null
+                return (
                 <li key={u.id} className={`grid ${cols} gap-3 px-5 py-3.5 hover:bg-slate-100 transition-colors items-center`}>
                   {/* Naam + email */}
                   <button className="flex items-center gap-3 min-w-0 text-left" onClick={() => onSelect(u.id)}>
@@ -1424,6 +1427,11 @@ function EmployeeListView({ teammates, loading, search, currentUserId, onSearch,
                       <p className="text-xs text-slate-400 truncate">{u.email || '—'}</p>
                     </div>
                   </button>
+
+                  {/* Manager */}
+                  <p className="text-sm text-slate-500 truncate">
+                    {dept?.managerName || ''}
+                  </p>
 
                   {/* Afdeling */}
                   {u.departmentName ? (
@@ -1478,7 +1486,8 @@ function EmployeeListView({ teammates, loading, search, currentUserId, onSearch,
                     )}
                   </div>
                 </li>
-              ))}
+              )
+            })}
             </ul>
           )}
         </div>
@@ -1888,12 +1897,12 @@ export default function ClientPortal() {
   const [search, setSearch] = useState('')
   const [showAddUser, setShowAddUser] = useState(false)
   const [showAddEmployee, setShowAddEmployee] = useState(false)
-  const [departmentOptions, setDepartmentOptions] = useState<{ id: string; name: string }[]>([])
+  const [departmentOptions, setDepartmentOptions] = useState<{ id: string; name: string; managerName: string }[]>([])
 
   const fetchDepartmentOptions = useCallback(async () => {
     try {
       const { data } = await api.get<DepartmentListItem[]>('/portal/departments')
-      setDepartmentOptions(data.map(d => ({ id: d.id, name: d.name })))
+      setDepartmentOptions(data.map(d => ({ id: d.id, name: d.name, managerName: d.managerName })))
     } catch { /* non-critical */ }
   }, [])
 
@@ -2033,6 +2042,7 @@ export default function ClientPortal() {
               loading={loadingUsers}
               search={search}
               currentUserId={user?.id}
+              departmentOptions={departmentOptions}
               onSearch={setSearch}
               onSelect={handleSelectEmployee}
               onAddEmployee={() => setShowAddEmployee(true)}
