@@ -1364,7 +1364,7 @@ function EmployeeListView({ teammates, loading, search, currentUserId, onSearch,
   const [openMenu, setOpenMenu] = useState<string | null>(null)
 
   const filtered = teammates.filter(t =>
-    `${t.firstName} ${t.lastName} ${t.email} ${t.department} ${t.jobTitle}`
+    `${t.firstName} ${t.lastName} ${t.email} ${t.departmentName} ${t.jobTitle}`
       .toLowerCase().includes(search.toLowerCase())
   )
 
@@ -1426,7 +1426,13 @@ function EmployeeListView({ teammates, loading, search, currentUserId, onSearch,
                   </button>
 
                   {/* Afdeling */}
-                  <p className="text-sm text-slate-500 truncate">{u.department || '—'}</p>
+                  {u.departmentName ? (
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-medium truncate w-fit max-w-full">
+                      {u.departmentName}
+                    </span>
+                  ) : (
+                    <span />
+                  )}
 
                   {/* Functie */}
                   <p className="text-sm text-slate-500 truncate">{u.jobTitle || '—'}</p>
@@ -1882,6 +1888,14 @@ export default function ClientPortal() {
   const [search, setSearch] = useState('')
   const [showAddUser, setShowAddUser] = useState(false)
   const [showAddEmployee, setShowAddEmployee] = useState(false)
+  const [departmentOptions, setDepartmentOptions] = useState<{ id: string; name: string }[]>([])
+
+  const fetchDepartmentOptions = useCallback(async () => {
+    try {
+      const { data } = await api.get<DepartmentListItem[]>('/portal/departments')
+      setDepartmentOptions(data.map(d => ({ id: d.id, name: d.name })))
+    } catch { /* non-critical */ }
+  }, [])
 
   const fetchUsers = useCallback(async () => {
     try {
@@ -1904,6 +1918,7 @@ export default function ClientPortal() {
   }, [])
 
   useEffect(() => { fetchUsers() }, [fetchUsers])
+  useEffect(() => { fetchDepartmentOptions() }, [fetchDepartmentOptions])
 
   const handleSelectEmployee = (id: string) => {
     fetchUserDetail(id)
@@ -2072,12 +2087,14 @@ export default function ClientPortal() {
         onSuccess={() => { fetchUsers(); setShowAddUser(false) }}
         clientName={tenantName}
         apiEndpoint="/portal/users"
+        departments={departmentOptions}
       />
 
       <AddEmployeeModal
         open={showAddEmployee}
         onClose={() => setShowAddEmployee(false)}
         onSuccess={() => { fetchUsers(); setShowAddEmployee(false) }}
+        departments={departmentOptions}
       />
     </div>
   )

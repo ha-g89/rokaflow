@@ -13,6 +13,8 @@ export interface ClientUserListItem {
   licenseCount: number
   completeness: number
   createdAt: string
+  departmentId: string | null
+  departmentName: string
 }
 
 export interface ClientUserResponse {

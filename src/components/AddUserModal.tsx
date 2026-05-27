@@ -11,7 +11,7 @@ const schema = z.object({
   lastName: z.string().min(1, 'Achternaam is verplicht').max(100),
   email: z.string().email('Geldig e-mailadres vereist'),
   password: z.string().min(8, 'Minimaal 8 tekens'),
-  department: z.string().max(200).optional().default(''),
+  departmentId: z.string().optional().default(''),
   jobTitle: z.string().max(200).optional().default(''),
   phone: z.string().max(100).optional().default(''),
   startDate: z.string().optional().default(''),
@@ -26,12 +26,14 @@ interface Props {
   clientName: string
   /** Override the POST endpoint (e.g. '/portal/users' for the client portal) */
   apiEndpoint?: string
+  /** If provided, shows a department dropdown instead of a free-text field */
+  departments?: { id: string; name: string }[]
 }
 
 const field =
   'w-full px-3 py-2 rounded-lg border border-slate-300 text-sm text-slate-900 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-colors'
 
-export function AddUserModal({ open, onClose, onSuccess, clientId, clientName, apiEndpoint }: Props) {
+export function AddUserModal({ open, onClose, onSuccess, clientId, clientName, apiEndpoint, departments = [] }: Props) {
   const [apiError, setApiError] = useState<string | null>(null)
   const {
     register,
@@ -47,7 +49,13 @@ export function AddUserModal({ open, onClose, onSuccess, clientId, clientName, a
     try {
       const endpoint = apiEndpoint ?? `/clients/${clientId}/users`
       await api.post(endpoint, {
-        ...values,
+        firstName: values.firstName,
+        lastName: values.lastName,
+        email: values.email,
+        password: values.password,
+        departmentId: values.departmentId || null,
+        jobTitle: values.jobTitle || null,
+        phone: values.phone || null,
         startDate: values.startDate ? new Date(values.startDate).toISOString() : null,
       })
       reset()
@@ -92,10 +100,17 @@ export function AddUserModal({ open, onClose, onSuccess, clientId, clientName, a
         <hr className="border-slate-100" />
 
         <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Afdeling</label>
-            <input {...register('department')} className={field} placeholder="Milieu" />
-          </div>
+          {departments.length > 0 ? (
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1">Afdeling</label>
+              <select {...register('departmentId')} className={field}>
+                <option value="">— Geen afdeling —</option>
+                {departments.map(d => (
+                  <option key={d.id} value={d.id}>{d.name}</option>
+                ))}
+              </select>
+            </div>
+          ) : null}
           <div>
             <label className="block text-xs font-medium text-slate-600 mb-1">Functie</label>
             <input {...register('jobTitle')} className={field} placeholder="Medewerker" />

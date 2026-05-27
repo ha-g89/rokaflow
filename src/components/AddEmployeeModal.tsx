@@ -13,7 +13,7 @@ const schema = z.object({
     v => v === '' || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v),
     'Ongeldig e-mailadres'
   ),
-  department: z.string().max(200),
+  departmentId: z.string(),
   jobTitle: z.string().max(200),
   phone: z.string().max(100),
   status: z.string(),
@@ -26,6 +26,7 @@ interface Props {
   open: boolean
   onClose: () => void
   onSuccess: () => void
+  departments?: { id: string; name: string }[]
 }
 
 const field =
@@ -37,7 +38,7 @@ const STATUS_OPTIONS = [
   { value: '2', label: 'Uit dienst' },
 ]
 
-export function AddEmployeeModal({ open, onClose, onSuccess }: Props) {
+export function AddEmployeeModal({ open, onClose, onSuccess, departments = [] }: Props) {
   const [apiError, setApiError] = useState<string | null>(null)
 
   const {
@@ -48,7 +49,7 @@ export function AddEmployeeModal({ open, onClose, onSuccess }: Props) {
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
-      firstName: '', lastName: '', email: '', department: '',
+      firstName: '', lastName: '', email: '', departmentId: '',
       jobTitle: '', phone: '', status: '0', startDate: '',
     },
   })
@@ -62,7 +63,7 @@ export function AddEmployeeModal({ open, onClose, onSuccess }: Props) {
         firstName: values.firstName,
         lastName: values.lastName,
         email: values.email || null,
-        department: values.department || null,
+        departmentId: values.departmentId || null,
         jobTitle: values.jobTitle || null,
         phone: values.phone || null,
         status: parseInt(values.status, 10),
@@ -103,7 +104,12 @@ export function AddEmployeeModal({ open, onClose, onSuccess }: Props) {
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="block text-xs font-medium text-slate-600 mb-1">Afdeling</label>
-            <input {...register('department')} className={field} placeholder="Milieu" />
+            <select {...register('departmentId')} className={field}>
+              <option value="">— Geen afdeling —</option>
+              {departments.map(d => (
+                <option key={d.id} value={d.id}>{d.name}</option>
+              ))}
+            </select>
           </div>
           <div>
             <label className="block text-xs font-medium text-slate-600 mb-1">Functie</label>
