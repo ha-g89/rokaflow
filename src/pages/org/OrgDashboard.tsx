@@ -1,11 +1,12 @@
 import { useEffect, useState, useCallback } from 'react'
 import {
   Briefcase, Users, Plus, ChevronRight, LogOut,
-  Building2, Search, UserPlus, User,
+  Building2, Search, UserPlus, User, ExternalLink, Loader2,
 } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { useNavigate } from 'react-router-dom'
 import api from '@/lib/axios'
+import type { SwitchToClientResponse } from '@/types/auth'
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { AddClientModal } from '@/components/AddClientModal'
@@ -51,7 +52,7 @@ function Avatar({ first, last, size = 8 }: { first: string; last: string; size?:
 type View = 'clients' | 'users' | 'detail'
 
 export default function OrgDashboard() {
-  const { user, logout } = useAuthStore()
+  const { user, logout, switchToClient } = useAuthStore()
   const navigate = useNavigate()
 
   const [clients, setClients] = useState<ClientListItem[]>([])
@@ -66,6 +67,7 @@ export default function OrgDashboard() {
   const [showAddUser, setShowAddUser] = useState(false)
   const [clientSearch, setClientSearch] = useState('')
   const [userSearch, setUserSearch] = useState('')
+  const [switchingClientId, setSwitchingClientId] = useState<string | null>(null)
 
   const fetchClients = useCallback(async () => {
     try {
@@ -117,6 +119,19 @@ export default function OrgDashboard() {
         leaverChecklist: patch(prev.leaverChecklist),
       }
     })
+  }
+
+  const handleSwitchToClient = async (clientId: string) => {
+    setSwitchingClientId(clientId)
+    try {
+      const { data } = await api.post<SwitchToClientResponse>(`/clients/${clientId}/switch`)
+      switchToClient(data.switchToken)
+      navigate('/client')
+    } catch {
+      // Error is handled by global interceptor / toast if present
+    } finally {
+      setSwitchingClientId(null)
+    }
   }
 
   const handleLogout = () => { logout(); navigate('/login') }
@@ -186,14 +201,24 @@ export default function OrgDashboard() {
                           <li key={c.id}>
                             <button
                               onClick={() => handleSelectClient(c)}
-                              className={`w-full text-left px-3 py-2.5 hover:bg-slate-50 transition-colors flex items-center justify-between gap-2 ${
+                              className={`w-full text-left px-3 py-2.5 hover:bg-slate-100 transition-colors flex items-center justify-between gap-2 ${
                                 selectedClient?.id === c.id ? 'bg-indigo-50 border-l-2 border-indigo-500' : ''}`}
                             >
-                              <div className="min-w-0">
+                              <div className="min-w-0 flex-1">
                                 <p className="text-xs font-semibold text-slate-800 truncate">{c.name}</p>
                                 <p className="text-xs text-slate-400">{c.userCount} gebruikers</p>
                               </div>
-                              <ChevronRight size={11} className="text-slate-300 flex-shrink-0" />
+                              <button
+                                onClick={(e) => { e.stopPropagation(); handleSwitchToClient(c.id) }}
+                                disabled={switchingClientId === c.id}
+                                title="Beheer portaal"
+                                className="flex-shrink-0 p-1 rounded hover:bg-indigo-100 text-indigo-400 hover:text-indigo-600 transition-colors disabled:opacity-50"
+                              >
+                                {switchingClientId === c.id
+                                  ? <Loader2 size={13} className="animate-spin" />
+                                  : <ExternalLink size={13} />
+                                }
+                              </button>
                             </button>
                           </li>
                         ))}
@@ -240,7 +265,7 @@ export default function OrgDashboard() {
                                 <li key={u.id}>
                                   <button
                                     onClick={() => handleSelectUser(u.id)}
-                                    className={`w-full text-left px-3 py-2.5 hover:bg-slate-50 transition-colors ${
+                                    className={`w-full text-left px-3 py-2.5 hover:bg-slate-100 transition-colors ${
                                       selectedUser?.id === u.id ? 'bg-indigo-50 border-l-2 border-indigo-500' : ''}`}
                                   >
                                     <div className="flex items-center gap-2 mb-1">

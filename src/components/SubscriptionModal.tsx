@@ -59,7 +59,7 @@ export function SubscriptionModal({ open, onClose, onSuccess, simCards, subscrip
         monthlyCost: subscription.monthlyCost != null ? String(subscription.monthlyCost) : '',
         startsAt: subscription.startsAt ? subscription.startsAt.substring(0, 10) : '',
         expiresAt: subscription.expiresAt ? subscription.expiresAt.substring(0, 10) : '',
-        status: subscription.status === 'Active' ? '0' : subscription.status === 'Cancelled' ? '1' : '2',
+        status: subscription.status === 'Active' ? '0' : subscription.status === 'Cancelled' ? '1' : subscription.status === 'Inactive' ? '2' : '0',
         location: subscription.location,
         simCardId: subscription.simCardId ?? '',
       } : {

@@ -1,11 +1,66 @@
 @import "tailwindcss";
 
+/* Tailwind v4 — class-based dark mode */
+@custom-variant dark (&:is(.dark, .dark *));
+
 * {
   box-sizing: border-box;
+}
+
+html.dark {
+  color-scheme: dark;
 }
 
 body {
   margin: 0;
   font-family: system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
+}
+
+/* ── Global dark mode overrides ─────────────────────────────────────────────
+   Covers bestaande components zonder elke Tailwind class te hoeven aanpassen
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/* Achtergronden */
+.dark .bg-white          { background-color: #1e293b; } /* slate-800 */
+.dark .bg-slate-50       { background-color: #0f172a; } /* slate-950 */
+.dark .bg-slate-100      { background-color: #1e293b; } /* slate-800 */
+
+/* Hover states */
+.dark .hover\:bg-slate-50:hover  { background-color: #1e293b; }
+.dark .hover\:bg-slate-100:hover { background-color: #334155; }
+
+/* Randen */
+.dark .border-slate-100  { border-color: #334155; }
+.dark .border-slate-200  { border-color: #334155; }
+.dark .border-slate-300  { border-color: #475569; }
+
+/* Dividers in lijsten */
+.dark .divide-slate-100 > :not([hidden]) ~ :not([hidden]) { border-color: #334155; }
+.dark .divide-slate-200 > :not([hidden]) ~ :not([hidden]) { border-color: #475569; }
+
+/* Primaire tekst (bijna zwart → bijna wit) */
+.dark .text-slate-900    { color: #f1f5f9; } /* slate-100 */
+.dark .text-slate-800    { color: #e2e8f0; } /* slate-200 */
+.dark .text-slate-700    { color: #cbd5e1; } /* slate-300 */
+
+/* Formulier elementen */
+.dark input:not([type=checkbox]):not([type=radio]),
+.dark select,
+.dark textarea {
+  background-color: #1e293b;
+  border-color: #475569;
+  color: #f1f5f9;
+}
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: #64748b;
+}
+
+/* Focus ring kleur behouden */
+.dark input:focus,
+.dark select:focus,
+.dark textarea:focus {
+  border-color: #818cf8; /* indigo-400 */
+  outline: none;
 }

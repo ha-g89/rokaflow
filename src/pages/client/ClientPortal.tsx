@@ -6,9 +6,10 @@ import {
   Settings, HelpCircle, Building2, MapPin, UserPlus,
   Plus, Pencil, Trash2,
   Package, Activity, Archive, XCircle, CheckCircle2, Clock,
-  MoreVertical, UserCog,
+  MoreVertical, Wifi, Moon, Sun, ArrowLeftCircle,
 } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
+import { useThemeStore } from '@/store/themeStore'
 import { useNavigate } from 'react-router-dom'
 import api from '@/lib/axios'
 import { Card, CardContent } from '@/components/ui/Card'
@@ -126,6 +127,7 @@ function StatCard({ label, value, icon, tone = 'default' }: {
     blue: 'bg-blue-100 text-blue-600',
     amber: 'bg-amber-100 text-amber-600',
     slate: 'bg-slate-100 text-slate-400',
+    indigo: 'bg-indigo-100 text-indigo-600',
   }
   return (
     <div className="bg-white rounded-2xl px-5 py-4 border border-slate-200 shadow-sm flex items-center gap-4">
@@ -301,7 +303,7 @@ function HardwareView({ teammates }: { teammates: ClientUserListItem[] }) {
                     <li key={a.id}>
                       <button
                         onClick={() => setSelected(a)}
-                        className={`w-full text-left px-4 py-3.5 transition-colors hover:bg-slate-50 ${
+                        className={`w-full text-left px-4 py-3.5 transition-colors hover:bg-slate-100 ${
                           selected?.id === a.id ? 'bg-indigo-50 border-l-2 border-indigo-500' : ''
                         }`}
                       >
@@ -623,7 +625,7 @@ function LicenseView({ teammates }: { teammates: ClientUserListItem[] }) {
                       <li
                         key={l.id}
                         onClick={() => setSelected(l)}
-                        className={`grid grid-cols-[2fr_1.5fr_0.8fr_1fr_0.7fr] gap-3 px-4 py-3 items-center cursor-pointer transition-colors hover:bg-slate-50 ${
+                        className={`grid grid-cols-[2fr_1.5fr_0.8fr_1fr_0.7fr] gap-3 px-4 py-3 items-center cursor-pointer transition-colors hover:bg-slate-100 ${
                           selected?.id === l.id ? 'bg-indigo-50 border-l-2 border-indigo-500' : ''
                         }`}
                       >
@@ -709,15 +711,44 @@ type TelefonieTab = 'phones' | 'simcards' | 'subscriptions'
 
 function TelefonieView({ teammates }: { teammates: ClientUserListItem[] }) {
   const [tab, setTab] = useState<TelefonieTab>('phones')
+  const [totals, setTotals] = useState({
+    subscriptions: 0,
+    phonesInUse: 0,
+    simCardsInUse: 0,
+  })
+
+  const fetchTotals = useCallback(async () => {
+    try {
+      const [phoneRes, simRes, subRes] = await Promise.all([
+        api.get<PhoneListItem[]>('/portal/phones'),
+        api.get<SimCardListItem[]>('/portal/simcards'),
+        api.get<SubscriptionListItem[]>('/portal/subscriptions'),
+      ])
+      setTotals({
+        subscriptions: subRes.data.length,
+        phonesInUse: phoneRes.data.filter(p => p.status === 'InUse').length,
+        simCardsInUse: simRes.data.filter(s => s.status === 'InUse').length,
+      })
+    } catch { /* negeer */ }
+  }, [])
+
+  useEffect(() => { fetchTotals() }, [fetchTotals])
 
   return (
     <div className="flex flex-col gap-4 h-full">
+      {/* Totalen */}
+      <div className="grid grid-cols-3 gap-3 flex-shrink-0">
+        <StatCard label="Abonnementen" value={totals.subscriptions} icon={<Layers size={18} />} tone="indigo" />
+        <StatCard label="Telefoons in gebruik" value={totals.phonesInUse} icon={<PhoneIcon size={18} />} tone="emerald" />
+        <StatCard label="Simkaarten in gebruik" value={totals.simCardsInUse} icon={<Wifi size={18} />} tone="blue" />
+      </div>
+
       {/* Tab bar */}
       <div className="flex gap-1 flex-shrink-0 bg-slate-100 p-1 rounded-xl w-fit">
         {([
-          { key: 'phones', label: 'Mobiele telefoons' },
-          { key: 'simcards', label: 'Simkaarten' },
+          { key: 'phones', label: 'Mobiele Telefoons' },
           { key: 'subscriptions', label: 'Abonnementen' },
+          { key: 'simcards', label: 'Simkaarten' },
         ] as { key: TelefonieTab; label: string }[]).map(t => (
           <button
             key={t.key}
@@ -734,8 +765,8 @@ function TelefonieView({ teammates }: { teammates: ClientUserListItem[] }) {
       </div>
 
       {tab === 'phones' && <PhonesTab teammates={teammates} />}
-      {tab === 'simcards' && <SimCardsTab teammates={teammates} />}
       {tab === 'subscriptions' && <SubscriptionsTab />}
+      {tab === 'simcards' && <SimCardsTab teammates={teammates} />}
     </div>
   )
 }
@@ -767,11 +798,6 @@ function PhonesTab({ teammates }: { teammates: ClientUserListItem[] }) {
       .toLowerCase().includes(search.toLowerCase())
   )
 
-  const totaal = phones.length
-  const inGebruik = phones.filter(p => p.status === 'InUse').length
-  const opVoorraad = phones.filter(p => p.status === 'InStock').length
-  const afgeschreven = phones.filter(p => p.status === 'Decommissioned').length
-
   const handleDelete = async (id: string) => {
     await api.delete(`/portal/phones/${id}`)
     setPhones(prev => prev.filter(p => p.id !== id))
@@ -781,6 +807,12 @@ function PhonesTab({ teammates }: { teammates: ClientUserListItem[] }) {
 
   const handleSaved = async () => { await fetchPhones(); setShowModal(false) }
 
+  const handleUnlinkSim = async (phoneId: string) => {
+    const { data } = await api.delete<PhoneListItem>(`/portal/phones/${phoneId}/simcard`)
+    setPhones(prev => prev.map(p => p.id === phoneId ? data : p))
+    setSelected(data)
+  }
+
   function fmt(d: string | null | undefined) {
     if (!d) return '—'
     return new Date(d).toLocaleDateString('nl-NL', { day: '2-digit', month: '2-digit', year: 'numeric' })
@@ -788,13 +820,6 @@ function PhonesTab({ teammates }: { teammates: ClientUserListItem[] }) {
 
   return (
     <div className="flex flex-col gap-4 flex-1 min-h-0">
-      <div className="grid grid-cols-4 gap-3 flex-shrink-0">
-        <StatCard label="Totaal" value={totaal} icon={<PhoneIcon size={18} />} />
-        <StatCard label="In gebruik" value={inGebruik} icon={<Activity size={18} />} tone="emerald" />
-        <StatCard label="Op voorraad" value={opVoorraad} icon={<Archive size={18} />} tone="blue" />
-        <StatCard label="Afgeschreven" value={afgeschreven} icon={<XCircle size={18} />} tone="slate" />
-      </div>
-
       <div className="flex gap-4 flex-1 min-h-0">
         <div className="flex flex-col flex-1 min-h-0 min-w-0">
           <div className="flex items-center gap-2 mb-3 flex-shrink-0">
@@ -827,7 +852,7 @@ function PhonesTab({ teammates }: { teammates: ClientUserListItem[] }) {
                     <li key={p.id}>
                       <button
                         onClick={() => { setSelected(p); setConfirmDelete(false) }}
-                        className={`w-full text-left px-4 py-3.5 transition-colors hover:bg-slate-50 ${selected?.id === p.id ? 'bg-indigo-50 border-l-2 border-indigo-500' : ''}`}
+                        className={`w-full text-left px-4 py-3.5 transition-colors hover:bg-slate-100 ${selected?.id === p.id ? 'bg-indigo-50 border-l-2 border-indigo-500' : ''}`}
                       >
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0">
@@ -880,11 +905,22 @@ function PhonesTab({ teammates }: { teammates: ClientUserListItem[] }) {
                 </div>
                 {selected.simCardNumber && (
                   <div className="mt-3 rounded-xl bg-indigo-50 border border-indigo-100 px-3 py-2.5">
-                    <p className="text-xs text-indigo-400 mb-0.5">Gekoppelde simkaart</p>
-                    <p className="text-sm font-medium text-indigo-700 truncate">
-                      {selected.simCardNumber}
-                      {selected.simPhoneNumber ? ` · ${selected.simPhoneNumber}` : ''}
-                    </p>
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="text-xs text-indigo-400 mb-0.5">Gekoppelde simkaart</p>
+                        <p className="text-sm font-medium text-indigo-700 truncate">
+                          {selected.simCardNumber}
+                          {selected.simPhoneNumber ? ` · ${selected.simPhoneNumber}` : ''}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => handleUnlinkSim(selected.id)}
+                        title="Simkaart ontkoppelen"
+                        className="flex-shrink-0 text-indigo-400 hover:text-red-500 transition-colors"
+                      >
+                        <XCircle size={15} />
+                      </button>
+                    </div>
                   </div>
                 )}
                 <div className="mt-4 flex flex-wrap gap-2">
@@ -1003,7 +1039,7 @@ function SimCardsTab({ teammates }: { teammates: ClientUserListItem[] }) {
                   <li key={s.id}>
                     <button
                       onClick={() => { setSelected(s); setConfirmDelete(false) }}
-                      className={`w-full text-left px-4 py-3.5 transition-colors hover:bg-slate-50 ${selected?.id === s.id ? 'bg-indigo-50 border-l-2 border-indigo-500' : ''}`}
+                      className={`w-full text-left px-4 py-3.5 transition-colors hover:bg-slate-100 ${selected?.id === s.id ? 'bg-indigo-50 border-l-2 border-indigo-500' : ''}`}
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
@@ -1196,7 +1232,7 @@ function SubscriptionsTab() {
                   <li key={s.id}>
                     <button
                       onClick={() => { setSelected(s); setConfirmDelete(false) }}
-                      className={`w-full text-left px-4 py-3.5 transition-colors hover:bg-slate-50 ${selected?.id === s.id ? 'bg-indigo-50 border-l-2 border-indigo-500' : ''}`}
+                      className={`w-full text-left px-4 py-3.5 transition-colors hover:bg-slate-100 ${selected?.id === s.id ? 'bg-indigo-50 border-l-2 border-indigo-500' : ''}`}
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
@@ -1297,7 +1333,10 @@ function SubscriptionsTab() {
         open={showModal}
         onClose={() => setShowModal(false)}
         onSuccess={handleSaved}
-        simCards={simCards}
+        simCards={simCards.filter(s =>
+          // Toon alleen simkaarten zonder abonnement, of de simkaart die al aan dit abonnement gekoppeld is
+          !subscriptions.some(sub => sub.simCardId === s.id && sub.id !== editTarget?.id)
+        )}
         subscription={editTarget}
       />
     </div>
@@ -1367,7 +1406,7 @@ function EmployeeListView({ teammates, loading, search, currentUserId, onSearch,
           ) : (
             <ul className="divide-y divide-slate-100">
               {filtered.map(u => (
-                <li key={u.id} className={`grid ${cols} gap-3 px-5 py-3.5 hover:bg-slate-50 transition-colors items-center`}>
+                <li key={u.id} className={`grid ${cols} gap-3 px-5 py-3.5 hover:bg-slate-100 transition-colors items-center`}>
                   {/* Naam + email */}
                   <button className="flex items-center gap-3 min-w-0 text-left" onClick={() => onSelect(u.id)}>
                     <Avatar first={u.firstName} last={u.lastName} size={48} />
@@ -1378,11 +1417,6 @@ function EmployeeListView({ teammates, loading, search, currentUserId, onSearch,
                         </p>
                         {u.id === currentUserId && (
                           <span className="text-xs px-1.5 py-0.5 bg-indigo-100 text-indigo-600 rounded-full font-medium">Jij</span>
-                        )}
-                        {!u.isPortalUser && (
-                          <span className="text-xs px-1.5 py-0.5 bg-slate-100 text-slate-500 rounded-full font-medium flex items-center gap-0.5">
-                            <UserCog size={9} /> Geen login
-                          </span>
                         )}
                       </div>
                       <p className="text-xs text-slate-400 truncate">{u.email || '—'}</p>
@@ -1428,7 +1462,7 @@ function EmployeeListView({ teammates, loading, search, currentUserId, onSearch,
                       <div className="absolute right-0 top-7 z-20 w-44 bg-white rounded-xl shadow-lg border border-slate-200 py-1 text-sm">
                         <button
                           onClick={() => { setOpenMenu(null); onSelect(u.id) }}
-                          className="w-full text-left px-4 py-2 text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                          className="w-full text-left px-4 py-2 text-slate-700 hover:bg-slate-100 flex items-center gap-2"
                         >
                           <ChevronRight size={13} className="text-slate-400" /> Details bekijken
                         </button>
@@ -1488,8 +1522,38 @@ function SettingsView({ teammates, tenantName, onAddUser }: {
   tenantName: string
   onAddUser: () => void
 }) {
+  const { darkMode, toggleDarkMode } = useThemeStore()
+
   return (
     <div className="max-w-2xl space-y-6">
+
+      {/* Weergave */}
+      <Card>
+        <CardContent className="p-5">
+          <h2 className="text-sm font-bold text-slate-800 mb-4">Weergave</h2>
+          <div className="flex items-center justify-between py-3 border-b border-slate-100 dark:border-slate-700 last:border-0">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center flex-shrink-0">
+                {darkMode ? <Moon size={15} className="text-indigo-400" /> : <Sun size={15} className="text-amber-500" />}
+              </div>
+              <div>
+                <p className="text-sm font-medium text-slate-800">Donkere modus</p>
+                <p className="text-xs text-slate-400 mt-0.5">Schakel tussen licht en donker thema</p>
+              </div>
+            </div>
+            <button
+              onClick={toggleDarkMode}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors flex-shrink-0 ${
+                darkMode ? 'bg-indigo-600' : 'bg-slate-200 dark:bg-slate-600'
+              }`}
+            >
+              <span className={`inline-block h-4 w-4 rounded-full bg-white shadow-sm transform transition-transform ${
+                darkMode ? 'translate-x-6' : 'translate-x-1'
+              }`} />
+            </button>
+          </div>
+        </CardContent>
+      </Card>
       <Card>
         <CardContent className="p-5">
           <div className="flex items-center justify-between mb-4">
@@ -1538,8 +1602,17 @@ function SettingsView({ teammates, tenantName, onAddUser }: {
 // ── Main component ────────────────────────────────────────────────────────────
 
 export default function ClientPortal() {
-  const { user, logout } = useAuthStore()
+  const { user, logout, switchBack } = useAuthStore()
+  const { darkMode, toggleDarkMode } = useThemeStore()
   const navigate = useNavigate()
+
+  // MSP context-switch: true when an org-admin is managing this client portal
+  const isMspMode = user?.switchedFromOrgId !== null && user?.switchedFromOrgId !== undefined
+
+  const handleSwitchBack = () => {
+    switchBack()
+    navigate('/org')
+  }
 
   const [view, setView] = useState<View>('employees')
   const [teammates, setTeammates] = useState<ClientUserListItem[]>([])
@@ -1594,10 +1667,10 @@ export default function ClientPortal() {
   const employeesActive = view === 'employees' || view === 'employee-detail'
 
   return (
-    <div className="flex h-screen overflow-hidden bg-slate-50">
+    <div className="flex h-screen overflow-hidden bg-slate-50 dark:bg-slate-950">
 
       {/* ── Sidebar ─────────────────────────────────────────────────────── */}
-      <aside className="w-56 bg-slate-900 flex flex-col flex-shrink-0">
+      <aside className="w-56 bg-slate-900 dark:bg-slate-950 flex flex-col flex-shrink-0">
 
         <div className="px-4 py-4 border-b border-slate-800 flex-shrink-0">
           <div className="flex items-center gap-2">
@@ -1637,6 +1710,13 @@ export default function ClientPortal() {
               {(user?.email?.[0] ?? '').toUpperCase()}
             </div>
             <p className="text-xs text-slate-400 truncate flex-1">{user?.email}</p>
+            <button
+              onClick={toggleDarkMode}
+              title={darkMode ? 'Lichte modus' : 'Donkere modus'}
+              className="text-slate-500 hover:text-white transition-colors flex-shrink-0"
+            >
+              {darkMode ? <Sun size={13} /> : <Moon size={13} />}
+            </button>
             <button onClick={handleLogout} title="Uitloggen" className="text-slate-500 hover:text-white transition-colors flex-shrink-0">
               <LogOut size={13} />
             </button>
@@ -1647,8 +1727,28 @@ export default function ClientPortal() {
       {/* ── Main content ─────────────────────────────────────────────────── */}
       <div className="flex-1 flex flex-col overflow-hidden">
 
-        <div className="bg-white border-b border-slate-200 px-6 py-3.5 flex-shrink-0">
-          <h1 className="text-sm font-semibold text-slate-800">{VIEW_TITLES[view]}</h1>
+        {/* MSP banner — only visible when an org-admin has switched context */}
+        {isMspMode && (
+          <div className="bg-amber-50 dark:bg-amber-900/30 border-b border-amber-200 dark:border-amber-700 px-6 py-2 flex items-center justify-between flex-shrink-0">
+            <div className="flex items-center gap-2 text-amber-800 dark:text-amber-300">
+              <ArrowLeftCircle size={15} />
+              <span className="text-xs font-medium">
+                MSP beheer modus — je beheert <strong>{user?.tenantName}</strong> namens{' '}
+                <strong>{user?.switchedFromOrgName}</strong>
+              </span>
+            </div>
+            <button
+              onClick={handleSwitchBack}
+              className="flex items-center gap-1.5 text-xs font-semibold text-amber-700 dark:text-amber-300 hover:text-amber-900 dark:hover:text-amber-100 transition-colors"
+            >
+              <ArrowLeft size={13} />
+              Terug naar {user?.switchedFromOrgName}
+            </button>
+          </div>
+        )}
+
+        <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-6 py-3.5 flex-shrink-0">
+          <h1 className="text-sm font-semibold text-slate-800 dark:text-slate-100">{VIEW_TITLES[view]}</h1>
         </div>
 
         <div className="flex-1 overflow-hidden p-6">

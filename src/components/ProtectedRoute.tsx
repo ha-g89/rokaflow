@@ -8,9 +8,9 @@ interface Props {
 }
 
 const ROLE_HOME: Record<UserRole, string> = {
-  superuser: '/superuser',
-  org_admin: '/org',
-  org_member: '/org',
+  superuser:   '/superuser',
+  org_admin:   '/org',
+  org_member:  '/org',
   client_user: '/client',
 }
 
@@ -22,7 +22,14 @@ export default function ProtectedRoute({ children, roles }: Props) {
     return <Navigate to="/login" state={{ from: location }} replace />
   }
 
-  if (!roles.includes(user.role)) {
+  // MSP context-switch: an org_admin operating inside a client portal
+  // is allowed to access /client/* even though their role is not client_user.
+  const isMspAdminInClientPortal =
+    user.role === 'org_admin' &&
+    user.switchedFromOrgId !== null &&
+    roles.includes('client_user')
+
+  if (!roles.includes(user.role) && !isMspAdminInClientPortal) {
     const home = ROLE_HOME[user.role]
     if (home && !location.pathname.startsWith(home)) {
       return <Navigate to={home} replace />

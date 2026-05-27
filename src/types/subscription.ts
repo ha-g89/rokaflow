@@ -7,7 +7,7 @@ export interface SubscriptionListItem {
   monthlyCost: number | null
   startsAt: string | null
   expiresAt: string | null
-  status: 'Active' | 'Cancelled' | 'Suspended'
+  status: 'Active' | 'Cancelled' | 'Inactive'
   location: string
   simCardId: string | null
   simCardNumber: string | null
@@ -24,13 +24,13 @@ export const SUB_TYPE_LABEL: Record<string, string> = {
 export const SUB_STATUS_LABEL: Record<string, string> = {
   Active: 'Actief',
   Cancelled: 'Opgezegd',
-  Suspended: 'Opgeschort',
+  Inactive: 'Inactief',
 }
 
 export const SUB_STATUS_TONE: Record<string, string> = {
   Active: 'bg-emerald-100 text-emerald-700',
   Cancelled: 'bg-red-100 text-red-600',
-  Suspended: 'bg-amber-100 text-amber-700',
+  Inactive: 'bg-amber-100 text-amber-700',
 }
 
 export const SUB_TYPE_OPTIONS = [
@@ -41,5 +41,5 @@ export const SUB_TYPE_OPTIONS = [
 export const SUB_STATUS_OPTIONS = [
   { value: '0', label: 'Actief' },
   { value: '1', label: 'Opgezegd' },
-  { value: '2', label: 'Opgeschort' },
+  { value: '2', label: 'Inactief' },
 ]

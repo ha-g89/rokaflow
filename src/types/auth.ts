@@ -6,6 +6,9 @@ export interface AuthUser {
   role: UserRole
   tenantId: string | null
   tenantName: string | null
+  /** Set when operating in a context-switch (MSP mode) */
+  switchedFromOrgId: string | null
+  switchedFromOrgName: string | null
 }
 
 export interface LoginResponse {
@@ -18,4 +21,12 @@ export interface LoginResponse {
 export interface LoginRequest {
   email: string
   password: string
+}
+
+/** Response from POST /api/clients/{id}/switch */
+export interface SwitchToClientResponse {
+  switchToken: string
+  clientId: string
+  clientName: string
+  orgName: string
 }

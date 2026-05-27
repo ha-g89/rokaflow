@@ -238,7 +238,7 @@ export function LicenseModal({ open, onClose, onSuccess, teammates, license }: P
                   <p className="p-3 text-xs text-slate-400 text-center">Geen medewerkers gevonden.</p>
                 ) : (
                   filteredTeammates.map(u => (
-                    <label key={u.id} className="flex items-center gap-2.5 px-3 py-2 hover:bg-slate-50 cursor-pointer">
+                    <label key={u.id} className="flex items-center gap-2.5 px-3 py-2 hover:bg-slate-100 cursor-pointer">
                       <input
                         type="checkbox"
                         checked={selectedIds.includes(u.id)}

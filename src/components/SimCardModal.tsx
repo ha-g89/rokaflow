@@ -52,7 +52,7 @@ export function SimCardModal({ open, onClose, onSuccess, teammates, phones, simC
         type: simCard.type === 'Physical' ? '0' : '1',
         phoneNumber: simCard.phoneNumber,
         provider: simCard.provider,
-        status: simCard.status === 'InUse' ? '0' : simCard.status === 'Reserved' ? '1' : '2',
+        status: simCard.status === 'InUse' ? '0' : simCard.status === 'InStock' ? '1' : '2',
         phoneId: simCard.phoneId ?? '',
         assignedToUserId: simCard.assignedToUserId ?? '',
       } : {

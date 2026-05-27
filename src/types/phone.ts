@@ -7,6 +7,7 @@ export interface PhoneListItem {
   status: 'InStock' | 'InUse' | 'Decommissioned'
   assignedToUserId: string | null
   assignedToName: string | null
+  simCardId: string | null
   simCardNumber: string | null
   simPhoneNumber: string | null
   issuedAt: string | null

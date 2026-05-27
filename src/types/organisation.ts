@@ -6,6 +6,7 @@ export interface OrganisationListItem {
   userCount: number
   clientCount: number
   createdAt: string
+  hasLogo: boolean
 }
 
 export interface OrganisationDetailResponse {
@@ -14,6 +15,7 @@ export interface OrganisationDetailResponse {
   slug: string
   isActive: boolean
   createdAt: string
+  logoDataUrl: string | null
   clients: OrgClientItem[]
   users: OrgUserItem[]
 }
