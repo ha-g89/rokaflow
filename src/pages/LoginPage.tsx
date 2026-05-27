@@ -37,8 +37,12 @@ export default function LoginPage() {
     try {
       const { data } = await api.post<LoginResponse>('/auth/login', values)
       login(data.accessToken, data.refreshToken, data.user)
+      const home = ROLE_HOME[data.user.role]
       const from = (location.state as { from?: { pathname: string } })?.from?.pathname
-      navigate(from ?? ROLE_HOME[data.user.role], { replace: true })
+      // Only restore `from` when it's within the user's own area (prevents
+      // an org_admin being sent back to /client after an expired MSP session).
+      const dest = from?.startsWith(home) ? from : home
+      navigate(dest, { replace: true })
     } catch (err: unknown) {
       const msg =
         (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail

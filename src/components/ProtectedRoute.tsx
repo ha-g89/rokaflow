@@ -24,9 +24,11 @@ export default function ProtectedRoute({ children, roles }: Props) {
 
   // MSP context-switch: an org_admin operating inside a client portal
   // is allowed to access /client/* even though their role is not client_user.
+  // Use !! to treat both null and undefined as falsy (backend sends null explicitly,
+  // but old persisted state might have undefined).
   const isMspAdminInClientPortal =
     user.role === 'org_admin' &&
-    user.switchedFromOrgId !== null &&
+    !!user.switchedFromOrgId &&
     roles.includes('client_user')
 
   if (!roles.includes(user.role) && !isMspAdminInClientPortal) {
