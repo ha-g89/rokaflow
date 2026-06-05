@@ -27,6 +27,7 @@ export const HARDWARE_STATUS_OPTIONS = [
   { value: 0, label: 'Op voorraad' },
   { value: 1, label: 'In gebruik' },
   { value: 2, label: 'Afgeschreven' },
+  { value: 3, label: 'In reparatie' },
 ] as const
 
 export const HARDWARE_TYPE_LABEL: Record<string, string> = {
@@ -42,10 +43,12 @@ export const HARDWARE_STATUS_LABEL: Record<string, string> = {
   InStock: 'Op voorraad',
   InUse: 'In gebruik',
   Decommissioned: 'Afgeschreven',
+  UnderRepair: 'In reparatie',
 }
 
 export const HARDWARE_STATUS_TONE: Record<string, string> = {
   InStock: 'bg-blue-100 text-blue-700',
   InUse: 'bg-emerald-100 text-emerald-700',
   Decommissioned: 'bg-slate-100 text-slate-600',
+  UnderRepair: 'bg-orange-100 text-orange-700',
 }
