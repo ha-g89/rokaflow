@@ -183,7 +183,7 @@ function licenseAuditLabel(entry: AuditEntry): string {
   }
 }
 
-function fmtDate(d: string) {
+function fmtAuditDate(d: string) {
   return new Date(d).toLocaleDateString('nl-NL', { day: '2-digit', month: '2-digit', year: 'numeric' })
 }
 
@@ -217,7 +217,7 @@ function HistoryBlock({ entityType, entityId, labelFn }: {
           {entries.map(e => (
             <div key={e.id} className="rounded-xl bg-slate-50 px-3 py-2">
               <p className="text-xs font-medium text-slate-700">{labelFn(e)}</p>
-              <p className="text-xs text-slate-400">{fmtDate(e.createdAt)}{e.userName ? ` • ${e.userName}` : ''}</p>
+              <p className="text-xs text-slate-400">{fmtAuditDate(e.createdAt)}{e.userName ? ` • ${e.userName}` : ''}</p>
             </div>
           ))}
         </div>
@@ -241,7 +241,7 @@ function HardwareDetailPanel({ asset, onEdit, onDelete }: {
   }
 
   return (
-    <Card className="h-full overflow-y-auto">
+    <Card>
       <CardContent className="p-5">
         <div className="flex items-start justify-between mb-5 gap-3">
           <div>
@@ -417,7 +417,7 @@ function HardwareView({ teammates }: { teammates: ClientUserListItem[] }) {
         </div>
 
         {/* Right: detail */}
-        <div className="w-[20%] flex-shrink-0 min-h-0">
+        <div className="w-[20%] flex-shrink-0 min-h-0 overflow-y-auto">
           {selected ? (
             <HardwareDetailPanel
               asset={selected}
@@ -471,7 +471,7 @@ function LicenseDetailPanel({ license, teammates, onEdit, onDelete, onAssign, on
   }
 
   return (
-    <Card className="h-full overflow-y-auto">
+    <Card>
       <CardContent className="p-5 space-y-5">
         {/* Header */}
         <div className="flex items-start justify-between gap-3">
@@ -759,7 +759,7 @@ function LicenseView({ teammates }: { teammates: ClientUserListItem[] }) {
         </div>
 
         {/* Right: detail */}
-        <div className="w-[20%] flex-shrink-0 min-h-0">
+        <div className="w-[20%] flex-shrink-0 min-h-0 overflow-y-auto">
           {selected ? (
             <LicenseDetailPanel
               license={selected}
