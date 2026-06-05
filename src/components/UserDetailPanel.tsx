@@ -114,6 +114,7 @@ function EditUserModal({ user, onClose, onSaved }: {
   const [firstName, setFirstName]     = useState(user.firstName)
   const [lastName, setLastName]       = useState(user.lastName)
   const [email, setEmail]             = useState(user.email)
+  const [jobTitle, setJobTitle]       = useState(user.jobTitle ?? '')
   const [status, setStatus]           = useState(STATUS_TO_INT[user.status] ?? '0')
   const [contractType, setContractType] = useState(user.contractType ? (CONTRACT_TO_INT[user.contractType] ?? '') : '')
   const [saving, setSaving]           = useState(false)
@@ -128,6 +129,7 @@ function EditUserModal({ user, onClose, onSaved }: {
         firstName: firstName.trim(),
         lastName: lastName.trim(),
         email: email.trim() || null,
+        jobTitle: jobTitle.trim() || null,
         status: parseInt(status, 10),
         contractType: contractType !== '' ? parseInt(contractType, 10) : null,
       })
@@ -169,6 +171,10 @@ function EditUserModal({ user, onClose, onSaved }: {
           <div>
             <label className="block text-xs font-medium text-slate-600 mb-1">E-mailadres</label>
             <input type="email" value={email} onChange={e => setEmail(e.target.value)} className={field} placeholder="jan@bedrijf.nl" />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-slate-600 mb-1">Functie</label>
+            <input value={jobTitle} onChange={e => setJobTitle(e.target.value)} className={field} placeholder="Medewerker" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
