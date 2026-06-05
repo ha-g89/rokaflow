@@ -144,6 +144,88 @@ function StatCard({ label, value, icon, tone = 'default' }: {
   )
 }
 
+// ── History helpers ───────────────────────────────────────────────────────────
+
+interface AuditEntry {
+  id: string
+  action: string
+  changes: string | null
+  userName: string | null
+  createdAt: string
+}
+
+function parseAuditChanges(raw: string | null): Record<string, unknown> {
+  if (!raw) return {}
+  try { return JSON.parse(raw) } catch { return {} }
+}
+
+function hardwareAuditLabel(entry: AuditEntry): string {
+  const c = parseAuditChanges(entry.changes)
+  switch (entry.action) {
+    case 'Created': return 'Hardware aangemaakt'
+    case 'Deleted': return 'Hardware verwijderd'
+    case 'Updated':
+      if ('Status' in c) return 'Status gewijzigd'
+      if ('AssignedToUserId' in c) return 'Toewijzing gewijzigd'
+      return 'Hardware bijgewerkt'
+    default: return entry.action
+  }
+}
+
+function licenseAuditLabel(entry: AuditEntry): string {
+  switch (entry.action) {
+    case 'Created':      return 'Licentie aangemaakt'
+    case 'Deleted':      return 'Licentie verwijderd'
+    case 'Updated':      return 'Licentie bijgewerkt'
+    case 'UserAssigned': return 'Gebruiker toegewezen'
+    case 'UserRevoked':  return 'Gebruiker ingetrokken'
+    default: return entry.action
+  }
+}
+
+function fmtDate(d: string) {
+  return new Date(d).toLocaleDateString('nl-NL', { day: '2-digit', month: '2-digit', year: 'numeric' })
+}
+
+function HistoryBlock({ entityType, entityId, labelFn }: {
+  entityType: string
+  entityId: string
+  labelFn: (entry: AuditEntry) => string
+}) {
+  const [entries, setEntries] = useState<AuditEntry[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    setLoading(true)
+    api.get<AuditEntry[]>(`/portal/history/${entityType}/${entityId}`)
+      .then(r => setEntries(r.data))
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [entityType, entityId])
+
+  return (
+    <div className="pt-4 border-t border-slate-100">
+      <p className="flex items-center gap-1.5 text-xs font-bold text-slate-600 uppercase tracking-wide mb-2">
+        <History size={12} /> Historie
+      </p>
+      {loading ? (
+        <p className="text-xs text-slate-400">Laden…</p>
+      ) : entries.length === 0 ? (
+        <p className="text-xs text-slate-400">Nog geen activiteiten.</p>
+      ) : (
+        <div className="space-y-1.5">
+          {entries.map(e => (
+            <div key={e.id} className="rounded-xl bg-slate-50 px-3 py-2">
+              <p className="text-xs font-medium text-slate-700">{labelFn(e)}</p>
+              <p className="text-xs text-slate-400">{fmtDate(e.createdAt)}{e.userName ? ` • ${e.userName}` : ''}</p>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── Hardware detail panel ─────────────────────────────────────────────────────
 
 function HardwareDetailPanel({ asset, onEdit, onDelete }: {
@@ -213,6 +295,8 @@ function HardwareDetailPanel({ asset, onEdit, onDelete }: {
             </>
           )}
         </div>
+
+        <HistoryBlock entityType="HardwareAsset" entityId={asset.id} labelFn={hardwareAuditLabel} />
       </CardContent>
     </Card>
   )
@@ -508,6 +592,8 @@ function LicenseDetailPanel({ license, teammates, onEdit, onDelete, onAssign, on
             </>
           )}
         </div>
+
+        <HistoryBlock entityType="License" entityId={license.id} labelFn={licenseAuditLabel} />
       </CardContent>
     </Card>
   )
