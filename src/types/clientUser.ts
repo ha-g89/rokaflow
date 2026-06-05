@@ -27,15 +27,21 @@ export interface ClientUserResponse {
   createdAt: string
 }
 
+export type ContractType = 'Vast' | 'Tijdelijk' | 'Stagiair'
+
 export interface ClientUserDetailResponse {
   id: string
   email: string
   firstName: string
   lastName: string
   department: string
+  departmentId: string | null
+  departmentName: string
+  managerName: string
   jobTitle: string
   phone: string
   status: 'InService' | 'LeavePlanned' | 'Left'
+  contractType: ContractType | null
   startDate: string | null
   leaveDate: string | null
   isActive: boolean

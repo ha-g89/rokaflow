@@ -17,6 +17,7 @@ const schema = z.object({
   jobTitle: z.string().max(200),
   phone: z.string().max(100),
   status: z.string(),
+  contractType: z.string(),
   startDate: z.string(),
 })
 
@@ -38,6 +39,13 @@ const STATUS_OPTIONS = [
   { value: '2', label: 'Uit dienst' },
 ]
 
+const CONTRACT_OPTIONS = [
+  { value: '', label: '— Geen —' },
+  { value: '0', label: 'Vast' },
+  { value: '1', label: 'Tijdelijk' },
+  { value: '2', label: 'Stagiair' },
+]
+
 export function AddEmployeeModal({ open, onClose, onSuccess, departments = [] }: Props) {
   const [apiError, setApiError] = useState<string | null>(null)
 
@@ -50,7 +58,7 @@ export function AddEmployeeModal({ open, onClose, onSuccess, departments = [] }:
     resolver: zodResolver(schema),
     defaultValues: {
       firstName: '', lastName: '', email: '', departmentId: '',
-      jobTitle: '', phone: '', status: '0', startDate: '',
+      jobTitle: '', phone: '', status: '0', contractType: '', startDate: '',
     },
   })
 
@@ -67,6 +75,7 @@ export function AddEmployeeModal({ open, onClose, onSuccess, departments = [] }:
         jobTitle: values.jobTitle || null,
         phone: values.phone || null,
         status: parseInt(values.status, 10),
+        contractType: values.contractType !== '' ? parseInt(values.contractType, 10) : null,
         startDate: values.startDate ? new Date(values.startDate).toISOString() : null,
       })
       reset()
@@ -128,13 +137,23 @@ export function AddEmployeeModal({ open, onClose, onSuccess, departments = [] }:
           </div>
         </div>
 
-        <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Status</label>
-          <select {...register('status')} className={field}>
-            {STATUS_OPTIONS.map(o => (
-              <option key={o.value} value={o.value}>{o.label}</option>
-            ))}
-          </select>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs font-medium text-slate-600 mb-1">Status</label>
+            <select {...register('status')} className={field}>
+              {STATUS_OPTIONS.map(o => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-slate-600 mb-1">Contracttype</label>
+            <select {...register('contractType')} className={field}>
+              {CONTRACT_OPTIONS.map(o => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+          </div>
         </div>
 
         {apiError && (

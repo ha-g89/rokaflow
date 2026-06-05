@@ -1498,10 +1498,11 @@ function EmployeeListView({ teammates, loading, search, currentUserId, departmen
 
 // ── Employee detail view (full-page) ──────────────────────────────────────────
 
-function EmployeeDetailView({ user, loading, onBack }: {
+function EmployeeDetailView({ user, loading, onBack, onUserUpdated }: {
   user: ClientUserDetailResponse | null
   loading: boolean
   onBack: () => void
+  onUserUpdated?: () => void
 }) {
   return (
     <div className="flex flex-col gap-4 h-full">
@@ -1525,6 +1526,8 @@ function EmployeeDetailView({ user, loading, onBack }: {
             user={user}
             canEdit={false}
             checklistBasePath={`/portal/users/${user.id}`}
+            historyPath={`/portal/history/ClientUser/${user.id}`}
+            onUserUpdated={onUserUpdated}
           />
         )}
       </div>
@@ -2054,6 +2057,7 @@ export default function ClientPortal() {
               user={selectedUser}
               loading={loadingDetail}
               onBack={handleBackToList}
+              onUserUpdated={() => { if (selectedUser) { fetchUserDetail(selectedUser.id); fetchUsers() } }}
             />
           )}
 

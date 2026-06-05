@@ -1,14 +1,56 @@
+import { useEffect, useRef, useState } from 'react'
 import {
   Laptop, KeyRound, History, CheckCircle2, AlertTriangle,
-  PackageCheck, LogOut, ShieldCheck, ClipboardList, Mail,
-  Briefcase, Phone, Calendar, User,
+  LogOut, ShieldCheck, ClipboardList, Mail,
+  Briefcase, Calendar, User, RotateCcw, Smartphone, Phone,
+  Users, FileText, Pencil, X,
 } from 'lucide-react'
-import { Card, CardContent, CardHeader } from '@/components/ui/Card'
+import { Card, CardContent } from '@/components/ui/Card'
 import type { ClientUserDetailResponse, UserStatus } from '@/types/clientUser'
-import { STATUS_LABEL, STATUS_TONE } from '@/types/clientUser'
+import { STATUS_LABEL } from '@/types/clientUser'
 import { HARDWARE_STATUS_LABEL, HARDWARE_STATUS_TONE, HARDWARE_TYPE_LABEL } from '@/types/hardware'
 import { LICENSE_TYPE_LABEL, LICENSE_TYPE_TONE } from '@/types/license'
 import api from '@/lib/axios'
+
+interface AuditLogEntry {
+  id: string
+  action: string
+  changes: string | null
+  userName: string | null
+  createdAt: string
+}
+
+function parseChanges(raw: string | null): Record<string, unknown> {
+  if (!raw) return {}
+  try { return JSON.parse(raw) } catch { return {} }
+}
+
+function auditLabel(entry: AuditLogEntry): string {
+  const c = parseChanges(entry.changes)
+  switch (entry.action) {
+    case 'Created':         return 'Medewerker aangemaakt'
+    case 'Updated':         return 'Profiel bijgewerkt'
+    case 'HardwareAssigned': return `Hardware toegewezen: ${c.AssetName ?? ''}${c.Brand ? ` (${c.Brand})` : ''}`
+    case 'HardwareReturned': return `Hardware teruggegeven: ${c.AssetName ?? ''}`
+    case 'PhoneAssigned':   return `Telefoon toegewezen: ${[c.Brand, c.Model].filter(Boolean).join(' ')}`
+    case 'PhoneReturned':   return `Telefoon teruggegeven: ${[c.Brand, c.Model].filter(Boolean).join(' ')}`
+    case 'LicenseAssigned': return `Licentie gekoppeld: ${c.LicenseName ?? ''}`
+    case 'LicenseRevoked':  return `Licentie ingetrokken: ${c.LicenseName ?? ''}`
+    case 'SoftwareAssigned': return `Software toegewezen: ${c.Name ?? ''}`
+    case 'SoftwareRevoked': return `Software verwijderd: ${c.Name ?? ''}`
+    default:                return entry.action
+  }
+}
+
+function AuditIcon({ action }: { action: string }) {
+  const cls = 'mt-0.5 flex-shrink-0'
+  if (action.startsWith('Hardware')) return <Laptop size={16} className={`${cls} text-blue-500`} />
+  if (action.startsWith('Phone'))    return <Smartphone size={16} className={`${cls} text-violet-500`} />
+  if (action.startsWith('License'))  return <KeyRound size={16} className={`${cls} text-amber-500`} />
+  if (action.startsWith('Software')) return <ShieldCheck size={16} className={`${cls} text-emerald-500`} />
+  if (action === 'Created')          return <User size={16} className={`${cls} text-slate-500`} />
+  return <RotateCcw size={16} className={`${cls} text-slate-400`} />
+}
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -42,6 +84,128 @@ function Badge({ children, tone = 'default' }: { children: React.ReactNode; tone
   )
 }
 
+function Avatar({ first, last }: { first: string; last: string }) {
+  return (
+    <div className="w-16 h-16 rounded-2xl bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-2xl flex-shrink-0 select-none">
+      {(first[0] ?? '').toUpperCase()}{(last[0] ?? '').toUpperCase()}
+    </div>
+  )
+}
+
+const STATUS_OPTIONS = [
+  { value: '0', label: 'In dienst' },
+  { value: '1', label: 'Uit dienst gepland' },
+  { value: '2', label: 'Uit dienst' },
+]
+const CONTRACT_OPTIONS = [
+  { value: '', label: '— Geen —' },
+  { value: '0', label: 'Vast' },
+  { value: '1', label: 'Tijdelijk' },
+  { value: '2', label: 'Stagiair' },
+]
+const STATUS_TO_INT: Record<string, string> = { InService: '0', LeavePlanned: '1', Left: '2' }
+const CONTRACT_TO_INT: Record<string, string> = { Vast: '0', Tijdelijk: '1', Stagiair: '2' }
+
+function EditUserModal({ user, onClose, onSaved }: {
+  user: ClientUserDetailResponse
+  onClose: () => void
+  onSaved: () => void
+}) {
+  const [firstName, setFirstName]     = useState(user.firstName)
+  const [lastName, setLastName]       = useState(user.lastName)
+  const [email, setEmail]             = useState(user.email)
+  const [status, setStatus]           = useState(STATUS_TO_INT[user.status] ?? '0')
+  const [contractType, setContractType] = useState(user.contractType ? (CONTRACT_TO_INT[user.contractType] ?? '') : '')
+  const [saving, setSaving]           = useState(false)
+  const [error, setError]             = useState<string | null>(null)
+  const overlayRef                    = useRef<HTMLDivElement>(null)
+
+  const handleSave = async () => {
+    if (!firstName.trim() || !lastName.trim()) { setError('Voor- en achternaam zijn verplicht.'); return }
+    setSaving(true); setError(null)
+    try {
+      await api.put(`/portal/users/${user.id}`, {
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        email: email.trim() || null,
+        status: parseInt(status, 10),
+        contractType: contractType !== '' ? parseInt(contractType, 10) : null,
+      })
+      onSaved()
+      onClose()
+    } catch {
+      setError('Opslaan mislukt. Controleer de gegevens en probeer opnieuw.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const field = 'w-full px-3 py-2 rounded-lg border border-slate-300 text-sm text-slate-900 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-colors'
+
+  return (
+    <div
+      ref={overlayRef}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+      onMouseDown={e => { if (e.target === overlayRef.current) onClose() }}
+    >
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
+        <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-slate-100">
+          <h2 className="text-base font-semibold text-slate-900">Medewerker wijzigen</h2>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition-colors">
+            <X size={18} />
+          </button>
+        </div>
+        <div className="p-5 space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1">Voornaam *</label>
+              <input value={firstName} onChange={e => setFirstName(e.target.value)} className={field} autoFocus />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1">Achternaam *</label>
+              <input value={lastName} onChange={e => setLastName(e.target.value)} className={field} />
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-slate-600 mb-1">E-mailadres</label>
+            <input type="email" value={email} onChange={e => setEmail(e.target.value)} className={field} placeholder="jan@bedrijf.nl" />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1">Status</label>
+              <select value={status} onChange={e => setStatus(e.target.value)} className={field}>
+                {STATUS_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1">Contracttype</label>
+              <select value={contractType} onChange={e => setContractType(e.target.value)} className={field}>
+                {CONTRACT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+            </div>
+          </div>
+          {error && <p className="text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>}
+        </div>
+        <div className="flex gap-3 px-5 pb-5">
+          <button
+            onClick={onClose}
+            className="flex-1 px-4 py-2 rounded-xl border border-slate-200 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+          >
+            Annuleren
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="flex-1 px-4 py-2 rounded-xl bg-indigo-600 text-sm font-medium text-white hover:bg-indigo-700 transition-colors disabled:opacity-60"
+          >
+            {saving ? 'Opslaan…' : 'Opslaan'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function Section({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
   return (
     <Card className="rounded-2xl shadow-sm">
@@ -63,13 +227,28 @@ interface Props {
   canEdit: boolean
   /** base path for checklist toggle API calls, e.g. "/clients/{id}/users/{uid}" */
   checklistBasePath: string
+  /** path to fetch audit history, e.g. "/portal/history/ClientUser/{uid}" */
+  historyPath?: string
   onChecklistToggle?: (entryId: string, checked: boolean) => void
+  onUserUpdated?: () => void
 }
 
-export function UserDetailPanel({ user, canEdit, checklistBasePath, onChecklistToggle }: Props) {
+export function UserDetailPanel({ user, canEdit, checklistBasePath, historyPath, onChecklistToggle, onUserUpdated }: Props) {
   const status = user.status as UserStatus
-  const statusTone =
-    status === 'InService' ? 'good' : status === 'LeavePlanned' ? 'warn' : 'bad'
+  const statusTone = status === 'InService' ? 'good' : status === 'LeavePlanned' ? 'warn' : 'bad'
+
+  const [auditHistory, setAuditHistory] = useState<AuditLogEntry[]>([])
+  const [historyLoading, setHistoryLoading] = useState(false)
+  const [editOpen, setEditOpen] = useState(false)
+
+  useEffect(() => {
+    if (!historyPath) return
+    setHistoryLoading(true)
+    api.get<AuditLogEntry[]>(historyPath)
+      .then(r => setAuditHistory(r.data))
+      .catch(() => {})
+      .finally(() => setHistoryLoading(false))
+  }, [historyPath])
 
   const handleToggle = async (entryId: string, checked: boolean) => {
     if (!canEdit) return
@@ -81,75 +260,103 @@ export function UserDetailPanel({ user, canEdit, checklistBasePath, onChecklistT
     }
   }
 
+  const dept = user.departmentName || user.department
+
   return (
-    <div className="space-y-4">
+    <>
+      {editOpen && (
+        <EditUserModal
+          user={user}
+          onClose={() => setEditOpen(false)}
+          onSaved={() => { onUserUpdated?.() }}
+        />
+      )}
+
+      <div className="space-y-4">
       {/* ── Profile header ── */}
       <Card className="rounded-2xl shadow-sm">
         <CardContent className="p-5">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <div className="flex items-center gap-3">
-                <h2 className="text-xl font-bold text-slate-900">
-                  {user.firstName} {user.lastName}
-                </h2>
-                <Badge tone={statusTone}>{STATUS_LABEL[status]}</Badge>
-              </div>
-              <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-500">
-                {user.email && (
-                  <span className="flex items-center gap-1"><Mail size={13} />{user.email}</span>
-                )}
-                {user.department && (
-                  <span className="flex items-center gap-1"><Briefcase size={13} />{user.department}</span>
-                )}
-                {user.jobTitle && (
-                  <span className="flex items-center gap-1"><User size={13} />{user.jobTitle}</span>
-                )}
-                {user.startDate && (
-                  <span className="flex items-center gap-1"><Calendar size={13} />Gestart {fmt(user.startDate)}</span>
-                )}
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <button className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 transition-colors">
-                <PackageCheck size={13} />
-                Aantreden
-              </button>
-              {(status === 'LeavePlanned' || status === 'Left') && (
-                <button className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 transition-colors">
-                  <LogOut size={13} />
-                  Weggaan
+
+          {/* Top row: avatar + name block + wijzigen button */}
+          <div className="flex items-start gap-4">
+            <Avatar first={user.firstName} last={user.lastName} />
+
+            <div className="flex-1 min-w-0">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <h2 className="text-lg font-bold text-slate-900 leading-tight truncate">
+                    {user.firstName} {user.lastName}
+                  </h2>
+                  <div className="mt-1">
+                    <Badge tone={statusTone}>{STATUS_LABEL[status]}</Badge>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setEditOpen(true)}
+                  className="flex-shrink-0 inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 hover:border-slate-300 transition-colors"
+                >
+                  <Pencil size={12} />
+                  Wijzigen
                 </button>
-              )}
+              </div>
             </div>
           </div>
 
+          {/* Info grid */}
+          <div className="mt-4 grid grid-cols-2 gap-x-6 gap-y-2.5">
+            {user.email && (
+              <InfoRow icon={<Mail size={13} />} label="E-mail" value={user.email} />
+            )}
+            {user.phone && (
+              <InfoRow icon={<Phone size={13} />} label="Telefoon" value={user.phone} />
+            )}
+            {user.jobTitle && (
+              <InfoRow icon={<User size={13} />} label="Functie" value={user.jobTitle} />
+            )}
+            {dept && (
+              <InfoRow icon={<Briefcase size={13} />} label="Afdeling" value={dept} />
+            )}
+            {user.managerName && (
+              <InfoRow icon={<Users size={13} />} label="Manager" value={user.managerName} />
+            )}
+            {user.contractType && (
+              <InfoRow icon={<FileText size={13} />} label="Contract" value={user.contractType} />
+            )}
+            {user.startDate && (
+              <InfoRow icon={<Calendar size={13} />} label="In dienst" value={fmt(user.startDate)} />
+            )}
+            {user.leaveDate && (
+              <InfoRow icon={<LogOut size={13} />} label="Uit dienst" value={fmt(user.leaveDate)} />
+            )}
+          </div>
+
           {/* Completeness */}
-          <div className="mt-4">
-            <div className="mb-1 flex items-center justify-between">
+          <div className="mt-4 pt-4 border-t border-slate-100">
+            <div className="mb-1.5 flex items-center justify-between">
               <span className="text-xs text-slate-500">Dossier volledigheid</span>
               <span className="text-xs font-semibold text-slate-700">{user.completeness}%</span>
             </div>
             <Progress value={user.completeness} />
           </div>
 
-          {/* Info grid */}
-          <div className="mt-4 grid grid-cols-3 gap-3">
+          {/* Quick stats */}
+          <div className="mt-3 grid grid-cols-3 gap-2">
             <div className="rounded-xl bg-slate-50 p-3">
-              <p className="text-xs text-slate-500">Licentie</p>
-              <p className="mt-1 text-sm font-semibold text-slate-800 truncate">
+              <p className="text-xs text-slate-400">Actieve software</p>
+              <p className="mt-0.5 text-sm font-semibold text-slate-800 truncate">
                 {user.software.find(s => s.isActive)?.name || '—'}
               </p>
             </div>
             <div className="rounded-xl bg-slate-50 p-3">
-              <p className="text-xs text-slate-500">Device</p>
-              <p className="mt-1 text-sm font-semibold text-slate-800 truncate">
+              <p className="text-xs text-slate-400">Device</p>
+              <p className="mt-0.5 text-sm font-semibold text-slate-800 truncate">
                 {user.hardware[0]?.name || '—'}
               </p>
             </div>
             <div className="rounded-xl bg-slate-50 p-3">
-              <p className="text-xs text-slate-500">Telefoon</p>
-              <p className="mt-1 text-sm font-semibold text-slate-800 truncate">
-                {user.phone || '—'}
+              <p className="text-xs text-slate-400">Licenties</p>
+              <p className="mt-0.5 text-sm font-semibold text-slate-800">
+                {user.licenses.length || '—'}
               </p>
             </div>
           </div>
@@ -252,25 +459,42 @@ export function UserDetailPanel({ user, canEdit, checklistBasePath, onChecklistT
       </div>
 
       {/* ── History ── */}
-      <Section title="Historie" icon={<History size={16} />}>
-        {user.history.length === 0 ? (
-          <p className="text-sm text-slate-400">Nog geen activiteiten.</p>
-        ) : (
-          <div className="space-y-3">
-            {user.history.map(a => (
-              <div key={a.id} className="flex gap-3 rounded-xl bg-white p-3 shadow-sm border border-slate-50">
-                <CheckCircle2 size={18} className="mt-0.5 flex-shrink-0 text-slate-600" />
-                <div>
-                  <p className="text-sm font-semibold text-slate-800">{a.description}</p>
-                  <p className="text-xs text-slate-400">
-                    {fmt(a.occurredAt)} • verwerkt door {a.processedBy}
-                  </p>
+      {historyPath && (
+        <Section title="Historie" icon={<History size={16} />}>
+          {historyLoading ? (
+            <p className="text-sm text-slate-400">Laden…</p>
+          ) : auditHistory.length === 0 ? (
+            <p className="text-sm text-slate-400">Nog geen activiteiten.</p>
+          ) : (
+            <div className="space-y-2">
+              {auditHistory.map(a => (
+                <div key={a.id} className="flex gap-3 rounded-xl bg-white p-3 border border-slate-100">
+                  <AuditIcon action={a.action} />
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-slate-800">{auditLabel(a)}</p>
+                    <p className="text-xs text-slate-400">
+                      {fmt(a.createdAt)}{a.userName ? ` • door ${a.userName}` : ''}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </Section>
+              ))}
+            </div>
+          )}
+        </Section>
+      )}
+    </div>
+    </>
+  )
+}
+
+// ── InfoRow sub-component ─────────────────────────────────────────────────────
+
+function InfoRow({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+  return (
+    <div className="flex items-center gap-2 min-w-0">
+      <span className="text-slate-400 flex-shrink-0">{icon}</span>
+      <span className="text-xs text-slate-400 flex-shrink-0 w-14">{label}</span>
+      <span className="text-xs font-medium text-slate-700 truncate">{value}</span>
     </div>
   )
 }

@@ -14,6 +14,7 @@ const schema = z.object({
   departmentId: z.string().optional().default(''),
   jobTitle: z.string().max(200).optional().default(''),
   phone: z.string().max(100).optional().default(''),
+  contractType: z.string().optional().default(''),
   startDate: z.string().optional().default(''),
 })
 type FormValues = z.infer<typeof schema>
@@ -56,6 +57,7 @@ export function AddUserModal({ open, onClose, onSuccess, clientId, clientName, a
         departmentId: values.departmentId || null,
         jobTitle: values.jobTitle || null,
         phone: values.phone || null,
+        contractType: values.contractType ? parseInt(values.contractType, 10) : null,
         startDate: values.startDate ? new Date(values.startDate).toISOString() : null,
       })
       reset()
@@ -120,11 +122,23 @@ export function AddUserModal({ open, onClose, onSuccess, clientId, clientName, a
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="block text-xs font-medium text-slate-600 mb-1">Telefoon</label>
-            <input {...register('phone')} className={field} placeholder="Samsung / n.v.t." />
+            <input {...register('phone')} className={field} placeholder="+31 6 12345678" />
           </div>
           <div>
             <label className="block text-xs font-medium text-slate-600 mb-1">Startdatum</label>
             <input {...register('startDate')} type="date" className={field} />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs font-medium text-slate-600 mb-1">Contracttype</label>
+            <select {...register('contractType')} className={field}>
+              <option value="">— Geen —</option>
+              <option value="0">Vast</option>
+              <option value="1">Tijdelijk</option>
+              <option value="2">Stagiair</option>
+            </select>
           </div>
         </div>
 
