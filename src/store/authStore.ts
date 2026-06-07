@@ -17,6 +17,8 @@ function parseTokenUser(token: string): AuthUser {
 }
 
 interface AuthState {
+  _hasHydrated: boolean
+  setHasHydrated: (value: boolean) => void
   /** Primary access token (org login or client login) */
   accessToken: string | null
   refreshToken: string | null
@@ -49,6 +51,8 @@ interface AuthState {
 export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
+      _hasHydrated: false,
+      setHasHydrated: (value) => set({ _hasHydrated: value }),
       accessToken:  null,
       refreshToken: null,
       user:         null,
@@ -93,6 +97,9 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'auth-storage',
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true)
+      },
       partialize: (state) => ({
         accessToken:  state.accessToken,
         refreshToken: state.refreshToken,

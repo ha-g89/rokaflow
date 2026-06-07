@@ -5,6 +5,32 @@ import SuperUserDashboard from '@/pages/superuser/SuperUserDashboard'
 import OrgDashboard from '@/pages/org/OrgDashboard'
 import ClientPortal from '@/pages/client/ClientPortal'
 import ProtectedRoute from '@/components/ProtectedRoute'
+import { useAuthStore } from '@/store/authStore'
+
+const ROLE_HOME: Record<string, string> = {
+  superuser:   '/superuser',
+  org_admin:   '/org',
+  org_member:  '/org',
+  client_user: '/client',
+}
+
+function RootRedirect() {
+  const { _hasHydrated, accessToken, user } = useAuthStore()
+
+  if (!_hasHydrated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    )
+  }
+
+  if (!accessToken || !user) {
+    return <Navigate to="/login" replace />
+  }
+
+  return <Navigate to={ROLE_HOME[user.role] ?? '/login'} replace />
+}
 
 export default function App() {
   return (
@@ -45,8 +71,8 @@ export default function App() {
         />
 
         {/* Fallback */}
-        <Route path="/" element={<Navigate to="/login" replace />} />
-        <Route path="*" element={<Navigate to="/login" replace />} />
+        <Route path="/" element={<RootRedirect />} />
+        <Route path="*" element={<RootRedirect />} />
       </Routes>
     </BrowserRouter>
   )
