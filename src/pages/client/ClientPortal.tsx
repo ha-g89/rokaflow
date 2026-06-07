@@ -2031,6 +2031,9 @@ export default function ClientPortal() {
   const handleNavClick = (v: View) => {
     setView(v)
     if (v !== 'employee-detail') setSelectedUser(null)
+    // herlaad gedeelde portaaldata zodat andere secties altijd actuele lijsten zien
+    fetchUsers()
+    fetchDepartmentOptions()
   }
 
   const handleLogout = () => { logout(); navigate('/login') }
@@ -2134,7 +2137,7 @@ export default function ClientPortal() {
               departmentOptions={departmentOptions}
               onSearch={setSearch}
               onSelect={handleSelectEmployee}
-              onAddEmployee={() => setShowAddEmployee(true)}
+              onAddEmployee={() => { fetchDepartmentOptions(); setShowAddEmployee(true) }}
             />
           )}
 
