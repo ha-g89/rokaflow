@@ -242,7 +242,16 @@ function EditUserModal({ user, departments, managers, onClose, onSaved }: {
             </div>
             <div>
               <label className="block text-xs font-medium text-slate-600 mb-1">Uit dienst datum</label>
-              <input type="date" value={leaveDate} onChange={e => setLeaveDate(e.target.value)} className={field} />
+              <input
+                type="date"
+                value={leaveDate}
+                onChange={e => {
+                  const val = e.target.value
+                  setLeaveDate(val)
+                  if (!val) setStatus('0')
+                }}
+                className={field}
+              />
             </div>
           </div>
 
