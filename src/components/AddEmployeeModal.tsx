@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -14,6 +14,7 @@ const schema = z.object({
     'Ongeldig e-mailadres'
   ),
   departmentId: z.string().min(1, 'Afdeling is verplicht'),
+  managerId: z.string(),
   jobTitle: z.string().min(1, 'Functie is verplicht').max(200),
   phone: z.string().min(1, 'Telefoon is verplicht').max(100),
   status: z.string(),
@@ -27,7 +28,8 @@ interface Props {
   open: boolean
   onClose: () => void
   onSuccess: () => void
-  departments?: { id: string; name: string }[]
+  departments?: { id: string; name: string; managerId: string | null }[]
+  managers?: { id: string; fullName: string }[]
 }
 
 const field =
@@ -46,21 +48,33 @@ const CONTRACT_OPTIONS = [
   { value: '2', label: 'Stagiair' },
 ]
 
-export function AddEmployeeModal({ open, onClose, onSuccess, departments = [] }: Props) {
+export function AddEmployeeModal({ open, onClose, onSuccess, departments = [], managers = [] }: Props) {
   const [apiError, setApiError] = useState<string | null>(null)
 
   const {
     register,
     handleSubmit,
     reset,
+    watch,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
-      firstName: '', lastName: '', email: '', departmentId: '',
+      firstName: '', lastName: '', email: '', departmentId: '', managerId: '',
       jobTitle: '', phone: '', status: '0', contractType: '', startDate: '',
     },
   })
+
+  const selectedDeptId = watch('departmentId')
+
+  // auto-fill manager when department changes
+  useEffect(() => {
+    if (selectedDeptId) {
+      const dept = departments.find(d => d.id === selectedDeptId)
+      if (dept?.managerId) setValue('managerId', dept.managerId)
+    }
+  }, [selectedDeptId, departments, setValue])
 
   const handleClose = () => { reset(); setApiError(null); onClose() }
 
@@ -72,6 +86,7 @@ export function AddEmployeeModal({ open, onClose, onSuccess, departments = [] }:
         lastName: values.lastName,
         email: values.email || null,
         departmentId: values.departmentId || null,
+        managerId: values.managerId || null,
         jobTitle: values.jobTitle || null,
         phone: values.phone || null,
         status: parseInt(values.status, 10),
@@ -122,10 +137,20 @@ export function AddEmployeeModal({ open, onClose, onSuccess, departments = [] }:
             {errors.departmentId && <p className="mt-1 text-xs text-red-600">{errors.departmentId.message}</p>}
           </div>
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Functie *</label>
-            <input {...register('jobTitle')} className={field} placeholder="Medewerker" />
-            {errors.jobTitle && <p className="mt-1 text-xs text-red-600">{errors.jobTitle.message}</p>}
+            <label className="block text-xs font-medium text-slate-600 mb-1">Manager</label>
+            <select {...register('managerId')} className={field}>
+              <option value="">— Geen manager —</option>
+              {managers.map(m => (
+                <option key={m.id} value={m.id}>{m.fullName}</option>
+              ))}
+            </select>
           </div>
+        </div>
+
+        <div>
+          <label className="block text-xs font-medium text-slate-600 mb-1">Functie *</label>
+          <input {...register('jobTitle')} className={field} placeholder="Medewerker" />
+          {errors.jobTitle && <p className="mt-1 text-xs text-red-600">{errors.jobTitle.message}</p>}
         </div>
 
         <div className="grid grid-cols-2 gap-3">

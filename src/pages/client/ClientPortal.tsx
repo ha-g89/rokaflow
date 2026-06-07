@@ -1584,12 +1584,13 @@ function EmployeeListView({ teammates, loading, search, currentUserId, departmen
 
 // ── Employee detail view (full-page) ──────────────────────────────────────────
 
-function EmployeeDetailView({ user, loading, onBack, onUserUpdated, departments }: {
+function EmployeeDetailView({ user, loading, onBack, onUserUpdated, departments, managers }: {
   user: ClientUserDetailResponse | null
   loading: boolean
   onBack: () => void
   onUserUpdated?: () => void
-  departments?: { id: string; name: string }[]
+  departments?: { id: string; name: string; managerId: string | null }[]
+  managers?: { id: string; fullName: string }[]
 }) {
   return (
     <div className="flex flex-col gap-4 h-full">
@@ -1613,6 +1614,7 @@ function EmployeeDetailView({ user, loading, onBack, onUserUpdated, departments 
             user={user}
             canEdit
             departments={departments}
+            managers={managers}
             checklistBasePath={`/portal/users/${user.id}`}
             historyPath={`/portal/history/ClientUser/${user.id}`}
             onUserUpdated={onUserUpdated}
@@ -1988,12 +1990,20 @@ export default function ClientPortal() {
   const [search, setSearch] = useState('')
   const [showAddUser, setShowAddUser] = useState(false)
   const [showAddEmployee, setShowAddEmployee] = useState(false)
-  const [departmentOptions, setDepartmentOptions] = useState<{ id: string; name: string; managerName: string }[]>([])
+  const [departmentOptions, setDepartmentOptions] = useState<{ id: string; name: string; managerName: string; managerId: string | null }[]>([])
+  const [managers, setManagers] = useState<{ id: string; fullName: string }[]>([])
 
   const fetchDepartmentOptions = useCallback(async () => {
     try {
       const { data } = await api.get<DepartmentListItem[]>('/portal/departments')
-      setDepartmentOptions(data.map(d => ({ id: d.id, name: d.name, managerName: d.managerName })))
+      setDepartmentOptions(data.map(d => ({ id: d.id, name: d.name, managerName: d.managerName, managerId: d.managerUserId })))
+    } catch { /* non-critical */ }
+  }, [])
+
+  const fetchManagers = useCallback(async () => {
+    try {
+      const { data } = await api.get<{ id: string; fullName: string }[]>('/portal/managers')
+      setManagers(data)
     } catch { /* non-critical */ }
   }, [])
 
@@ -2019,6 +2029,7 @@ export default function ClientPortal() {
 
   useEffect(() => { fetchUsers() }, [fetchUsers])
   useEffect(() => { fetchDepartmentOptions() }, [fetchDepartmentOptions])
+  useEffect(() => { fetchManagers() }, [fetchManagers])
 
   const handleSelectEmployee = (id: string) => {
     fetchUserDetail(id)
@@ -2036,6 +2047,7 @@ export default function ClientPortal() {
     // herlaad gedeelde portaaldata zodat andere secties altijd actuele lijsten zien
     fetchUsers()
     fetchDepartmentOptions()
+    fetchManagers()
   }
 
   const handleLogout = () => { logout(); navigate('/login') }
@@ -2150,6 +2162,7 @@ export default function ClientPortal() {
               onBack={handleBackToList}
               onUserUpdated={() => { if (selectedUser) { fetchUserDetail(selectedUser.id); fetchUsers() } }}
               departments={departmentOptions}
+              managers={managers}
             />
           )}
 
@@ -2201,6 +2214,7 @@ export default function ClientPortal() {
         onClose={() => setShowAddEmployee(false)}
         onSuccess={() => { fetchUsers(); setShowAddEmployee(false) }}
         departments={departmentOptions}
+        managers={managers}
       />
     </div>
   )

@@ -37,6 +37,7 @@ export interface ClientUserDetailResponse {
   department: string
   departmentId: string | null
   departmentName: string
+  managerId: string | null
   managerName: string
   jobTitle: string
   phone: string

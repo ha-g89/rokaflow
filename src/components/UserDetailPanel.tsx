@@ -106,9 +106,10 @@ const CONTRACT_OPTIONS = [
 const STATUS_TO_INT: Record<string, string> = { InService: '0', LeavePlanned: '1', Left: '2' }
 const CONTRACT_TO_INT: Record<string, string> = { Vast: '0', Tijdelijk: '1', Stagiair: '2' }
 
-function EditUserModal({ user, departments, onClose, onSaved }: {
+function EditUserModal({ user, departments, managers, onClose, onSaved }: {
   user: ClientUserDetailResponse
-  departments: { id: string; name: string }[]
+  departments: { id: string; name: string; managerId: string | null }[]
+  managers: { id: string; fullName: string }[]
   onClose: () => void
   onSaved: () => void
 }) {
@@ -120,6 +121,7 @@ function EditUserModal({ user, departments, onClose, onSaved }: {
   const [email, setEmail]               = useState(user.email)
   const [jobTitle, setJobTitle]         = useState(user.jobTitle ?? '')
   const [departmentId, setDepartmentId] = useState(user.departmentId ?? '')
+  const [managerId, setManagerId]       = useState(user.managerId ?? '')
   const [status, setStatus]             = useState(STATUS_TO_INT[user.status] ?? '0')
   const [contractType, setContractType] = useState(user.contractType ? (CONTRACT_TO_INT[user.contractType] ?? '') : '')
   const [startDate, setStartDate]       = useState(toDateInput(user.startDate))
@@ -127,6 +129,14 @@ function EditUserModal({ user, departments, onClose, onSaved }: {
   const [saving, setSaving]             = useState(false)
   const [error, setError]               = useState<string | null>(null)
   const overlayRef                      = useRef<HTMLDivElement>(null)
+
+  const handleDepartmentChange = (deptId: string) => {
+    setDepartmentId(deptId)
+    if (deptId) {
+      const dept = departments.find(d => d.id === deptId)
+      if (dept?.managerId) setManagerId(dept.managerId)
+    }
+  }
 
   // derive displayed status based on leaveDate input
   const derivedStatus = leaveDate
@@ -147,6 +157,7 @@ function EditUserModal({ user, departments, onClose, onSaved }: {
         startDate: startDate || null,
         leaveDate: leaveDate || null,
         departmentId: departmentId || null,
+        managerId: managerId || null,
       })
       onSaved()
       onClose()
@@ -197,21 +208,30 @@ function EditUserModal({ user, departments, onClose, onSaved }: {
             </div>
           </div>
 
-          {/* afdeling + contracttype */}
+          {/* afdeling + manager */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-medium text-slate-600 mb-1">Afdeling</label>
-              <select value={departmentId} onChange={e => setDepartmentId(e.target.value)} className={field}>
+              <select value={departmentId} onChange={e => handleDepartmentChange(e.target.value)} className={field}>
                 <option value="">— Geen afdeling —</option>
                 {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">Contracttype</label>
-              <select value={contractType} onChange={e => setContractType(e.target.value)} className={field}>
-                {CONTRACT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+              <label className="block text-xs font-medium text-slate-600 mb-1">Manager</label>
+              <select value={managerId} onChange={e => setManagerId(e.target.value)} className={field}>
+                <option value="">— Geen manager —</option>
+                {managers.map(m => <option key={m.id} value={m.id}>{m.fullName}</option>)}
               </select>
             </div>
+          </div>
+
+          {/* contracttype */}
+          <div>
+            <label className="block text-xs font-medium text-slate-600 mb-1">Contracttype</label>
+            <select value={contractType} onChange={e => setContractType(e.target.value)} className={field}>
+              {CONTRACT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
           </div>
 
           {/* datums */}
@@ -274,7 +294,8 @@ function Section({ title, icon, children }: { title: string; icon: React.ReactNo
 interface Props {
   user: ClientUserDetailResponse
   canEdit: boolean
-  departments?: { id: string; name: string }[]
+  departments?: { id: string; name: string; managerId?: string | null }[]
+  managers?: { id: string; fullName: string }[]
   /** base path for checklist toggle API calls, e.g. "/clients/{id}/users/{uid}" */
   checklistBasePath: string
   /** path to fetch audit history, e.g. "/portal/history/ClientUser/{uid}" */
@@ -283,7 +304,7 @@ interface Props {
   onUserUpdated?: () => void
 }
 
-export function UserDetailPanel({ user, canEdit, departments = [], checklistBasePath, historyPath, onChecklistToggle, onUserUpdated }: Props) {
+export function UserDetailPanel({ user, canEdit, departments = [], managers = [], checklistBasePath, historyPath, onChecklistToggle, onUserUpdated }: Props) {
   const status = user.status as UserStatus
   const statusTone = status === 'InService' ? 'good' : status === 'LeavePlanned' ? 'warn' : 'bad'
 
@@ -317,7 +338,8 @@ export function UserDetailPanel({ user, canEdit, departments = [], checklistBase
       {editOpen && (
         <EditUserModal
           user={user}
-          departments={departments}
+          departments={departments as { id: string; name: string; managerId: string | null }[]}
+          managers={managers}
           onClose={() => setEditOpen(false)}
           onSaved={() => { onUserUpdated?.() }}
         />
