@@ -106,20 +106,32 @@ const CONTRACT_OPTIONS = [
 const STATUS_TO_INT: Record<string, string> = { InService: '0', LeavePlanned: '1', Left: '2' }
 const CONTRACT_TO_INT: Record<string, string> = { Vast: '0', Tijdelijk: '1', Stagiair: '2' }
 
-function EditUserModal({ user, onClose, onSaved }: {
+function EditUserModal({ user, departments, onClose, onSaved }: {
   user: ClientUserDetailResponse
+  departments: { id: string; name: string }[]
   onClose: () => void
   onSaved: () => void
 }) {
-  const [firstName, setFirstName]     = useState(user.firstName)
-  const [lastName, setLastName]       = useState(user.lastName)
-  const [email, setEmail]             = useState(user.email)
-  const [jobTitle, setJobTitle]       = useState(user.jobTitle ?? '')
-  const [status, setStatus]           = useState(STATUS_TO_INT[user.status] ?? '0')
+  const toDateInput = (d: string | null | undefined) =>
+    d ? new Date(d).toISOString().split('T')[0] : ''
+
+  const [firstName, setFirstName]       = useState(user.firstName)
+  const [lastName, setLastName]         = useState(user.lastName)
+  const [email, setEmail]               = useState(user.email)
+  const [jobTitle, setJobTitle]         = useState(user.jobTitle ?? '')
+  const [departmentId, setDepartmentId] = useState(user.departmentId ?? '')
+  const [status, setStatus]             = useState(STATUS_TO_INT[user.status] ?? '0')
   const [contractType, setContractType] = useState(user.contractType ? (CONTRACT_TO_INT[user.contractType] ?? '') : '')
-  const [saving, setSaving]           = useState(false)
-  const [error, setError]             = useState<string | null>(null)
-  const overlayRef                    = useRef<HTMLDivElement>(null)
+  const [startDate, setStartDate]       = useState(toDateInput(user.startDate))
+  const [leaveDate, setLeaveDate]       = useState(toDateInput(user.leaveDate))
+  const [saving, setSaving]             = useState(false)
+  const [error, setError]               = useState<string | null>(null)
+  const overlayRef                      = useRef<HTMLDivElement>(null)
+
+  // derive displayed status based on leaveDate input
+  const derivedStatus = leaveDate
+    ? (new Date(leaveDate) <= new Date() ? 'Uit dienst' : 'Uit dienst gepland')
+    : STATUS_OPTIONS.find(o => o.value === status)?.label ?? ''
 
   const handleSave = async () => {
     if (!firstName.trim() || !lastName.trim()) { setError('Voor- en achternaam zijn verplicht.'); return }
@@ -132,6 +144,9 @@ function EditUserModal({ user, onClose, onSaved }: {
         jobTitle: jobTitle.trim() || null,
         status: parseInt(status, 10),
         contractType: contractType !== '' ? parseInt(contractType, 10) : null,
+        startDate: startDate || null,
+        leaveDate: leaveDate || null,
+        departmentId: departmentId || null,
       })
       onSaved()
       onClose()
@@ -150,7 +165,7 @@ function EditUserModal({ user, onClose, onSaved }: {
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
       onMouseDown={e => { if (e.target === overlayRef.current) onClose() }}
     >
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg">
         <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-slate-100">
           <h2 className="text-base font-semibold text-slate-900">Medewerker wijzigen</h2>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition-colors">
@@ -158,6 +173,7 @@ function EditUserModal({ user, onClose, onSaved }: {
           </button>
         </div>
         <div className="p-5 space-y-4">
+          {/* naam */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-medium text-slate-600 mb-1">Voornaam *</label>
@@ -168,19 +184,26 @@ function EditUserModal({ user, onClose, onSaved }: {
               <input value={lastName} onChange={e => setLastName(e.target.value)} className={field} />
             </div>
           </div>
-          <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">E-mailadres</label>
-            <input type="email" value={email} onChange={e => setEmail(e.target.value)} className={field} placeholder="jan@bedrijf.nl" />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Functie</label>
-            <input value={jobTitle} onChange={e => setJobTitle(e.target.value)} className={field} placeholder="Medewerker" />
-          </div>
+
+          {/* email + functie */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">Status</label>
-              <select value={status} onChange={e => setStatus(e.target.value)} className={field}>
-                {STATUS_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+              <label className="block text-xs font-medium text-slate-600 mb-1">E-mailadres</label>
+              <input type="email" value={email} onChange={e => setEmail(e.target.value)} className={field} placeholder="jan@bedrijf.nl" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1">Functie</label>
+              <input value={jobTitle} onChange={e => setJobTitle(e.target.value)} className={field} placeholder="Medewerker" />
+            </div>
+          </div>
+
+          {/* afdeling + contracttype */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1">Afdeling</label>
+              <select value={departmentId} onChange={e => setDepartmentId(e.target.value)} className={field}>
+                <option value="">— Geen afdeling —</option>
+                {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
               </select>
             </div>
             <div>
@@ -190,20 +213,40 @@ function EditUserModal({ user, onClose, onSaved }: {
               </select>
             </div>
           </div>
+
+          {/* datums */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1">In dienst datum</label>
+              <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className={field} />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1">Uit dienst datum</label>
+              <input type="date" value={leaveDate} onChange={e => setLeaveDate(e.target.value)} className={field} />
+            </div>
+          </div>
+
+          {/* status — alleen tonen als geen leaveDate (anders auto) */}
+          {leaveDate ? (
+            <div className="rounded-xl bg-amber-50 border border-amber-100 px-4 py-3 text-xs text-amber-700">
+              Status wordt automatisch ingesteld op <strong>{derivedStatus}</strong> op basis van de uit dienst datum.
+            </div>
+          ) : (
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1">Status</label>
+              <select value={status} onChange={e => setStatus(e.target.value)} className={field}>
+                {STATUS_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+            </div>
+          )}
+
           {error && <p className="text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>}
         </div>
         <div className="flex gap-3 px-5 pb-5">
-          <button
-            onClick={onClose}
-            className="flex-1 px-4 py-2 rounded-xl border border-slate-200 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
-          >
+          <button onClick={onClose} className="flex-1 px-4 py-2 rounded-xl border border-slate-200 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors">
             Annuleren
           </button>
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="flex-1 px-4 py-2 rounded-xl bg-indigo-600 text-sm font-medium text-white hover:bg-indigo-700 transition-colors disabled:opacity-60"
-          >
+          <button onClick={handleSave} disabled={saving} className="flex-1 px-4 py-2 rounded-xl bg-indigo-600 text-sm font-medium text-white hover:bg-indigo-700 transition-colors disabled:opacity-60">
             {saving ? 'Opslaan…' : 'Opslaan'}
           </button>
         </div>
@@ -231,6 +274,7 @@ function Section({ title, icon, children }: { title: string; icon: React.ReactNo
 interface Props {
   user: ClientUserDetailResponse
   canEdit: boolean
+  departments?: { id: string; name: string }[]
   /** base path for checklist toggle API calls, e.g. "/clients/{id}/users/{uid}" */
   checklistBasePath: string
   /** path to fetch audit history, e.g. "/portal/history/ClientUser/{uid}" */
@@ -239,7 +283,7 @@ interface Props {
   onUserUpdated?: () => void
 }
 
-export function UserDetailPanel({ user, canEdit, checklistBasePath, historyPath, onChecklistToggle, onUserUpdated }: Props) {
+export function UserDetailPanel({ user, canEdit, departments = [], checklistBasePath, historyPath, onChecklistToggle, onUserUpdated }: Props) {
   const status = user.status as UserStatus
   const statusTone = status === 'InService' ? 'good' : status === 'LeavePlanned' ? 'warn' : 'bad'
 
@@ -273,6 +317,7 @@ export function UserDetailPanel({ user, canEdit, checklistBasePath, historyPath,
       {editOpen && (
         <EditUserModal
           user={user}
+          departments={departments}
           onClose={() => setEditOpen(false)}
           onSaved={() => { onUserUpdated?.() }}
         />
