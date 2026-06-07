@@ -25,6 +25,8 @@ body {
 .dark .bg-white          { background-color: #1e293b; } /* slate-800 */
 .dark .bg-slate-50       { background-color: #0f172a; } /* slate-950 */
 .dark .bg-slate-100      { background-color: #1e293b; } /* slate-800 */
+.dark .bg-indigo-50      { background-color: rgb(99 102 241 / 0.15); } /* subtiel indigo op dark */
+.dark .bg-indigo-100     { background-color: rgb(99 102 241 / 0.25); }
 
 /* Hover states */
 .dark .hover\:bg-slate-50:hover  { background-color: #1e293b; }
