@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import {
   Briefcase, Users, Plus, ChevronRight, LogOut,
   Building2, Search, UserPlus, User, ExternalLink, Loader2,
+  MoreVertical, Pencil, X,
 } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { useNavigate } from 'react-router-dom'
@@ -68,6 +69,10 @@ export default function OrgDashboard() {
   const [clientSearch, setClientSearch] = useState('')
   const [userSearch, setUserSearch] = useState('')
   const [switchingClientId, setSwitchingClientId] = useState<string | null>(null)
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null)
+  const [editClient, setEditClient] = useState<ClientListItem | null>(null)
+  const [editName, setEditName] = useState('')
+  const [editSaving, setEditSaving] = useState(false)
 
   const fetchClients = useCallback(async () => {
     try {
@@ -119,6 +124,19 @@ export default function OrgDashboard() {
         leaverChecklist: patch(prev.leaverChecklist),
       }
     })
+  }
+
+  const handleRenameClient = async () => {
+    if (!editClient || !editName.trim()) return
+    setEditSaving(true)
+    try {
+      await api.put(`/clients/${editClient.id}`, { name: editName.trim() })
+      setClients(prev => prev.map(c => c.id === editClient.id ? { ...c, name: editName.trim() } : c))
+      if (selectedClient?.id === editClient.id) setSelectedClient(prev => prev ? { ...prev, name: editName.trim() } : prev)
+      setEditClient(null)
+    } finally {
+      setEditSaving(false)
+    }
   }
 
   const handleSwitchToClient = async (clientId: string) => {
@@ -208,17 +226,37 @@ export default function OrgDashboard() {
                                 <p className="text-xs font-semibold text-slate-800 truncate">{c.name}</p>
                                 <p className="text-xs text-slate-400">{c.userCount} gebruikers</p>
                               </div>
-                              <button
-                                onClick={(e) => { e.stopPropagation(); handleSwitchToClient(c.id) }}
-                                disabled={switchingClientId === c.id}
-                                title="Beheer portaal"
-                                className="flex-shrink-0 p-1 rounded hover:bg-indigo-100 text-indigo-400 hover:text-indigo-600 transition-colors disabled:opacity-50"
-                              >
-                                {switchingClientId === c.id
-                                  ? <Loader2 size={13} className="animate-spin" />
-                                  : <ExternalLink size={13} />
-                                }
-                              </button>
+                              <div className="flex items-center gap-1 flex-shrink-0">
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); handleSwitchToClient(c.id) }}
+                                  disabled={switchingClientId === c.id}
+                                  title="Beheer portaal"
+                                  className="p-1 rounded hover:bg-indigo-100 text-indigo-400 hover:text-indigo-600 transition-colors disabled:opacity-50"
+                                >
+                                  {switchingClientId === c.id
+                                    ? <Loader2 size={13} className="animate-spin" />
+                                    : <ExternalLink size={13} />
+                                  }
+                                </button>
+                                <div className="relative">
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); setOpenMenuId(openMenuId === c.id ? null : c.id) }}
+                                    className="p-1 rounded hover:bg-slate-200 text-slate-400 hover:text-slate-600 transition-colors"
+                                  >
+                                    <MoreVertical size={13} />
+                                  </button>
+                                  {openMenuId === c.id && (
+                                    <div className="absolute right-0 top-6 z-20 w-36 rounded-xl border border-slate-200 bg-white shadow-lg py-1">
+                                      <button
+                                        onClick={(e) => { e.stopPropagation(); setEditClient(c); setEditName(c.name); setOpenMenuId(null) }}
+                                        className="w-full flex items-center gap-2 px-3 py-2 text-xs text-slate-700 hover:bg-slate-50 transition-colors"
+                                      >
+                                        <Pencil size={12} /> Wijzigen
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
                             </button>
                           </li>
                         ))}
@@ -331,6 +369,50 @@ export default function OrgDashboard() {
           clientId={selectedClient.id}
           clientName={selectedClient.name}
         />
+      )}
+
+      {/* Rename client modal */}
+      {editClient && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+          onMouseDown={e => { if (e.target === e.currentTarget) setEditClient(null) }}
+        >
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm">
+            <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-slate-100">
+              <h2 className="text-base font-semibold text-slate-900">Naam wijzigen</h2>
+              <button onClick={() => setEditClient(null)} className="text-slate-400 hover:text-slate-600">
+                <X size={18} />
+              </button>
+            </div>
+            <div className="p-5 space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">Naam organisatie *</label>
+                <input
+                  value={editName}
+                  onChange={e => setEditName(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleRenameClient()}
+                  className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm text-slate-900 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                  autoFocus
+                />
+              </div>
+            </div>
+            <div className="flex gap-3 px-5 pb-5">
+              <button
+                onClick={() => setEditClient(null)}
+                className="flex-1 px-4 py-2 rounded-xl border border-slate-200 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+              >
+                Annuleren
+              </button>
+              <button
+                onClick={handleRenameClient}
+                disabled={editSaving || !editName.trim()}
+                className="flex-1 px-4 py-2 rounded-xl bg-indigo-600 text-sm font-medium text-white hover:bg-indigo-700 transition-colors disabled:opacity-60"
+              >
+                {editSaving ? 'Opslaan…' : 'Opslaan'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )
