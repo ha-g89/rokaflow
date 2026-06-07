@@ -15,6 +15,7 @@ export interface ClientUserListItem {
   createdAt: string
   departmentId: string | null
   departmentName: string
+  managerName: string
 }
 
 export interface ClientUserResponse {

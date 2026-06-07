@@ -1494,9 +1494,7 @@ function EmployeeListView({ teammates, loading, search, currentUserId, departmen
             </div>
           ) : (
             <ul className="divide-y divide-slate-100">
-              {filtered.map(u => {
-                const dept = u.departmentId ? departmentOptions.find(d => d.id === u.departmentId) : null
-                return (
+              {filtered.map(u => (
                 <li key={u.id} className={`grid ${cols} gap-3 px-5 py-3.5 hover:bg-slate-100 transition-colors items-center`}>
                   {/* Naam + email */}
                   <button className="flex items-center gap-3 min-w-0 text-left" onClick={() => onSelect(u.id)}>
@@ -1516,7 +1514,7 @@ function EmployeeListView({ teammates, loading, search, currentUserId, departmen
 
                   {/* Manager */}
                   <p className="text-sm text-slate-500 truncate">
-                    {dept?.managerName || ''}
+                    {u.managerName || ''}
                   </p>
 
                   {/* Afdeling */}
@@ -1572,8 +1570,7 @@ function EmployeeListView({ teammates, loading, search, currentUserId, departmen
                     )}
                   </div>
                 </li>
-              )
-            })}
+              ))}
             </ul>
           )}
         </div>
