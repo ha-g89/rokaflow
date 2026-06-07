@@ -8,8 +8,8 @@ import api from '@/lib/axios'
 import type { LoginResponse } from '@/types/auth'
 
 const schema = z.object({
-  email: z.string().email('Enter a valid email address'),
-  password: z.string().min(1, 'Password is required'),
+  email: z.string().email('Voer een geldig e-mailadres in'),
+  password: z.string().min(1, 'Wachtwoord is verplicht'),
 })
 type FormValues = z.infer<typeof schema>
 
@@ -20,17 +20,97 @@ const ROLE_HOME = {
   client_user: '/client',
 } as const
 
+const CSS = `
+  @keyframes rfSlideUp {
+    from { opacity: 0; transform: translateY(20px) scale(0.975); }
+    to   { opacity: 1; transform: translateY(0)    scale(1);     }
+  }
+  @keyframes rfSpin {
+    to { transform: rotate(360deg); }
+  }
+
+  .rf-portal-card {
+    animation: rfSlideUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .rf-portal-input {
+    width: 100%;
+    padding: 11px 14px;
+    background: rgba(255,255,255,0.05) !important;
+    border: 1px solid rgba(255,255,255,0.09) !important;
+    border-radius: 10px;
+    color: #f1f5f9 !important;
+    font-size: 14px;
+    font-family: 'DM Sans', system-ui, sans-serif;
+    outline: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    box-sizing: border-box;
+  }
+  .rf-portal-input::placeholder { color: rgba(148,163,184,0.4); }
+  .rf-portal-input:focus {
+    border-color: rgba(99,102,241,0.65) !important;
+    background: rgba(99,102,241,0.06) !important;
+    box-shadow: 0 0 0 3px rgba(99,102,241,0.13);
+  }
+  .rf-portal-input.rf-err {
+    border-color: rgba(239,68,68,0.45) !important;
+    background: rgba(239,68,68,0.05) !important;
+  }
+  .rf-portal-input.rf-err:focus {
+    border-color: rgba(239,68,68,0.65) !important;
+    box-shadow: 0 0 0 3px rgba(239,68,68,0.10);
+  }
+
+  .rf-portal-btn {
+    width: 100%;
+    padding: 12px 20px;
+    border: none;
+    cursor: pointer;
+    background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: 'DM Sans', system-ui, sans-serif;
+    border-radius: 10px;
+    letter-spacing: 0.01em;
+    box-shadow: 0 4px 16px rgba(99,102,241,0.32);
+    transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .rf-portal-btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 22px rgba(99,102,241,0.44);
+  }
+  .rf-portal-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .rf-portal-label {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(148,163,184,0.7);
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  .rf-portal-link { color: #818cf8; text-decoration: none; font-weight: 600; transition: color 0.15s; }
+  .rf-portal-link:hover { color: #a5b4fc; }
+
+  .rf-portal-spin { animation: rfSpin 0.75s linear infinite; }
+`
+
 export default function LoginPage() {
   const [apiError, setApiError] = useState<string | null>(null)
+  const [showPass, setShowPass] = useState(false)
   const { login } = useAuthStore()
   const navigate = useNavigate()
   const location = useLocation()
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isSubmitting },
-  } = useForm<FormValues>({ resolver: zodResolver(schema) })
+  const { register, handleSubmit, formState: { errors, isSubmitting } } =
+    useForm<FormValues>({ resolver: zodResolver(schema) })
 
   const onSubmit = async (values: FormValues) => {
     setApiError(null)
@@ -39,102 +119,152 @@ export default function LoginPage() {
       login(data.accessToken, data.refreshToken, data.user)
       const home = ROLE_HOME[data.user.role]
       const from = (location.state as { from?: { pathname: string } })?.from?.pathname
-      // Only restore `from` when it's within the user's own area (prevents
-      // an org_admin being sent back to /client after an expired MSP session).
-      const dest = from?.startsWith(home) ? from : home
-      navigate(dest, { replace: true })
+      navigate(from?.startsWith(home) ? from : home, { replace: true })
     } catch (err: unknown) {
-      const msg =
-        (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail
-      setApiError(msg ?? 'Invalid email or password.')
+      const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail
+      setApiError(msg ?? 'Ongeldig e-mailadres of wachtwoord.')
     }
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center px-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-white tracking-tight">RokaFlow CMS</h1>
-          <p className="mt-2 text-slate-400 text-sm">Sign in to your account</p>
-        </div>
+    <>
+      <style>{CSS}</style>
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '24px',
+        fontFamily: "'DM Sans', system-ui, sans-serif",
+        background: '#07101f',
+        position: 'relative',
+        overflow: 'hidden',
+      }}>
+        {/* Subtle dot grid */}
+        <div style={{
+          position: 'absolute', inset: 0, pointerEvents: 'none',
+          backgroundImage: 'radial-gradient(rgba(148,163,184,0.04) 1px, transparent 1px)',
+          backgroundSize: '28px 28px',
+        }} />
 
-        <div className="bg-white rounded-2xl shadow-2xl p-8">
-          <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-5">
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-1">
-                Email address
-              </label>
-              <input
-                id="email"
-                type="email"
-                autoComplete="email"
-                {...register('email')}
-                className={`w-full px-3 py-2.5 rounded-lg border text-slate-900 text-sm outline-none transition-colors
-                  ${errors.email
-                    ? 'border-red-400 bg-red-50 focus:border-red-500 focus:ring-2 focus:ring-red-200'
-                    : 'border-slate-300 bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100'
-                  }`}
-                placeholder="you@example.com"
-              />
-              {errors.email && (
-                <p className="mt-1 text-xs text-red-600">{errors.email.message}</p>
-              )}
-            </div>
+        <div className="rf-portal-card" style={{ width: '100%', maxWidth: '400px', position: 'relative', zIndex: 1 }}>
 
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-slate-700 mb-1">
-                Password
-              </label>
-              <input
-                id="password"
-                type="password"
-                autoComplete="current-password"
-                {...register('password')}
-                className={`w-full px-3 py-2.5 rounded-lg border text-slate-900 text-sm outline-none transition-colors
-                  ${errors.password
-                    ? 'border-red-400 bg-red-50 focus:border-red-500 focus:ring-2 focus:ring-red-200'
-                    : 'border-slate-300 bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100'
-                  }`}
-                placeholder="••••••••"
-              />
-              {errors.password && (
-                <p className="mt-1 text-xs text-red-600">{errors.password.message}</p>
-              )}
-            </div>
+          {/* Brand */}
+          <div style={{ textAlign: 'center', marginBottom: '28px' }}>
+            <h1 style={{ margin: 0, fontSize: '21px', fontWeight: 700, color: '#f8fafc', letterSpacing: '-0.02em' }}>
+              RokaFlow
+            </h1>
+            <p style={{ margin: '5px 0 0', fontSize: '13px', color: 'rgba(148,163,184,0.65)' }}>
+              Log in op uw account
+            </p>
+          </div>
 
-            {apiError && (
-              <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3">
-                <p className="text-sm text-red-700">{apiError}</p>
+          {/* Card */}
+          <div style={{
+            background: 'rgba(10,18,36,0.82)',
+            border: '1px solid rgba(255,255,255,0.08)',
+            borderRadius: '20px',
+            padding: '30px',
+            backdropFilter: 'blur(24px)',
+            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.07), 0 28px 60px rgba(0,0,0,0.55)',
+          }}>
+            <form onSubmit={handleSubmit(onSubmit)} noValidate style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+
+              {/* Email */}
+              <div>
+                <label className="rf-portal-label">E-mailadres</label>
+                <input
+                  type="email"
+                  autoComplete="email"
+                  placeholder="u@organisatie.nl"
+                  {...register('email')}
+                  className={`rf-portal-input${errors.email ? ' rf-err' : ''}`}
+                />
+                {errors.email && (
+                  <p style={{ margin: '5px 0 0', fontSize: '12px', color: '#f87171', fontWeight: 500 }}>
+                    {errors.email.message}
+                  </p>
+                )}
               </div>
-            )}
 
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white text-sm font-semibold rounded-lg transition-colors flex items-center justify-center gap-2"
-            >
-              {isSubmitting ? (
-                <>
-                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-                  </svg>
-                  Signing in…
-                </>
-              ) : (
-                'Sign in'
+              {/* Password */}
+              <div>
+                <label className="rf-portal-label">Wachtwoord</label>
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type={showPass ? 'text' : 'password'}
+                    autoComplete="current-password"
+                    placeholder="••••••••"
+                    {...register('password')}
+                    className={`rf-portal-input${errors.password ? ' rf-err' : ''}`}
+                    style={{ paddingRight: '44px' }}
+                  />
+                  <button
+                    type="button"
+                    tabIndex={-1}
+                    onClick={() => setShowPass(p => !p)}
+                    style={{
+                      position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)',
+                      background: 'none', border: 'none', cursor: 'pointer', padding: '4px',
+                      color: 'rgba(148,163,184,0.45)', display: 'flex', alignItems: 'center',
+                      transition: 'color 0.15s',
+                    }}
+                    onMouseEnter={e => (e.currentTarget.style.color = 'rgba(148,163,184,0.8)')}
+                    onMouseLeave={e => (e.currentTarget.style.color = 'rgba(148,163,184,0.45)')}
+                  >
+                    {showPass ? (
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24" />
+                        <line x1="1" y1="1" x2="23" y2="23" />
+                      </svg>
+                    ) : (
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                        <circle cx="12" cy="12" r="3" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
+                {errors.password && (
+                  <p style={{ margin: '5px 0 0', fontSize: '12px', color: '#f87171', fontWeight: 500 }}>
+                    {errors.password.message}
+                  </p>
+                )}
+              </div>
+
+              {/* API error */}
+              {apiError && (
+                <div style={{
+                  padding: '10px 14px', borderRadius: '9px',
+                  background: 'rgba(239,68,68,0.09)', border: '1px solid rgba(239,68,68,0.17)',
+                  fontSize: '13px', color: '#fca5a5',
+                }}>
+                  {apiError}
+                </div>
               )}
-            </button>
-          </form>
 
-          <p className="mt-6 text-center text-xs text-slate-400">
-            Platform admin?{' '}
-            <a href="/superuser/login" className="text-indigo-500 hover:underline">
-              SuperUser login
-            </a>
+              {/* Submit */}
+              <button type="submit" disabled={isSubmitting} className="rf-portal-btn" style={{ marginTop: '4px' }}>
+                {isSubmitting ? (
+                  <>
+                    <svg className="rf-portal-spin" width="14" height="14" viewBox="0 0 24 24" fill="none">
+                      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" strokeOpacity="0.25" />
+                      <path fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                    </svg>
+                    Bezig…
+                  </>
+                ) : 'Inloggen'}
+              </button>
+            </form>
+          </div>
+
+          {/* Footer link */}
+          <p style={{ margin: '18px 0 0', textAlign: 'center', fontSize: '12px', color: 'rgba(100,116,139,0.65)' }}>
+            Platform beheerder?{' '}
+            <a href="/superuser/login" className="rf-portal-link">Admin login →</a>
           </p>
         </div>
       </div>
-    </div>
+    </>
   )
 }
