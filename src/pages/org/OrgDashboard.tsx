@@ -1,21 +1,28 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import {
-  Briefcase, Users, Plus, ChevronRight, LogOut,
+  Briefcase, Users, Plus, LogOut,
   Building2, Search, UserPlus, User, ExternalLink, Loader2,
-  MoreVertical, Pencil, X,
+  MoreVertical, Pencil, X, Mail, Ban, ShieldCheck, Calendar,
 } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { useNavigate } from 'react-router-dom'
 import api from '@/lib/axios'
 import type { SwitchToClientResponse } from '@/types/auth'
-import { Card, CardContent, CardHeader } from '@/components/ui/Card'
+import { Card, CardContent } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { AddClientModal } from '@/components/AddClientModal'
 import { AddUserModal } from '@/components/AddUserModal'
-import { UserDetailPanel } from '@/components/UserDetailPanel'
 import type { ClientListItem } from '@/types/client'
 import type { ClientUserListItem, ClientUserDetailResponse } from '@/types/clientUser'
-import { STATUS_LABEL, STATUS_TONE } from '@/types/clientUser'
+
+// ── helpers ───────────────────────────────────────────────────────────────────
+
+function fmt(d: string | null | undefined) {
+  if (!d) return '—'
+  return new Date(d).toLocaleDateString('nl-NL', { day: '2-digit', month: '2-digit', year: 'numeric' })
+}
+
+// ── small components ──────────────────────────────────────────────────────────
 
 function StatCard({ icon, label, value, color }: {
   icon: React.ReactNode; label: string; value: number; color: string
@@ -33,14 +40,6 @@ function StatCard({ icon, label, value, color }: {
   )
 }
 
-function ProgressBar({ value }: { value: number }) {
-  return (
-    <div className="h-1.5 w-full rounded-full bg-slate-200">
-      <div className="h-1.5 rounded-full bg-slate-700" style={{ width: `${value}%` }} />
-    </div>
-  )
-}
-
 function Avatar({ first, last, size = 8 }: { first: string; last: string; size?: number }) {
   const s = `w-${size} h-${size}`
   return (
@@ -50,29 +49,232 @@ function Avatar({ first, last, size = 8 }: { first: string; last: string; size?:
   )
 }
 
+function ActiveBadge({ isActive }: { isActive: boolean }) {
+  return (
+    <span className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-0.5 rounded-full font-medium ${
+      isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
+    }`}>
+      <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${isActive ? 'bg-emerald-500' : 'bg-red-500'}`} />
+      {isActive ? 'Actief' : 'Inactief'}
+    </span>
+  )
+}
+
+// ── OrgEditUserModal ──────────────────────────────────────────────────────────
+
+function OrgEditUserModal({ user, clientId, onClose, onSaved }: {
+  user: ClientUserDetailResponse
+  clientId: string
+  onClose: () => void
+  onSaved: () => void
+}) {
+  const [firstName, setFirstName] = useState(user.firstName)
+  const [lastName, setLastName]   = useState(user.lastName)
+  const [email, setEmail]         = useState(user.email)
+  const [saving, setSaving]       = useState(false)
+  const [error, setError]         = useState<string | null>(null)
+  const overlayRef                = useRef<HTMLDivElement>(null)
+
+  const field = 'w-full px-3 py-2 rounded-lg border border-slate-300 text-sm text-slate-900 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-colors'
+
+  const handleSave = async () => {
+    if (!firstName.trim() || !lastName.trim()) { setError('Voor- en achternaam zijn verplicht.'); return }
+    setSaving(true); setError(null)
+    try {
+      await api.put(`/clients/${clientId}/users/${user.id}`, {
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        email: email.trim() || null,
+      })
+      onSaved()
+      onClose()
+    } catch {
+      setError('Opslaan mislukt. Probeer het opnieuw.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div
+      ref={overlayRef}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+      onMouseDown={e => { if (e.target === overlayRef.current) onClose() }}
+    >
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm">
+        <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-slate-100">
+          <h2 className="text-base font-semibold text-slate-900">Gebruiker wijzigen</h2>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition-colors">
+            <X size={18} />
+          </button>
+        </div>
+        <div className="p-5 space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1">Voornaam *</label>
+              <input value={firstName} onChange={e => setFirstName(e.target.value)} className={field} autoFocus />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1">Achternaam *</label>
+              <input value={lastName} onChange={e => setLastName(e.target.value)} className={field} />
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-slate-600 mb-1">E-mailadres</label>
+            <input type="email" value={email} onChange={e => setEmail(e.target.value)} className={field} placeholder="jan@bedrijf.nl" />
+          </div>
+          {error && <p className="text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>}
+        </div>
+        <div className="flex gap-3 px-5 pb-5">
+          <button
+            onClick={onClose}
+            className="flex-1 px-4 py-2 rounded-xl border border-slate-200 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+          >
+            Annuleren
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="flex-1 px-4 py-2 rounded-xl bg-indigo-600 text-sm font-medium text-white hover:bg-indigo-700 transition-colors disabled:opacity-60"
+          >
+            {saving ? 'Opslaan…' : 'Opslaan'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── OrgPortalUserPanel ────────────────────────────────────────────────────────
+
+function OrgPortalUserPanel({ user, clientId, onUserUpdated }: {
+  user: ClientUserDetailResponse
+  clientId: string
+  onUserUpdated: () => void
+}) {
+  const [blocking, setBlocking]   = useState(false)
+  const [editOpen, setEditOpen]   = useState(false)
+
+  const toggleActive = async () => {
+    setBlocking(true)
+    try {
+      await api.put(`/clients/${clientId}/users/${user.id}/active`, { isActive: !user.isActive })
+      onUserUpdated()
+    } finally {
+      setBlocking(false)
+    }
+  }
+
+  return (
+    <>
+      {editOpen && (
+        <OrgEditUserModal
+          user={user}
+          clientId={clientId}
+          onClose={() => setEditOpen(false)}
+          onSaved={onUserUpdated}
+        />
+      )}
+
+      <Card className="rounded-2xl shadow-sm">
+        <CardContent className="p-6">
+
+          {/* Avatar + naam + email + badge */}
+          <div className="flex items-start gap-4">
+            <div className="w-16 h-16 rounded-2xl bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-2xl flex-shrink-0 select-none">
+              {(user.firstName[0] ?? '').toUpperCase()}{(user.lastName[0] ?? '').toUpperCase()}
+            </div>
+            <div className="flex-1 min-w-0">
+              <h2 className="text-xl font-bold text-slate-900 leading-tight truncate">
+                {user.firstName} {user.lastName}
+              </h2>
+              <p className="text-sm text-slate-500 truncate mt-0.5">{user.email}</p>
+              <div className="mt-2">
+                <ActiveBadge isActive={user.isActive} />
+              </div>
+            </div>
+          </div>
+
+          {/* Info blok */}
+          <div className="mt-5 rounded-xl bg-slate-50 divide-y divide-slate-100">
+            <div className="flex items-center gap-3 px-4 py-3">
+              <Mail size={14} className="text-slate-400 flex-shrink-0" />
+              <span className="text-xs text-slate-400 w-20 flex-shrink-0">E-mail</span>
+              <span className="text-xs font-medium text-slate-700 truncate">{user.email || '—'}</span>
+            </div>
+            {(user.departmentName || user.department) && (
+              <div className="flex items-center gap-3 px-4 py-3">
+                <Briefcase size={14} className="text-slate-400 flex-shrink-0" />
+                <span className="text-xs text-slate-400 w-20 flex-shrink-0">Afdeling</span>
+                <span className="text-xs font-medium text-slate-700 truncate">{user.departmentName || user.department}</span>
+              </div>
+            )}
+            <div className="flex items-center gap-3 px-4 py-3">
+              <Calendar size={14} className="text-slate-400 flex-shrink-0" />
+              <span className="text-xs text-slate-400 w-20 flex-shrink-0">Aangemaakt</span>
+              <span className="text-xs font-medium text-slate-700">{fmt(user.createdAt)}</span>
+            </div>
+          </div>
+
+          {/* Actie knoppen */}
+          <div className="mt-5 flex gap-3">
+            <button
+              onClick={() => setEditOpen(true)}
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-medium text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-colors"
+            >
+              <Pencil size={14} />
+              Wijzigen
+            </button>
+            <button
+              onClick={toggleActive}
+              disabled={blocking}
+              className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-medium transition-colors disabled:opacity-60 ${
+                user.isActive
+                  ? 'border-red-200 text-red-600 hover:bg-red-50'
+                  : 'border-emerald-200 text-emerald-600 hover:bg-emerald-50'
+              }`}
+            >
+              {blocking
+                ? <Loader2 size={14} className="animate-spin" />
+                : user.isActive
+                  ? <Ban size={14} />
+                  : <ShieldCheck size={14} />
+              }
+              {user.isActive ? 'Blokkeren' : 'Deblokkeren'}
+            </button>
+          </div>
+
+        </CardContent>
+      </Card>
+    </>
+  )
+}
+
+// ── main component ────────────────────────────────────────────────────────────
+
 type View = 'clients' | 'users' | 'detail'
 
 export default function OrgDashboard() {
   const { user, logout, switchToClient } = useAuthStore()
   const navigate = useNavigate()
 
-  const [clients, setClients] = useState<ClientListItem[]>([])
+  const [clients, setClients]               = useState<ClientListItem[]>([])
   const [selectedClient, setSelectedClient] = useState<ClientListItem | null>(null)
-  const [clientUsers, setClientUsers] = useState<ClientUserListItem[]>([])
-  const [selectedUser, setSelectedUser] = useState<ClientUserDetailResponse | null>(null)
-  const [view, setView] = useState<View>('clients')
+  const [clientUsers, setClientUsers]       = useState<ClientUserListItem[]>([])
+  const [selectedUser, setSelectedUser]     = useState<ClientUserDetailResponse | null>(null)
+  const [view, setView]                     = useState<View>('clients')
   const [loadingClients, setLoadingClients] = useState(true)
-  const [loadingUsers, setLoadingUsers] = useState(false)
-  const [loadingDetail, setLoadingDetail] = useState(false)
-  const [showAddClient, setShowAddClient] = useState(false)
-  const [showAddUser, setShowAddUser] = useState(false)
-  const [clientSearch, setClientSearch] = useState('')
-  const [userSearch, setUserSearch] = useState('')
+  const [loadingUsers, setLoadingUsers]     = useState(false)
+  const [loadingDetail, setLoadingDetail]   = useState(false)
+  const [showAddClient, setShowAddClient]   = useState(false)
+  const [showAddUser, setShowAddUser]       = useState(false)
+  const [clientSearch, setClientSearch]     = useState('')
+  const [userSearch, setUserSearch]         = useState('')
   const [switchingClientId, setSwitchingClientId] = useState<string | null>(null)
-  const [openMenuId, setOpenMenuId] = useState<string | null>(null)
-  const [editClient, setEditClient] = useState<ClientListItem | null>(null)
-  const [editName, setEditName] = useState('')
-  const [editSaving, setEditSaving] = useState(false)
+  const [openMenuId, setOpenMenuId]         = useState<string | null>(null)
+  const [editClient, setEditClient]         = useState<ClientListItem | null>(null)
+  const [editName, setEditName]             = useState('')
+  const [editSaving, setEditSaving]         = useState(false)
 
   const fetchClients = useCallback(async () => {
     try {
@@ -113,17 +315,9 @@ export default function OrgDashboard() {
     fetchUserDetail(selectedClient.id, userId)
   }
 
-  const handleChecklistToggle = (entryId: string, checked: boolean) => {
-    setSelectedUser(prev => {
-      if (!prev) return prev
-      const patch = (list: typeof prev.starterChecklist) =>
-        list.map(e => e.id === entryId ? { ...e, isChecked: checked } : e)
-      return {
-        ...prev,
-        starterChecklist: patch(prev.starterChecklist),
-        leaverChecklist: patch(prev.leaverChecklist),
-      }
-    })
+  const handleUserUpdated = () => {
+    if (selectedClient && selectedUser)
+      fetchUserDetail(selectedClient.id, selectedUser.id)
   }
 
   const handleRenameClient = async () => {
@@ -146,7 +340,7 @@ export default function OrgDashboard() {
       switchToClient(data.switchToken)
       navigate('/client')
     } catch {
-      // Error is handled by global interceptor / toast if present
+      // handled by global interceptor
     } finally {
       setSwitchingClientId(null)
     }
@@ -156,11 +350,14 @@ export default function OrgDashboard() {
 
   const filteredClients = clients.filter(c =>
     c.name.toLowerCase().includes(clientSearch.toLowerCase()))
-  const filteredUsers = clientUsers.filter(u =>
-    `${u.firstName} ${u.lastName} ${u.email} ${u.department}`
+
+  // alleen portal users tonen (niet de employee-only records)
+  const portalUsers = clientUsers.filter(u => u.isPortalUser)
+  const filteredUsers = portalUsers.filter(u =>
+    `${u.firstName} ${u.lastName} ${u.email}`
       .toLowerCase().includes(userSearch.toLowerCase()))
 
-  const totalUsers = clients.reduce((s, c) => s + c.userCount, 0)
+  const totalUsers    = clients.reduce((s, c) => s + c.userCount, 0)
   const activeClients = clients.filter(c => c.isActive).length
 
   return (
@@ -266,7 +463,7 @@ export default function OrgDashboard() {
             </Card>
           </div>
 
-          {/* Col 2 — Users */}
+          {/* Col 2 — Portal users */}
           <div className="w-64 flex-shrink-0 flex flex-col gap-2">
             {!selectedClient
               ? <Card className="flex-1 flex items-center justify-center">
@@ -295,7 +492,7 @@ export default function OrgDashboard() {
                         : filteredUsers.length === 0
                           ? <div className="p-4 text-center">
                               <User size={24} className="mx-auto mb-1 text-slate-200" />
-                              <p className="text-xs text-slate-400">Geen gebruikers.</p>
+                              <p className="text-xs text-slate-400">Geen portalgebruikers.</p>
                               <button onClick={() => setShowAddUser(true)} className="mt-1 text-xs text-indigo-500 hover:underline">Toevoegen</button>
                             </div>
                           : <ul className="divide-y divide-slate-100">
@@ -306,22 +503,16 @@ export default function OrgDashboard() {
                                     className={`w-full text-left px-3 py-2.5 hover:bg-slate-100 transition-colors ${
                                       selectedUser?.id === u.id ? 'bg-indigo-50 border-l-2 border-indigo-500' : ''}`}
                                   >
-                                    <div className="flex items-center gap-2 mb-1">
-                                      <Avatar first={u.firstName} last={u.lastName} size={6} />
+                                    <div className="flex items-center gap-2">
+                                      <Avatar first={u.firstName} last={u.lastName} size={7} />
                                       <div className="min-w-0 flex-1">
                                         <p className="text-xs font-semibold text-slate-800 truncate">
                                           {u.firstName} {u.lastName}
                                         </p>
-                                        <p className="text-xs text-slate-400 truncate">{u.department || u.email}</p>
+                                        <p className="text-xs text-slate-400 truncate">{u.email}</p>
                                       </div>
+                                      <ActiveBadge isActive={u.isActive} />
                                     </div>
-                                    <div className="flex items-center gap-2">
-                                      <ProgressBar value={u.completeness} />
-                                      <span className="text-xs text-slate-400 flex-shrink-0">{u.completeness}%</span>
-                                    </div>
-                                    <span className={`mt-1 inline-block text-xs px-1.5 py-0.5 rounded-full font-medium ${STATUS_TONE[u.status]}`}>
-                                      {STATUS_LABEL[u.status]}
-                                    </span>
                                   </button>
                                 </li>
                               ))}
@@ -333,28 +524,29 @@ export default function OrgDashboard() {
             }
           </div>
 
-          {/* Col 3 — Detail */}
+          {/* Col 3 — Portal user detail */}
           <div className="flex-1 overflow-y-auto min-w-0">
             {loadingDetail ? (
               <Card className="h-40 flex items-center justify-center">
-                <p className="text-sm text-slate-400">Laden…</p>
+                <Loader2 size={20} className="animate-spin text-slate-300" />
               </Card>
             ) : !selectedUser ? (
               <Card className="h-40 flex items-center justify-center">
                 <p className="text-xs text-slate-400">Selecteer een gebruiker</p>
               </Card>
             ) : (
-              <UserDetailPanel
+              <OrgPortalUserPanel
                 user={selectedUser}
-                canEdit={user?.role === 'org_admin'}
-                checklistBasePath={`/clients/${selectedClient?.id}/users/${selectedUser.id}`}
-                onChecklistToggle={handleChecklistToggle}
+                clientId={selectedClient!.id}
+                onUserUpdated={handleUserUpdated}
               />
             )}
           </div>
+
         </div>
       </div>
 
+      {/* Modals */}
       <AddClientModal
         open={showAddClient}
         onClose={() => setShowAddClient(false)}
