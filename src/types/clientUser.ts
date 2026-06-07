@@ -5,7 +5,7 @@ export interface ClientUserListItem {
   lastName: string
   department: string
   jobTitle: string
-  status: 'InService' | 'LeavePlanned' | 'Left'
+  status: 'InService' | 'LeavePlanned' | 'Left' | 'StartPlanned'
   startDate: string | null
   isActive: boolean
   isPortalUser: boolean
@@ -42,7 +42,7 @@ export interface ClientUserDetailResponse {
   managerName: string
   jobTitle: string
   phone: string
-  status: 'InService' | 'LeavePlanned' | 'Left'
+  status: 'InService' | 'LeavePlanned' | 'Left' | 'StartPlanned'
   contractType: ContractType | null
   startDate: string | null
   leaveDate: string | null
@@ -109,13 +109,15 @@ export interface UserActivityDto {
 export type UserStatus = ClientUserListItem['status']
 
 export const STATUS_LABEL: Record<UserStatus, string> = {
-  InService: 'In dienst',
+  InService:    'In dienst',
+  StartPlanned: 'In dienst gepland',
   LeavePlanned: 'Uit dienst gepland',
-  Left: 'Uit dienst',
+  Left:         'Uit dienst',
 }
 
 export const STATUS_TONE: Record<UserStatus, string> = {
-  InService: 'bg-emerald-100 text-emerald-700',
+  InService:    'bg-emerald-100 text-emerald-700',
+  StartPlanned: 'bg-blue-100 text-blue-700',
   LeavePlanned: 'bg-amber-100 text-amber-800',
-  Left: 'bg-red-100 text-red-700',
+  Left:         'bg-red-100 text-red-700',
 }

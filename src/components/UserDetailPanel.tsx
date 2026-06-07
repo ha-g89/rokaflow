@@ -73,9 +73,10 @@ function Progress({ value }: { value: number }) {
 function Badge({ children, tone = 'default' }: { children: React.ReactNode; tone?: string }) {
   const tones: Record<string, string> = {
     default: 'bg-slate-100 text-slate-700',
-    good: 'bg-emerald-100 text-emerald-700',
-    warn: 'bg-amber-100 text-amber-800',
-    bad: 'bg-red-100 text-red-700',
+    good:    'bg-emerald-100 text-emerald-700',
+    info:    'bg-blue-100 text-blue-700',
+    warn:    'bg-amber-100 text-amber-800',
+    bad:     'bg-red-100 text-red-700',
   }
   return (
     <span className={`rounded-full px-3 py-1 text-xs font-medium ${tones[tone] ?? tones.default}`}>
@@ -103,7 +104,7 @@ const CONTRACT_OPTIONS = [
   { value: '1', label: 'Tijdelijk' },
   { value: '2', label: 'Stagiair' },
 ]
-const STATUS_TO_INT: Record<string, string> = { InService: '0', LeavePlanned: '1', Left: '2' }
+const STATUS_TO_INT: Record<string, string> = { InService: '0', LeavePlanned: '1', Left: '2', StartPlanned: '0' }
 const CONTRACT_TO_INT: Record<string, string> = { Vast: '0', Tijdelijk: '1', Stagiair: '2' }
 
 function EditUserModal({ user, departments, managers, onClose, onSaved }: {
@@ -138,10 +139,14 @@ function EditUserModal({ user, departments, managers, onClose, onSaved }: {
     }
   }
 
-  // derive displayed status based on leaveDate input
+  const startIsPlanned = startDate ? new Date(startDate) > new Date() : false
+
+  // derive displayed status: leaveDate takes priority, then startDate in future
   const derivedStatus = leaveDate
     ? (new Date(leaveDate) <= new Date() ? 'Uit dienst' : 'Uit dienst gepland')
-    : STATUS_OPTIONS.find(o => o.value === status)?.label ?? ''
+    : startIsPlanned
+    ? 'In dienst gepland'
+    : null
 
   const handleSave = async () => {
     if (!firstName.trim() || !lastName.trim()) { setError('Voor- en achternaam zijn verplicht.'); return }
@@ -255,10 +260,14 @@ function EditUserModal({ user, departments, managers, onClose, onSaved }: {
             </div>
           </div>
 
-          {/* status — alleen tonen als geen leaveDate (anders auto) */}
-          {leaveDate ? (
-            <div className="rounded-xl bg-amber-50 border border-amber-100 px-4 py-3 text-xs text-amber-700">
-              Status wordt automatisch ingesteld op <strong>{derivedStatus}</strong> op basis van de uit dienst datum.
+          {/* status — auto wanneer datums een status bepalen */}
+          {derivedStatus ? (
+            <div className={`rounded-xl border px-4 py-3 text-xs ${
+              leaveDate
+                ? 'bg-amber-50 border-amber-100 text-amber-700'
+                : 'bg-blue-50 border-blue-100 text-blue-700'
+            }`}>
+              Status wordt automatisch ingesteld op <strong>{derivedStatus}</strong> op basis van de {leaveDate ? 'uit dienst' : 'in dienst'} datum.
             </div>
           ) : (
             <div>
@@ -315,7 +324,7 @@ interface Props {
 
 export function UserDetailPanel({ user, canEdit, departments = [], managers = [], checklistBasePath, historyPath, onChecklistToggle, onUserUpdated }: Props) {
   const status = user.status as UserStatus
-  const statusTone = status === 'InService' ? 'good' : status === 'LeavePlanned' ? 'warn' : 'bad'
+  const statusTone = status === 'InService' ? 'good' : status === 'StartPlanned' ? 'info' : status === 'LeavePlanned' ? 'warn' : 'bad'
 
   const [auditHistory, setAuditHistory] = useState<AuditLogEntry[]>([])
   const [historyLoading, setHistoryLoading] = useState(false)

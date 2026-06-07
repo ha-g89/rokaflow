@@ -37,6 +37,7 @@ const field =
 
 const STATUS_OPTIONS = [
   { value: '0', label: 'In dienst' },
+  { value: '3', label: 'In dienst gepland' },
   { value: '1', label: 'Uit dienst gepland' },
   { value: '2', label: 'Uit dienst' },
 ]
@@ -67,6 +68,8 @@ export function AddEmployeeModal({ open, onClose, onSuccess, departments = [], m
   })
 
   const selectedDeptId = watch('departmentId')
+  const selectedStartDate = watch('startDate')
+  const startIsPlanned = selectedStartDate ? new Date(selectedStartDate) > new Date() : false
 
   // auto-fill manager when department changes
   useEffect(() => {
@@ -169,11 +172,17 @@ export function AddEmployeeModal({ open, onClose, onSuccess, departments = [], m
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="block text-xs font-medium text-slate-600 mb-1">Status</label>
-            <select {...register('status')} className={field}>
-              {STATUS_OPTIONS.map(o => (
-                <option key={o.value} value={o.value}>{o.label}</option>
-              ))}
-            </select>
+            {startIsPlanned ? (
+              <div className="rounded-lg bg-blue-50 border border-blue-100 px-3 py-2 text-xs text-blue-700">
+                Automatisch <strong>In dienst gepland</strong>
+              </div>
+            ) : (
+              <select {...register('status')} className={field}>
+                {STATUS_OPTIONS.filter(o => o.value !== '3').map(o => (
+                  <option key={o.value} value={o.value}>{o.label}</option>
+                ))}
+              </select>
+            )}
           </div>
           <div>
             <label className="block text-xs font-medium text-slate-600 mb-1">Contracttype *</label>
