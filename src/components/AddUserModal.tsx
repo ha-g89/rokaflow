@@ -12,10 +12,6 @@ const schema = z.object({
   email: z.string().email('Geldig e-mailadres vereist'),
   password: z.string().min(8, 'Minimaal 8 tekens'),
   departmentId: z.string().optional().default(''),
-  jobTitle: z.string().max(200).optional().default(''),
-  phone: z.string().max(100).optional().default(''),
-  contractType: z.string().optional().default(''),
-  startDate: z.string().optional().default(''),
 })
 type FormValues = z.infer<typeof schema>
 
@@ -55,10 +51,6 @@ export function AddUserModal({ open, onClose, onSuccess, clientId, clientName, a
         email: values.email,
         password: values.password,
         departmentId: values.departmentId || null,
-        jobTitle: values.jobTitle || null,
-        phone: values.phone || null,
-        contractType: values.contractType ? parseInt(values.contractType, 10) : null,
-        startDate: values.startDate ? new Date(values.startDate).toISOString() : null,
       })
       reset()
       onSuccess()
@@ -72,7 +64,6 @@ export function AddUserModal({ open, onClose, onSuccess, clientId, clientName, a
   return (
     <Modal open={open} onClose={handleClose} title={`Gebruiker toevoegen aan ${clientName}`} className="max-w-lg">
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        {/* Name row */}
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="block text-xs font-medium text-slate-600 mb-1">Voornaam *</label>
@@ -99,10 +90,9 @@ export function AddUserModal({ open, onClose, onSuccess, clientId, clientName, a
           <p className="mt-1 text-xs text-slate-400">Gebruiker logt in met deze gegevens.</p>
         </div>
 
-        <hr className="border-slate-100" />
-
-        <div className="grid grid-cols-2 gap-3">
-          {departments.length > 0 ? (
+        {departments.length > 0 && (
+          <>
+            <hr className="border-slate-100" />
             <div>
               <label className="block text-xs font-medium text-slate-600 mb-1">Afdeling</label>
               <select {...register('departmentId')} className={field}>
@@ -112,35 +102,8 @@ export function AddUserModal({ open, onClose, onSuccess, clientId, clientName, a
                 ))}
               </select>
             </div>
-          ) : null}
-          <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Functie</label>
-            <input {...register('jobTitle')} className={field} placeholder="Medewerker" />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Telefoon</label>
-            <input {...register('phone')} className={field} placeholder="+31 6 12345678" />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Startdatum</label>
-            <input {...register('startDate')} type="date" className={field} />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Contracttype</label>
-            <select {...register('contractType')} className={field}>
-              <option value="">— Geen —</option>
-              <option value="0">Vast</option>
-              <option value="1">Tijdelijk</option>
-              <option value="2">Stagiair</option>
-            </select>
-          </div>
-        </div>
+          </>
+        )}
 
         {apiError && (
           <p className="text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{apiError}</p>

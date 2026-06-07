@@ -13,12 +13,12 @@ const schema = z.object({
     v => v === '' || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v),
     'Ongeldig e-mailadres'
   ),
-  departmentId: z.string(),
-  jobTitle: z.string().max(200),
-  phone: z.string().max(100),
+  departmentId: z.string().min(1, 'Afdeling is verplicht'),
+  jobTitle: z.string().min(1, 'Functie is verplicht').max(200),
+  phone: z.string().min(1, 'Telefoon is verplicht').max(100),
   status: z.string(),
-  contractType: z.string(),
-  startDate: z.string(),
+  contractType: z.string().min(1, 'Contracttype is verplicht'),
+  startDate: z.string().min(1, 'Startdatum is verplicht'),
 })
 
 type FormValues = z.infer<typeof schema>
@@ -40,7 +40,7 @@ const STATUS_OPTIONS = [
 ]
 
 const CONTRACT_OPTIONS = [
-  { value: '', label: '— Geen —' },
+  { value: '', label: '— Kies contracttype —' },
   { value: '0', label: 'Vast' },
   { value: '1', label: 'Tijdelijk' },
   { value: '2', label: 'Stagiair' },
@@ -112,28 +112,32 @@ export function AddEmployeeModal({ open, onClose, onSuccess, departments = [] }:
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Afdeling</label>
+            <label className="block text-xs font-medium text-slate-600 mb-1">Afdeling *</label>
             <select {...register('departmentId')} className={field}>
-              <option value="">— Geen afdeling —</option>
+              <option value="">— Kies afdeling —</option>
               {departments.map(d => (
                 <option key={d.id} value={d.id}>{d.name}</option>
               ))}
             </select>
+            {errors.departmentId && <p className="mt-1 text-xs text-red-600">{errors.departmentId.message}</p>}
           </div>
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Functie</label>
+            <label className="block text-xs font-medium text-slate-600 mb-1">Functie *</label>
             <input {...register('jobTitle')} className={field} placeholder="Medewerker" />
+            {errors.jobTitle && <p className="mt-1 text-xs text-red-600">{errors.jobTitle.message}</p>}
           </div>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Telefoon</label>
+            <label className="block text-xs font-medium text-slate-600 mb-1">Telefoon *</label>
             <input {...register('phone')} className={field} placeholder="+31 6 12345678" />
+            {errors.phone && <p className="mt-1 text-xs text-red-600">{errors.phone.message}</p>}
           </div>
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Startdatum</label>
+            <label className="block text-xs font-medium text-slate-600 mb-1">Startdatum *</label>
             <input {...register('startDate')} type="date" className={field} />
+            {errors.startDate && <p className="mt-1 text-xs text-red-600">{errors.startDate.message}</p>}
           </div>
         </div>
 
@@ -147,12 +151,13 @@ export function AddEmployeeModal({ open, onClose, onSuccess, departments = [] }:
             </select>
           </div>
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Contracttype</label>
+            <label className="block text-xs font-medium text-slate-600 mb-1">Contracttype *</label>
             <select {...register('contractType')} className={field}>
               {CONTRACT_OPTIONS.map(o => (
                 <option key={o.value} value={o.value}>{o.label}</option>
               ))}
             </select>
+            {errors.contractType && <p className="mt-1 text-xs text-red-600">{errors.contractType.message}</p>}
           </div>
         </div>
 
