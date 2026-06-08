@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+﻿import { useEffect, useRef, useState } from 'react'
 import {
   Laptop, KeyRound, History, CheckCircle2, AlertTriangle,
   LogOut, ShieldCheck, ClipboardList, Mail,
@@ -87,7 +87,7 @@ function Badge({ children, tone = 'default' }: { children: React.ReactNode; tone
 
 function Avatar({ first, last }: { first: string; last: string }) {
   return (
-    <div className="w-16 h-16 rounded-2xl bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-2xl flex-shrink-0 select-none">
+    <div className="w-16 h-16 rounded-2xl bg-violet-100 text-violet-700 flex items-center justify-center font-bold text-2xl flex-shrink-0 select-none">
       {(first[0] ?? '').toUpperCase()}{(last[0] ?? '').toUpperCase()}
     </div>
   )
@@ -174,7 +174,7 @@ function EditUserModal({ user, departments, managers, onClose, onSaved }: {
     }
   }
 
-  const field = 'w-full px-3 py-2 rounded-lg border border-slate-300 text-sm text-slate-900 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-colors'
+  const field = 'w-full px-3 py-2 rounded-lg border border-slate-300 text-sm text-slate-900 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-colors'
 
   return (
     <div
@@ -285,7 +285,7 @@ function EditUserModal({ user, departments, managers, onClose, onSaved }: {
           <button onClick={onClose} className="flex-1 px-4 py-2 rounded-xl border border-slate-200 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors">
             Annuleren
           </button>
-          <button onClick={handleSave} disabled={saving} className="flex-1 px-4 py-2 rounded-xl bg-indigo-600 text-sm font-medium text-white hover:bg-indigo-700 transition-colors disabled:opacity-60">
+          <button onClick={handleSave} disabled={saving} className="flex-1 px-4 py-2 rounded-xl bg-violet-600 text-sm font-medium text-white hover:bg-violet-700 transition-colors disabled:opacity-60">
             {saving ? 'Opslaan…' : 'Opslaan'}
           </button>
         </div>

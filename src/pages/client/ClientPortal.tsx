@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+﻿import { useEffect, useState, useCallback } from 'react'
 import {
   Users, LogOut, Layers, Search, ChevronRight, ArrowLeft,
   Laptop, Shield, CreditCard, Phone as PhoneIcon,
@@ -82,7 +82,7 @@ function NavItem({ icon, label, active, onClick }: {
     <button
       onClick={onClick}
       className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-left text-sm transition-colors ${
-        active ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+        active ? 'bg-violet-600 text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
       }`}
     >
       <span className="flex-shrink-0">{icon}</span>
@@ -96,7 +96,7 @@ function NavItem({ icon, label, active, onClick }: {
 function Avatar({ first, last, size = 32 }: { first: string; last: string; size?: number }) {
   return (
     <div
-      className="rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold flex-shrink-0"
+      className="rounded-full bg-violet-100 text-violet-700 flex items-center justify-center font-bold flex-shrink-0"
       style={{ width: size, height: size, fontSize: Math.round(size * 0.38) }}
     >
       {(first[0] ?? '').toUpperCase()}{(last[0] ?? '').toUpperCase()}
@@ -129,7 +129,7 @@ function StatCard({ label, value, icon, tone = 'default' }: {
     blue: 'bg-blue-100 text-blue-600',
     amber: 'bg-amber-100 text-amber-600',
     slate: 'bg-slate-100 text-slate-400',
-    indigo: 'bg-indigo-100 text-indigo-600',
+    violet: 'bg-violet-100 text-violet-600',
   }
   return (
     <div className="bg-white rounded-2xl px-5 py-4 border border-slate-200 shadow-sm flex items-center gap-4">
@@ -364,7 +364,7 @@ function HardwareView({ teammates }: { teammates: ClientUserListItem[] }) {
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder="Zoek hardware…"
-                className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-200 bg-white focus:outline-none focus:border-indigo-400"
+                className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-200 bg-white focus:outline-none focus:border-violet-400"
               />
             </div>
             <Button size="sm" onClick={handleOpenAdd}>
@@ -390,7 +390,7 @@ function HardwareView({ teammates }: { teammates: ClientUserListItem[] }) {
                       <button
                         onClick={() => setSelected(a)}
                         className={`w-full text-left px-4 py-3.5 transition-colors hover:bg-slate-100 ${
-                          selected?.id === a.id ? 'bg-indigo-50 border-l-2 border-indigo-500' : ''
+                          selected?.id === a.id ? 'bg-violet-50 border-l-2 border-violet-500' : ''
                         }`}
                       >
                         <div className="flex items-start justify-between gap-2">
@@ -500,7 +500,7 @@ function LicenseDetailPanel({ license, teammates, onEdit, onDelete, onAssign, on
           </div>
           <div className="h-2 rounded-full bg-slate-200">
             <div
-              className={`h-2 rounded-full transition-all ${license.assignedUsers >= license.maxUsers ? 'bg-red-500' : 'bg-indigo-500'}`}
+              className={`h-2 rounded-full transition-all ${license.assignedUsers >= license.maxUsers ? 'bg-red-500' : 'bg-violet-500'}`}
               style={{ width: `${Math.min(100, (license.assignedUsers / license.maxUsers) * 100)}%` }}
             />
           </div>
@@ -526,7 +526,7 @@ function LicenseDetailPanel({ license, teammates, onEdit, onDelete, onAssign, on
               <select
                 value={assignUserId}
                 onChange={e => setAssignUserId(e.target.value)}
-                className="flex-1 px-3 py-2 rounded-lg border border-slate-300 text-sm text-slate-900 focus:outline-none focus:border-indigo-500"
+                className="flex-1 px-3 py-2 rounded-lg border border-slate-300 text-sm text-slate-900 focus:outline-none focus:border-violet-500"
               >
                 <option value="">— Selecteer medewerker —</option>
                 {assignableUsers.map(u => (
@@ -678,7 +678,7 @@ function LicenseView({ teammates }: { teammates: ClientUserListItem[] }) {
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder="Zoek licenties…"
-                className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-200 bg-white focus:outline-none focus:border-indigo-400"
+                className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-200 bg-white focus:outline-none focus:border-violet-400"
               />
             </div>
             <Button size="sm" onClick={handleOpenAdd}>
@@ -708,13 +708,13 @@ function LicenseView({ teammates }: { teammates: ClientUserListItem[] }) {
                     const isExpired = l.expiresAt ? new Date(l.expiresAt) < new Date() : false
                     const seatsLeft = l.maxUsers - l.assignedUsers
                     const pct = l.maxUsers > 0 ? Math.min(100, (l.assignedUsers / l.maxUsers) * 100) : 0
-                    const barColor = pct >= 100 ? 'bg-red-500' : pct >= 80 ? 'bg-amber-400' : 'bg-indigo-500'
+                    const barColor = pct >= 100 ? 'bg-red-500' : pct >= 80 ? 'bg-amber-400' : 'bg-violet-500'
                     return (
                       <li
                         key={l.id}
                         onClick={() => setSelected(l)}
                         className={`grid grid-cols-[2fr_1.5fr_0.8fr_1fr_0.7fr] gap-3 px-4 py-3 items-center cursor-pointer transition-colors hover:bg-slate-100 ${
-                          selected?.id === l.id ? 'bg-indigo-50 border-l-2 border-indigo-500' : ''
+                          selected?.id === l.id ? 'bg-violet-50 border-l-2 border-violet-500' : ''
                         }`}
                       >
                         {/* Naam + vendor */}
@@ -826,7 +826,7 @@ function TelefonieView({ teammates }: { teammates: ClientUserListItem[] }) {
     <div className="flex flex-col gap-4 h-full">
       {/* Totalen */}
       <div className="grid grid-cols-3 gap-3 flex-shrink-0">
-        <StatCard label="Abonnementen" value={totals.subscriptions} icon={<Layers size={18} />} tone="indigo" />
+        <StatCard label="Abonnementen" value={totals.subscriptions} icon={<Layers size={18} />} tone="violet" />
         <StatCard label="Telefoons in gebruik" value={totals.phonesInUse} icon={<PhoneIcon size={18} />} tone="emerald" />
         <StatCard label="Simkaarten in gebruik" value={totals.simCardsInUse} icon={<Wifi size={18} />} tone="blue" />
       </div>
@@ -917,7 +917,7 @@ function PhonesTab({ teammates }: { teammates: ClientUserListItem[] }) {
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder="Zoek telefoons…"
-                className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-200 bg-white focus:outline-none focus:border-indigo-400"
+                className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-200 bg-white focus:outline-none focus:border-violet-400"
               />
             </div>
             <Button size="sm" onClick={() => { setEditTarget(null); setShowModal(true) }}>
@@ -940,7 +940,7 @@ function PhonesTab({ teammates }: { teammates: ClientUserListItem[] }) {
                     <li key={p.id}>
                       <button
                         onClick={() => { setSelected(p); setConfirmDelete(false) }}
-                        className={`w-full text-left px-4 py-3.5 transition-colors hover:bg-slate-100 ${selected?.id === p.id ? 'bg-indigo-50 border-l-2 border-indigo-500' : ''}`}
+                        className={`w-full text-left px-4 py-3.5 transition-colors hover:bg-slate-100 ${selected?.id === p.id ? 'bg-violet-50 border-l-2 border-violet-500' : ''}`}
                       >
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0">
@@ -953,7 +953,7 @@ function PhonesTab({ teammates }: { teammates: ClientUserListItem[] }) {
                         </div>
                         {p.assignedToName && <p className="mt-1 text-xs text-slate-400 truncate">{p.assignedToName}</p>}
                         {p.simCardNumber && (
-                          <p className="mt-0.5 text-xs text-indigo-500 truncate">Simkaart: {p.simPhoneNumber || p.simCardNumber}</p>
+                          <p className="mt-0.5 text-xs text-violet-500 truncate">Simkaart: {p.simPhoneNumber || p.simCardNumber}</p>
                         )}
                       </button>
                     </li>
@@ -992,11 +992,11 @@ function PhonesTab({ teammates }: { teammates: ClientUserListItem[] }) {
                   ))}
                 </div>
                 {selected.simCardNumber && (
-                  <div className="mt-3 rounded-xl bg-indigo-50 border border-indigo-100 px-3 py-2.5">
+                  <div className="mt-3 rounded-xl bg-violet-50 border border-violet-100 px-3 py-2.5">
                     <div className="flex items-center justify-between gap-2">
                       <div className="min-w-0">
-                        <p className="text-xs text-indigo-400 mb-0.5">Gekoppelde simkaart</p>
-                        <p className="text-sm font-medium text-indigo-700 truncate">
+                        <p className="text-xs text-violet-400 mb-0.5">Gekoppelde simkaart</p>
+                        <p className="text-sm font-medium text-violet-700 truncate">
                           {selected.simCardNumber}
                           {selected.simPhoneNumber ? ` · ${selected.simPhoneNumber}` : ''}
                         </p>
@@ -1004,7 +1004,7 @@ function PhonesTab({ teammates }: { teammates: ClientUserListItem[] }) {
                       <button
                         onClick={() => handleUnlinkSim(selected.id)}
                         title="Simkaart ontkoppelen"
-                        className="flex-shrink-0 text-indigo-400 hover:text-red-500 transition-colors"
+                        className="flex-shrink-0 text-violet-400 hover:text-red-500 transition-colors"
                       >
                         <XCircle size={15} />
                       </button>
@@ -1104,7 +1104,7 @@ function SimCardsTab({ teammates }: { teammates: ClientUserListItem[] }) {
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Zoek simkaarten…"
-              className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-200 bg-white focus:outline-none focus:border-indigo-400"
+              className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-200 bg-white focus:outline-none focus:border-violet-400"
             />
           </div>
           <Button size="sm" onClick={() => { setEditTarget(null); setShowModal(true) }}>
@@ -1127,7 +1127,7 @@ function SimCardsTab({ teammates }: { teammates: ClientUserListItem[] }) {
                   <li key={s.id}>
                     <button
                       onClick={() => { setSelected(s); setConfirmDelete(false) }}
-                      className={`w-full text-left px-4 py-3.5 transition-colors hover:bg-slate-100 ${selected?.id === s.id ? 'bg-indigo-50 border-l-2 border-indigo-500' : ''}`}
+                      className={`w-full text-left px-4 py-3.5 transition-colors hover:bg-slate-100 ${selected?.id === s.id ? 'bg-violet-50 border-l-2 border-violet-500' : ''}`}
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
@@ -1146,7 +1146,7 @@ function SimCardsTab({ teammates }: { teammates: ClientUserListItem[] }) {
                         </p>
                       )}
                       {s.subscriptionName && (
-                        <p className="mt-0.5 text-xs text-indigo-500 truncate">Abonnement: {s.subscriptionName}</p>
+                        <p className="mt-0.5 text-xs text-violet-500 truncate">Abonnement: {s.subscriptionName}</p>
                       )}
                     </button>
                   </li>
@@ -1183,15 +1183,15 @@ function SimCardsTab({ teammates }: { teammates: ClientUserListItem[] }) {
                 ))}
               </div>
               {selected.phoneName && (
-                <div className="mt-3 rounded-xl bg-indigo-50 border border-indigo-100 px-3 py-2.5">
-                  <p className="text-xs text-indigo-400 mb-0.5">Gekoppelde telefoon</p>
-                  <p className="text-sm font-medium text-indigo-700 truncate">{selected.phoneName}</p>
+                <div className="mt-3 rounded-xl bg-violet-50 border border-violet-100 px-3 py-2.5">
+                  <p className="text-xs text-violet-400 mb-0.5">Gekoppelde telefoon</p>
+                  <p className="text-sm font-medium text-violet-700 truncate">{selected.phoneName}</p>
                 </div>
               )}
               {selected.subscriptionName && (
-                <div className="mt-2 rounded-xl bg-indigo-50 border border-indigo-100 px-3 py-2.5">
-                  <p className="text-xs text-indigo-400 mb-0.5">Gekoppeld abonnement</p>
-                  <p className="text-sm font-medium text-indigo-700 truncate">{selected.subscriptionName}</p>
+                <div className="mt-2 rounded-xl bg-violet-50 border border-violet-100 px-3 py-2.5">
+                  <p className="text-xs text-violet-400 mb-0.5">Gekoppeld abonnement</p>
+                  <p className="text-sm font-medium text-violet-700 truncate">{selected.subscriptionName}</p>
                 </div>
               )}
               <div className="mt-4 flex flex-wrap gap-2">
@@ -1297,7 +1297,7 @@ function SubscriptionsTab() {
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Zoek abonnementen…"
-              className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-200 bg-white focus:outline-none focus:border-indigo-400"
+              className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-200 bg-white focus:outline-none focus:border-violet-400"
             />
           </div>
           <Button size="sm" onClick={() => { setEditTarget(null); setShowModal(true) }}>
@@ -1320,7 +1320,7 @@ function SubscriptionsTab() {
                   <li key={s.id}>
                     <button
                       onClick={() => { setSelected(s); setConfirmDelete(false) }}
-                      className={`w-full text-left px-4 py-3.5 transition-colors hover:bg-slate-100 ${selected?.id === s.id ? 'bg-indigo-50 border-l-2 border-indigo-500' : ''}`}
+                      className={`w-full text-left px-4 py-3.5 transition-colors hover:bg-slate-100 ${selected?.id === s.id ? 'bg-violet-50 border-l-2 border-violet-500' : ''}`}
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
@@ -1338,7 +1338,7 @@ function SubscriptionsTab() {
                         <p className="mt-1 text-xs text-slate-400 truncate">{s.assignedToName}</p>
                       )}
                       {s.simCardNumber && (
-                        <p className="mt-0.5 text-xs text-indigo-500 truncate">Simkaart: {s.simPhoneNumber || s.simCardNumber}</p>
+                        <p className="mt-0.5 text-xs text-violet-500 truncate">Simkaart: {s.simPhoneNumber || s.simCardNumber}</p>
                       )}
                     </button>
                   </li>
@@ -1379,9 +1379,9 @@ function SubscriptionsTab() {
                 ))}
               </div>
               {selected.simCardNumber && (
-                <div className="mt-3 rounded-xl bg-indigo-50 border border-indigo-100 px-3 py-2.5">
-                  <p className="text-xs text-indigo-400 mb-0.5">Gekoppelde simkaart</p>
-                  <p className="text-sm font-medium text-indigo-700 truncate">
+                <div className="mt-3 rounded-xl bg-violet-50 border border-violet-100 px-3 py-2.5">
+                  <p className="text-xs text-violet-400 mb-0.5">Gekoppelde simkaart</p>
+                  <p className="text-sm font-medium text-violet-700 truncate">
                     {selected.simCardNumber}
                     {selected.simPhoneNumber ? ` · ${selected.simPhoneNumber}` : ''}
                   </p>
@@ -1467,7 +1467,7 @@ function EmployeeListView({ teammates, loading, search, currentUserId, departmen
             value={search}
             onChange={e => onSearch(e.target.value)}
             placeholder="Zoek op naam, e-mail of afdeling…"
-            className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-200 bg-white focus:outline-none focus:border-indigo-400"
+            className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-200 bg-white focus:outline-none focus:border-violet-400"
           />
         </div>
         <span className="text-xs text-slate-400 flex-1">{filtered.length} medewerker{filtered.length !== 1 ? 's' : ''}</span>
@@ -1505,7 +1505,7 @@ function EmployeeListView({ teammates, loading, search, currentUserId, departmen
                           {u.firstName} {u.lastName}
                         </p>
                         {u.id === currentUserId && (
-                          <span className="text-xs px-1.5 py-0.5 bg-indigo-100 text-indigo-600 rounded-full font-medium">Jij</span>
+                          <span className="text-xs px-1.5 py-0.5 bg-violet-100 text-violet-600 rounded-full font-medium">Jij</span>
                         )}
                       </div>
                       <p className="text-xs text-slate-400 truncate">{u.email || '—'}</p>
@@ -1641,7 +1641,7 @@ function SettingsView({ teammates, tenantName, onAddUser }: {
           <div className="flex items-center justify-between py-3 border-b border-slate-100 dark:border-slate-700 last:border-0">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center flex-shrink-0">
-                {darkMode ? <Moon size={15} className="text-indigo-400" /> : <Sun size={15} className="text-amber-500" />}
+                {darkMode ? <Moon size={15} className="text-violet-400" /> : <Sun size={15} className="text-amber-500" />}
               </div>
               <div>
                 <p className="text-sm font-medium text-slate-800">Donkere modus</p>
@@ -1651,7 +1651,7 @@ function SettingsView({ teammates, tenantName, onAddUser }: {
             <button
               onClick={toggleDarkMode}
               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors flex-shrink-0 ${
-                darkMode ? 'bg-indigo-600' : 'bg-slate-200 dark:bg-slate-600'
+                darkMode ? 'bg-violet-600' : 'bg-slate-200 dark:bg-slate-600'
               }`}
             >
               <span className={`inline-block h-4 w-4 rounded-full bg-white shadow-sm transform transition-transform ${
@@ -1903,7 +1903,7 @@ function DepartmentsView() {
                 <div className="flex gap-1 flex-shrink-0">
                   <button
                     onClick={() => { setEditTarget(d); setShowModal(true) }}
-                    className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-violet-600 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors"
                     title="Bewerken"
                   >
                     <Pencil size={13} />
@@ -1945,7 +1945,7 @@ function DepartmentsView() {
               <button
                 onClick={() => openDetail(d.id)}
                 disabled={loadingDetail}
-                className="mt-auto w-full py-2 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 text-xs font-semibold hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-colors flex items-center justify-center gap-1.5"
+                className="mt-auto w-full py-2 rounded-xl bg-violet-50 dark:bg-violet-900/20 text-violet-600 dark:text-violet-400 text-xs font-semibold hover:bg-violet-100 dark:hover:bg-violet-900/40 transition-colors flex items-center justify-center gap-1.5"
               >
                 {loadingDetail ? 'Laden…' : 'Bekijken →'}
               </button>
@@ -2054,14 +2054,14 @@ export default function ClientPortal() {
   const employeesActive = view === 'employees' || view === 'employee-detail'
 
   return (
-    <div className="flex h-screen overflow-hidden bg-slate-50 dark:bg-slate-950">
+    <div className="flex h-screen overflow-hidden bg-slate-100 dark:bg-slate-950">
 
       {/* ── Sidebar ─────────────────────────────────────────────────────── */}
       <aside className="w-56 bg-slate-900 dark:bg-slate-950 flex flex-col flex-shrink-0">
 
         <div className="px-4 py-4 border-b border-slate-800 flex-shrink-0">
           <div className="flex items-center gap-2">
-            <Layers size={16} className="text-indigo-400 flex-shrink-0" />
+            <Layers size={16} className="text-violet-400 flex-shrink-0" />
             <span className="font-bold text-white text-sm truncate">{tenantName}</span>
           </div>
           <p className="text-xs text-slate-500 mt-0.5 ml-6">Portaal</p>
@@ -2093,7 +2093,7 @@ export default function ClientPortal() {
           <NavItem icon={<Settings size={14} />} label="Instellingen" active={view === 'settings'} onClick={() => handleNavClick('settings')} />
           <NavItem icon={<HelpCircle size={14} />} label="Help" active={view === 'help'} onClick={() => handleNavClick('help')} />
           <div className="mt-2 px-3 flex items-center gap-2">
-            <div className="w-6 h-6 rounded-full bg-indigo-700 text-white text-xs font-bold flex items-center justify-center flex-shrink-0">
+            <div className="w-6 h-6 rounded-full bg-violet-700 text-white text-xs font-bold flex items-center justify-center flex-shrink-0">
               {(user?.email?.[0] ?? '').toUpperCase()}
             </div>
             <p className="text-xs text-slate-400 truncate flex-1">{user?.email}</p>

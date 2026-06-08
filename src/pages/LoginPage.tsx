@@ -48,9 +48,9 @@ const CSS = `
   }
   .rf-portal-input::placeholder { color: rgba(148,163,184,0.4); }
   .rf-portal-input:focus {
-    border-color: rgba(99,102,241,0.65) !important;
-    background: rgba(99,102,241,0.06) !important;
-    box-shadow: 0 0 0 3px rgba(99,102,241,0.13);
+    border-color: rgba(139,92,246,0.65) !important;
+    background: rgba(139,92,246,0.06) !important;
+    box-shadow: 0 0 0 3px rgba(139,92,246,0.13);
   }
   .rf-portal-input.rf-err {
     border-color: rgba(239,68,68,0.45) !important;
@@ -66,14 +66,14 @@ const CSS = `
     padding: 12px 20px;
     border: none;
     cursor: pointer;
-    background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+    background: linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%);
     color: #fff;
     font-size: 14px;
     font-weight: 600;
     font-family: 'DM Sans', system-ui, sans-serif;
     border-radius: 10px;
     letter-spacing: 0.01em;
-    box-shadow: 0 4px 16px rgba(99,102,241,0.32);
+    box-shadow: 0 4px 16px rgba(139,92,246,0.32);
     transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
     display: flex;
     align-items: center;
@@ -82,7 +82,7 @@ const CSS = `
   }
   .rf-portal-btn:hover:not(:disabled) {
     transform: translateY(-1px);
-    box-shadow: 0 6px 22px rgba(99,102,241,0.44);
+    box-shadow: 0 6px 22px rgba(139,92,246,0.44);
   }
   .rf-portal-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
@@ -96,8 +96,8 @@ const CSS = `
     margin-bottom: 6px;
   }
 
-  .rf-portal-link { color: #818cf8; text-decoration: none; font-weight: 600; transition: color 0.15s; }
-  .rf-portal-link:hover { color: #a5b4fc; }
+  .rf-portal-link { color: #a78bfa; text-decoration: none; font-weight: 600; transition: color 0.15s; }
+  .rf-portal-link:hover { color: #c4b5fd; }
 
   .rf-portal-spin { animation: rfSpin 0.75s linear infinite; }
 `

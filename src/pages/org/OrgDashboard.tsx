@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from 'react'
+﻿import { useEffect, useState, useCallback, useRef } from 'react'
 import {
   Briefcase, Users, Plus, LogOut,
   Building2, Search, UserPlus, User, ExternalLink, Loader2,
@@ -43,7 +43,7 @@ function StatCard({ icon, label, value, color }: {
 function Avatar({ first, last, size = 8 }: { first: string; last: string; size?: number }) {
   const s = `w-${size} h-${size}`
   return (
-    <div className={`${s} rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-xs font-bold flex-shrink-0`}>
+    <div className={`${s} rounded-full bg-violet-100 text-violet-700 flex items-center justify-center text-xs font-bold flex-shrink-0`}>
       {(first[0] ?? '').toUpperCase()}{(last[0] ?? '').toUpperCase()}
     </div>
   )
@@ -75,7 +75,7 @@ function OrgEditUserModal({ user, clientId, onClose, onSaved }: {
   const [error, setError]         = useState<string | null>(null)
   const overlayRef                = useRef<HTMLDivElement>(null)
 
-  const field = 'w-full px-3 py-2 rounded-lg border border-slate-300 text-sm text-slate-900 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-colors'
+  const field = 'w-full px-3 py-2 rounded-lg border border-slate-300 text-sm text-slate-900 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-colors'
 
   const handleSave = async () => {
     if (!firstName.trim() || !lastName.trim()) { setError('Voor- en achternaam zijn verplicht.'); return }
@@ -135,7 +135,7 @@ function OrgEditUserModal({ user, clientId, onClose, onSaved }: {
           <button
             onClick={handleSave}
             disabled={saving}
-            className="flex-1 px-4 py-2 rounded-xl bg-indigo-600 text-sm font-medium text-white hover:bg-indigo-700 transition-colors disabled:opacity-60"
+            className="flex-1 px-4 py-2 rounded-xl bg-violet-600 text-sm font-medium text-white hover:bg-violet-700 transition-colors disabled:opacity-60"
           >
             {saving ? 'Opslaan…' : 'Opslaan'}
           </button>
@@ -181,7 +181,7 @@ function OrgPortalUserPanel({ user, clientId, onUserUpdated }: {
 
           {/* Avatar + naam + email + badge */}
           <div className="flex items-start gap-4">
-            <div className="w-16 h-16 rounded-2xl bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-2xl flex-shrink-0 select-none">
+            <div className="w-16 h-16 rounded-2xl bg-violet-100 text-violet-700 flex items-center justify-center font-bold text-2xl flex-shrink-0 select-none">
               {(user.firstName[0] ?? '').toUpperCase()}{(user.lastName[0] ?? '').toUpperCase()}
             </div>
             <div className="flex-1 min-w-0">
@@ -361,11 +361,11 @@ export default function OrgDashboard() {
   const activeClients = clients.filter(c => c.isActive).length
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
+    <div className="min-h-screen bg-slate-100 flex flex-col">
       {/* Header */}
       <header className="bg-slate-900 text-white px-6 py-3.5 flex items-center justify-between shadow-md flex-shrink-0">
         <div className="flex items-center gap-2.5">
-          <Building2 size={20} className="text-indigo-400" />
+          <Building2 size={20} className="text-violet-400" />
           <span className="font-bold text-base">{user?.tenantName ?? 'Organisatie'}</span>
           <span className="text-slate-500 text-xs ml-1.5 uppercase tracking-wider">Admin</span>
         </div>
@@ -380,7 +380,7 @@ export default function OrgDashboard() {
       <div className="flex-1 max-w-7xl w-full mx-auto px-6 py-5 flex flex-col gap-5">
         {/* Stats */}
         <div className="grid grid-cols-3 gap-4">
-          <StatCard icon={<Briefcase size={18} className="text-indigo-600" />} label="Totaal clients" value={clients.length} color="bg-indigo-50" />
+          <StatCard icon={<Briefcase size={18} className="text-violet-600" />} label="Totaal clients" value={clients.length} color="bg-violet-50" />
           <StatCard icon={<Briefcase size={18} className="text-emerald-600" />} label="Actieve clients" value={activeClients} color="bg-emerald-50" />
           <StatCard icon={<Users size={18} className="text-violet-600" />} label="Totaal gebruikers" value={totalUsers} color="bg-violet-50" />
         </div>
@@ -395,7 +395,7 @@ export default function OrgDashboard() {
                 <Search size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input value={clientSearch} onChange={e => setClientSearch(e.target.value)}
                   placeholder="Zoek client…"
-                  className="w-full pl-7 pr-2 py-1.5 text-xs rounded-lg border border-slate-200 bg-white focus:outline-none focus:border-indigo-400" />
+                  className="w-full pl-7 pr-2 py-1.5 text-xs rounded-lg border border-slate-200 bg-white focus:outline-none focus:border-violet-400" />
               </div>
               <Button size="sm" onClick={() => setShowAddClient(true)} title="Client toevoegen">
                 <Plus size={13} />
@@ -417,7 +417,7 @@ export default function OrgDashboard() {
                             <button
                               onClick={() => handleSelectClient(c)}
                               className={`w-full text-left px-3 py-2.5 hover:bg-slate-100 transition-colors flex items-center justify-between gap-2 ${
-                                selectedClient?.id === c.id ? 'bg-indigo-50 border-l-2 border-indigo-500' : ''}`}
+                                selectedClient?.id === c.id ? 'bg-violet-50 border-l-2 border-violet-500' : ''}`}
                             >
                               <div className="min-w-0 flex-1">
                                 <p className="text-xs font-semibold text-slate-800 truncate">{c.name}</p>
@@ -428,7 +428,7 @@ export default function OrgDashboard() {
                                   onClick={(e) => { e.stopPropagation(); handleSwitchToClient(c.id) }}
                                   disabled={switchingClientId === c.id}
                                   title="Beheer portaal"
-                                  className="p-1 rounded hover:bg-indigo-100 text-indigo-400 hover:text-indigo-600 transition-colors disabled:opacity-50"
+                                  className="p-1 rounded hover:bg-violet-100 text-violet-400 hover:text-violet-600 transition-colors disabled:opacity-50"
                                 >
                                   {switchingClientId === c.id
                                     ? <Loader2 size={13} className="animate-spin" />
@@ -475,7 +475,7 @@ export default function OrgDashboard() {
                       <Search size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400" />
                       <input value={userSearch} onChange={e => setUserSearch(e.target.value)}
                         placeholder="Zoek gebruiker…"
-                        className="w-full pl-7 pr-2 py-1.5 text-xs rounded-lg border border-slate-200 bg-white focus:outline-none focus:border-indigo-400" />
+                        className="w-full pl-7 pr-2 py-1.5 text-xs rounded-lg border border-slate-200 bg-white focus:outline-none focus:border-violet-400" />
                     </div>
                     <Button size="sm" onClick={() => setShowAddUser(true)} title="Gebruiker toevoegen">
                       <UserPlus size={13} />
@@ -493,7 +493,7 @@ export default function OrgDashboard() {
                           ? <div className="p-4 text-center">
                               <User size={24} className="mx-auto mb-1 text-slate-200" />
                               <p className="text-xs text-slate-400">Geen portalgebruikers.</p>
-                              <button onClick={() => setShowAddUser(true)} className="mt-1 text-xs text-indigo-500 hover:underline">Toevoegen</button>
+                              <button onClick={() => setShowAddUser(true)} className="mt-1 text-xs text-violet-500 hover:underline">Toevoegen</button>
                             </div>
                           : <ul className="divide-y divide-slate-100">
                               {filteredUsers.map(u => (
@@ -501,7 +501,7 @@ export default function OrgDashboard() {
                                   <button
                                     onClick={() => handleSelectUser(u.id)}
                                     className={`w-full text-left px-3 py-2.5 hover:bg-slate-100 transition-colors ${
-                                      selectedUser?.id === u.id ? 'bg-indigo-50 border-l-2 border-indigo-500' : ''}`}
+                                      selectedUser?.id === u.id ? 'bg-violet-50 border-l-2 border-violet-500' : ''}`}
                                   >
                                     <div className="flex items-center gap-2">
                                       <Avatar first={u.firstName} last={u.lastName} size={7} />
@@ -583,7 +583,7 @@ export default function OrgDashboard() {
                   value={editName}
                   onChange={e => setEditName(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && handleRenameClient()}
-                  className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm text-slate-900 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                  className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm text-slate-900 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100"
                   autoFocus
                 />
               </div>
@@ -598,7 +598,7 @@ export default function OrgDashboard() {
               <button
                 onClick={handleRenameClient}
                 disabled={editSaving || !editName.trim()}
-                className="flex-1 px-4 py-2 rounded-xl bg-indigo-600 text-sm font-medium text-white hover:bg-indigo-700 transition-colors disabled:opacity-60"
+                className="flex-1 px-4 py-2 rounded-xl bg-violet-600 text-sm font-medium text-white hover:bg-violet-700 transition-colors disabled:opacity-60"
               >
                 {editSaving ? 'Opslaan…' : 'Opslaan'}
               </button>

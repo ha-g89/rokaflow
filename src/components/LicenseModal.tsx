@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+﻿import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -32,7 +32,7 @@ interface Props {
 }
 
 const field =
-  'w-full px-3 py-2 rounded-lg border border-slate-300 text-sm text-slate-900 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-colors'
+  'w-full px-3 py-2 rounded-lg border border-slate-300 text-sm text-slate-900 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-colors'
 
 function toDateInput(v: string | null | undefined) {
   if (!v) return ''
@@ -186,7 +186,7 @@ export function LicenseModal({ open, onClose, onSuccess, teammates, license }: P
 
         {/* IsActive */}
         <label className="flex items-center gap-2.5 cursor-pointer">
-          <input {...register('isActive')} type="checkbox" className="w-4 h-4 accent-indigo-600" />
+          <input {...register('isActive')} type="checkbox" className="w-4 h-4 accent-violet-600" />
           <span className="text-sm text-slate-700">Actief</span>
         </label>
 
@@ -198,7 +198,7 @@ export function LicenseModal({ open, onClose, onSuccess, teammates, license }: P
               <label className="block text-xs font-medium text-slate-600 mb-2">
                 Gebruikers toewijzen
                 {selectedIds.length > 0 && (
-                  <span className="ml-1.5 text-indigo-600">({selectedIds.length} geselecteerd)</span>
+                  <span className="ml-1.5 text-violet-600">({selectedIds.length} geselecteerd)</span>
                 )}
               </label>
 
@@ -209,9 +209,9 @@ export function LicenseModal({ open, onClose, onSuccess, teammates, license }: P
                     const u = teammates.find(t => t.id === id)
                     if (!u) return null
                     return (
-                      <span key={id} className="inline-flex items-center gap-1 text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full">
+                      <span key={id} className="inline-flex items-center gap-1 text-xs bg-violet-100 text-violet-700 px-2 py-0.5 rounded-full">
                         {u.firstName} {u.lastName}
-                        <button type="button" onClick={() => toggleUser(id)} className="hover:text-indigo-900">
+                        <button type="button" onClick={() => toggleUser(id)} className="hover:text-violet-900">
                           <X size={11} />
                         </button>
                       </span>
@@ -228,7 +228,7 @@ export function LicenseModal({ open, onClose, onSuccess, teammates, license }: P
                   value={userSearch}
                   onChange={e => setUserSearch(e.target.value)}
                   placeholder="Zoek medewerker…"
-                  className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-slate-200 bg-slate-50 focus:outline-none focus:border-indigo-400"
+                  className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-slate-200 bg-slate-50 focus:outline-none focus:border-violet-400"
                 />
               </div>
 
@@ -243,7 +243,7 @@ export function LicenseModal({ open, onClose, onSuccess, teammates, license }: P
                         type="checkbox"
                         checked={selectedIds.includes(u.id)}
                         onChange={() => toggleUser(u.id)}
-                        className="w-3.5 h-3.5 accent-indigo-600 flex-shrink-0"
+                        className="w-3.5 h-3.5 accent-violet-600 flex-shrink-0"
                       />
                       <div className="min-w-0">
                         <p className="text-xs font-medium text-slate-800 truncate">

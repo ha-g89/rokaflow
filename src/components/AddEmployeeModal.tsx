@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+﻿import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -16,7 +16,7 @@ const schema = z.object({
   departmentId: z.string().min(1, 'Afdeling is verplicht'),
   managerId: z.string(),
   jobTitle: z.string().min(1, 'Functie is verplicht').max(200),
-  phone: z.string().min(1, 'Telefoon is verplicht').max(100),
+  phone: z.string().max(100),
   status: z.string(),
   contractType: z.string().min(1, 'Contracttype is verplicht'),
   startDate: z.string().min(1, 'Startdatum is verplicht'),
@@ -33,7 +33,7 @@ interface Props {
 }
 
 const field =
-  'w-full px-3 py-2 rounded-lg border border-slate-300 text-sm text-slate-900 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-colors'
+  'w-full px-3 py-2 rounded-lg border border-slate-300 text-sm text-slate-900 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-colors'
 
 const STATUS_OPTIONS = [
   { value: '0', label: 'In dienst' },
@@ -159,9 +159,8 @@ export function AddEmployeeModal({ open, onClose, onSuccess, departments = [], m
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Telefoon *</label>
-            <input {...register('phone')} className={field} placeholder="+31 6 12345678" />
-            {errors.phone && <p className="mt-1 text-xs text-red-600">{errors.phone.message}</p>}
+            <label className="block text-xs font-medium text-slate-600 mb-1">Telefoon</label>
+            <input {...register('phone')} className={field} placeholder="+31 6 12345678 (optioneel)" />
           </div>
           <div>
             <label className="block text-xs font-medium text-slate-600 mb-1">Startdatum *</label>

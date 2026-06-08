@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+﻿import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -137,7 +137,7 @@ export function DepartmentModal({ open, onClose, onSuccess, editTarget }: Props)
             <input
               {...register('name')}
               placeholder="bijv. IT, Sales, HR"
-              className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-indigo-400"
+              className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-violet-400"
             />
             {errors.name && <p className="mt-1 text-xs text-red-500">{errors.name.message}</p>}
           </div>
@@ -151,7 +151,7 @@ export function DepartmentModal({ open, onClose, onSuccess, editTarget }: Props)
               {...register('description')}
               rows={2}
               placeholder="Korte omschrijving van deze afdeling…"
-              className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-indigo-400 resize-none"
+              className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-violet-400 resize-none"
             />
             {errors.description && <p className="mt-1 text-xs text-red-500">{errors.description.message}</p>}
           </div>
@@ -163,7 +163,7 @@ export function DepartmentModal({ open, onClose, onSuccess, editTarget }: Props)
             </label>
             <select
               {...register('managerUserId')}
-              className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-indigo-400"
+              className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-violet-400"
             >
               <option value="">— Geen manager —</option>
               {allUsers.map(u => (
@@ -184,7 +184,7 @@ export function DepartmentModal({ open, onClose, onSuccess, editTarget }: Props)
             {selectedMembers.length > 0 && (
               <div className="flex flex-wrap gap-1.5 mb-3">
                 {selectedMembers.map(m => (
-                  <span key={m.id} className="inline-flex items-center gap-1 px-2 py-1 bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 rounded-full text-xs font-medium">
+                  <span key={m.id} className="inline-flex items-center gap-1 px-2 py-1 bg-violet-100 dark:bg-violet-900/40 text-violet-700 dark:text-violet-300 rounded-full text-xs font-medium">
                     {m.firstName} {m.lastName}
                     <button type="button" onClick={() => removeMember(m.id)} className="hover:text-red-500">
                       <X size={11} />
@@ -201,7 +201,7 @@ export function DepartmentModal({ open, onClose, onSuccess, editTarget }: Props)
                 value={memberSearch}
                 onChange={e => setMemberSearch(e.target.value)}
                 placeholder="Zoek medewerker om toe te voegen…"
-                className="w-full pl-8 pr-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-indigo-400"
+                className="w-full pl-8 pr-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-violet-400"
               />
             </div>
 
@@ -212,9 +212,9 @@ export function DepartmentModal({ open, onClose, onSuccess, editTarget }: Props)
                     <button
                       type="button"
                       onClick={() => addMember(u)}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-left text-xs hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
+                      className="w-full flex items-center gap-2 px-3 py-2 text-left text-xs hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors"
                     >
-                      <UserPlus size={12} className="text-indigo-400 flex-shrink-0" />
+                      <UserPlus size={12} className="text-violet-400 flex-shrink-0" />
                       <span className="text-slate-800 dark:text-slate-200 font-medium">{u.firstName} {u.lastName}</span>
                       {u.jobTitle && <span className="text-slate-400">— {u.jobTitle}</span>}
                     </button>
