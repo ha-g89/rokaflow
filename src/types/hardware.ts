@@ -49,6 +49,6 @@ export const HARDWARE_STATUS_LABEL: Record<string, string> = {
 export const HARDWARE_STATUS_TONE: Record<string, string> = {
   InStock: 'bg-blue-100 text-blue-700',
   InUse: 'bg-emerald-100 text-emerald-700',
-  Decommissioned: 'bg-slate-100 text-slate-600',
+  Decommissioned: 'bg-red-100 text-red-700',
   UnderRepair: 'bg-orange-100 text-orange-700',
 }
