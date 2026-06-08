@@ -1,5 +1,6 @@
 ﻿import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import LoginPage from '@/pages/LoginPage'
+import LandingPage from '@/pages/LandingPage'
 import SuperUserLoginPage from '@/pages/SuperUserLoginPage'
 import SuperUserDashboard from '@/pages/superuser/SuperUserDashboard'
 import OrgDashboard from '@/pages/org/OrgDashboard'
@@ -70,8 +71,8 @@ export default function App() {
           }
         />
 
-        {/* Fallback */}
-        <Route path="/" element={<RootRedirect />} />
+        {/* Landing & fallback */}
+        <Route path="/" element={<LandingPage />} />
         <Route path="*" element={<RootRedirect />} />
       </Routes>
     </BrowserRouter>
