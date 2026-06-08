@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -8,19 +8,20 @@ import api from '@/lib/axios'
 import type { ClientUserListItem } from '@/types/clientUser'
 import type { HardwareAssetListItem } from '@/types/hardware'
 import { HARDWARE_TYPE_OPTIONS, HARDWARE_STATUS_OPTIONS } from '@/types/hardware'
+import type { LocationListItem } from '@/types/location'
 
 const schema = z.object({
-  name: z.string().min(1, 'Naam is verplicht').max(256),
-  brand: z.string().max(200),
-  type: z.string(),
-  assetNumber: z.string().max(100),
-  serialNumber: z.string().max(100),
-  status: z.string(),
-  location: z.string().max(200),
-  purchaseValue: z.string(),
+  name:             z.string().min(1, 'Naam is verplicht').max(256),
+  brand:            z.string().max(200),
+  type:             z.string(),
+  assetNumber:      z.string().max(100),
+  serialNumber:     z.string().max(100),
+  status:           z.string(),
+  locationId:       z.string(),
+  purchaseValue:    z.string(),
   assignedToUserId: z.string(),
-  issuedAt: z.string(),
-  returnedAt: z.string(),
+  issuedAt:         z.string(),
+  returnedAt:       z.string(),
 })
 
 type FormValues = z.infer<typeof schema>
@@ -30,6 +31,7 @@ interface Props {
   onClose: () => void
   onSuccess: () => void
   teammates: ClientUserListItem[]
+  locations: LocationListItem[]
   asset?: HardwareAssetListItem | null
 }
 
@@ -55,7 +57,7 @@ function statusNameToValue(statusName: string): number {
   return map[statusName] ?? 0
 }
 
-export function HardwareModal({ open, onClose, onSuccess, teammates, asset }: Props) {
+export function HardwareModal({ open, onClose, onSuccess, teammates, locations, asset }: Props) {
   const [apiError, setApiError] = useState<string | null>(null)
   const isEdit = !!asset
 
@@ -70,22 +72,22 @@ export function HardwareModal({ open, onClose, onSuccess, teammates, asset }: Pr
     if (open) {
       if (asset) {
         reset({
-          name: asset.name,
-          brand: asset.brand,
-          type: String(typeNameToValue(asset.type)),
-          assetNumber: asset.assetNumber,
-          serialNumber: asset.serialNumber,
-          status: String(statusNameToValue(asset.status)),
-          location: asset.location,
-          purchaseValue: asset.purchaseValue != null ? String(asset.purchaseValue) : '',
+          name:             asset.name,
+          brand:            asset.brand,
+          type:             String(typeNameToValue(asset.type)),
+          assetNumber:      asset.assetNumber,
+          serialNumber:     asset.serialNumber,
+          status:           String(statusNameToValue(asset.status)),
+          locationId:       asset.locationId ?? '',
+          purchaseValue:    asset.purchaseValue != null ? String(asset.purchaseValue) : '',
           assignedToUserId: asset.assignedToUserId ?? '',
-          issuedAt: toDateInput(asset.issuedAt),
-          returnedAt: toDateInput(asset.returnedAt),
+          issuedAt:         toDateInput(asset.issuedAt),
+          returnedAt:       toDateInput(asset.returnedAt),
         })
       } else {
         reset({
           name: '', brand: '', type: '0', assetNumber: '', serialNumber: '',
-          status: '0', location: '', purchaseValue: '',
+          status: '0', locationId: '', purchaseValue: '',
           assignedToUserId: '', issuedAt: '', returnedAt: '',
         })
       }
@@ -99,17 +101,18 @@ export function HardwareModal({ open, onClose, onSuccess, teammates, asset }: Pr
     setApiError(null)
     try {
       const payload = {
-        name: values.name,
-        brand: values.brand || '',
-        type: parseInt(values.type, 10),
-        assetNumber: values.assetNumber || '',
-        serialNumber: values.serialNumber || '',
-        status: parseInt(values.status, 10),
-        location: values.location || '',
-        purchaseValue: values.purchaseValue !== '' ? parseFloat(values.purchaseValue) : null,
+        name:             values.name,
+        brand:            values.brand || '',
+        type:             parseInt(values.type, 10),
+        assetNumber:      values.assetNumber || '',
+        serialNumber:     values.serialNumber || '',
+        status:           parseInt(values.status, 10),
+        location:         '',
+        locationId:       values.locationId || null,
+        purchaseValue:    values.purchaseValue !== '' ? parseFloat(values.purchaseValue) : null,
         assignedToUserId: values.assignedToUserId || null,
-        issuedAt: values.issuedAt ? new Date(values.issuedAt).toISOString() : null,
-        returnedAt: values.returnedAt ? new Date(values.returnedAt).toISOString() : null,
+        issuedAt:         values.issuedAt ? new Date(values.issuedAt).toISOString() : null,
+        returnedAt:       values.returnedAt ? new Date(values.returnedAt).toISOString() : null,
       }
 
       if (isEdit) {
@@ -181,7 +184,12 @@ export function HardwareModal({ open, onClose, onSuccess, teammates, asset }: Pr
           </div>
           <div>
             <label className="block text-xs font-medium text-slate-600 mb-1">Locatie</label>
-            <input {...register('location')} className={field} placeholder="Kantoor Amsterdam" />
+            <select {...register('locationId')} className={field}>
+              <option value="">— Geen locatie —</option>
+              {locations.map(l => (
+                <option key={l.id} value={l.id}>{l.name}{l.city ? ` · ${l.city}` : ''}</option>
+              ))}
+            </select>
           </div>
         </div>
 

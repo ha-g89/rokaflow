@@ -24,6 +24,7 @@ import { PhoneModal } from '@/components/PhoneModal'
 import { SimCardModal } from '@/components/SimCardModal'
 import { SubscriptionModal } from '@/components/SubscriptionModal'
 import { DepartmentModal } from '@/components/DepartmentModal'
+import { LocationModal } from '@/components/LocationModal'
 import type { ClientUserListItem, ClientUserDetailResponse } from '@/types/clientUser'
 import { STATUS_LABEL, STATUS_TONE } from '@/types/clientUser'
 import type { HardwareAssetListItem } from '@/types/hardware'
@@ -37,6 +38,7 @@ import { SIM_STATUS_LABEL, SIM_STATUS_TONE, SIM_TYPE_LABEL } from '@/types/simca
 import type { SubscriptionListItem } from '@/types/subscription'
 import { SUB_STATUS_LABEL, SUB_STATUS_TONE, SUB_TYPE_LABEL } from '@/types/subscription'
 import type { DepartmentListItem, DepartmentDetailResponse } from '@/types/department'
+import type { LocationListItem } from '@/types/location'
 import logo from '@/assets/RokaFlow_icon_dark_transparent.png'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -556,6 +558,7 @@ function HardwareDetailPanel({ asset, onEdit, onDelete, historyKey }: {
 
 function HardwareView({ teammates }: { teammates: ClientUserListItem[] }) {
   const [assets, setAssets] = useState<HardwareAssetListItem[]>([])
+  const [locations, setLocations] = useState<LocationListItem[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState<HardwareAssetListItem | null>(null)
@@ -565,8 +568,12 @@ function HardwareView({ teammates }: { teammates: ClientUserListItem[] }) {
 
   const fetchAssets = useCallback(async () => {
     try {
-      const { data } = await api.get<HardwareAssetListItem[]>('/portal/hardware')
-      setAssets(data)
+      const [assetsRes, locationsRes] = await Promise.all([
+        api.get<HardwareAssetListItem[]>('/portal/hardware'),
+        api.get<LocationListItem[]>('/portal/locations'),
+      ])
+      setAssets(assetsRes.data)
+      setLocations(locationsRes.data)
     } finally {
       setLoading(false)
     }
@@ -693,6 +700,7 @@ function HardwareView({ teammates }: { teammates: ClientUserListItem[] }) {
         onClose={() => setShowModal(false)}
         onSuccess={handleSaved}
         teammates={teammates}
+        locations={locations}
         asset={editTarget}
       />
     </div>
@@ -2170,6 +2178,121 @@ function SettingsView({ teammates, tenantName, onAddUser }: {
   )
 }
 
+// ── Locations view ────────────────────────────────────────────────────────────
+
+function LocationsView() {
+  const [locations, setLocations] = useState<LocationListItem[]>([])
+  const [loading, setLoading]     = useState(true)
+  const [showModal, setShowModal] = useState(false)
+  const [editTarget, setEditTarget] = useState<LocationListItem | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+
+  const fetchLocations = async () => {
+    setLoading(true)
+    try {
+      const { data } = await api.get<LocationListItem[]>('/portal/locations')
+      setLocations(data)
+    } finally { setLoading(false) }
+  }
+
+  useEffect(() => { fetchLocations() }, [])
+
+  const handleDelete = async (id: string) => {
+    if (!window.confirm('Locatie verwijderen? Hardware die aan deze locatie is gekoppeld wordt losgekoppeld.')) return
+    setDeletingId(id)
+    try {
+      await api.delete(`/portal/locations/${id}`)
+      setLocations(prev => prev.filter(l => l.id !== id))
+    } catch {
+    } finally { setDeletingId(null) }
+  }
+
+  return (
+    <div className="flex flex-col gap-5 h-full">
+      <div className="flex items-center justify-between flex-shrink-0">
+        <p className="text-xs text-slate-500">{locations.length} locatie{locations.length !== 1 ? 's' : ''}</p>
+        <Button size="sm" onClick={() => { setEditTarget(null); setShowModal(true) }}>
+          <Plus size={13} /> Locatie toevoegen
+        </Button>
+      </div>
+
+      {/* Cards */}
+      {loading ? (
+        <div className="flex-1 flex items-center justify-center text-sm text-slate-400">Laden…</div>
+      ) : locations.length === 0 ? (
+        <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center">
+          <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center">
+            <MapPin size={28} className="text-slate-300" />
+          </div>
+          <p className="text-sm font-medium text-slate-600">Nog geen locaties</p>
+          <p className="text-xs text-slate-400">Voeg een locatie toe om hardware aan te koppelen.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 overflow-y-auto pb-2">
+          {locations.map(loc => (
+            <div
+              key={loc.id}
+              className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-violet-200 transition-all duration-200 flex flex-col overflow-hidden group"
+            >
+              <div className="p-5 flex flex-col gap-3 flex-1">
+                {/* Name + hardware count */}
+                <div className="flex items-start justify-between gap-2">
+                  <h3 className="font-semibold text-slate-900 text-sm leading-tight">{loc.name}</h3>
+                  <span className="flex-shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-violet-50 text-violet-700 text-xs font-medium border border-violet-100">
+                    <Laptop size={11} />
+                    {loc.hardwareCount}
+                  </span>
+                </div>
+
+                {/* Address info */}
+                <div className="flex flex-col gap-1 flex-1">
+                  {loc.address && (
+                    <p className="text-xs text-slate-500 leading-relaxed">{loc.address}</p>
+                  )}
+                  <p className="text-xs text-slate-600 font-medium">
+                    {[loc.postalCode, loc.city].filter(Boolean).join('  ')}
+                    {loc.province ? <span className="text-slate-400 font-normal"> · {loc.province}</span> : null}
+                  </p>
+                  {loc.country && loc.country !== 'Nederland' && (
+                    <p className="text-xs text-slate-400">{loc.country}</p>
+                  )}
+                  {loc.phone && (
+                    <p className="text-xs text-slate-500 mt-1">{loc.phone}</p>
+                  )}
+                </div>
+
+                {/* Actions */}
+                <div className="flex items-center gap-2 pt-2 border-t border-slate-100">
+                  <button
+                    onClick={() => { setEditTarget(loc); setShowModal(true) }}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-50 hover:text-violet-600 transition-colors border border-slate-200"
+                  >
+                    <Pencil size={12} /> Wijzigen
+                  </button>
+                  <button
+                    onClick={() => handleDelete(loc.id)}
+                    disabled={deletingId === loc.id}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-medium text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors border border-red-100 disabled:opacity-40"
+                  >
+                    <Trash2 size={12} /> {deletingId === loc.id ? '…' : 'Verwijderen'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <LocationModal
+        open={showModal}
+        onClose={() => setShowModal(false)}
+        onSuccess={() => { setShowModal(false); fetchLocations() }}
+        location={editTarget}
+      />
+    </div>
+  )
+}
+
 // ── Departments view ──────────────────────────────────────────────────────────
 
 function DepartmentsView() {
@@ -2537,17 +2660,25 @@ export default function ClientPortal() {
   const employeesActive = view === 'employees' || view === 'employee-detail'
 
   return (
-    <div className="flex h-screen overflow-hidden bg-slate-100 dark:bg-slate-950">
+    <div className="flex flex-col h-screen overflow-hidden bg-slate-100 dark:bg-slate-950">
+
+      {/* ── Shared top bar ──────────────────────────────────────────────── */}
+      <div className="flex flex-shrink-0 h-16">
+        <div className="w-56 bg-slate-900 dark:bg-slate-950 px-4 flex flex-col justify-center flex-shrink-0 border-b border-slate-800">
+          <span className="font-bold text-white text-sm truncate">{tenantName}</span>
+          <p className="text-xs text-slate-500 mt-0.5">Portaal</p>
+        </div>
+        <div className="flex-1 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-6 flex items-center justify-between">
+          <h1 className="text-sm font-semibold text-slate-800 dark:text-slate-100">{VIEW_TITLES[view]}</h1>
+          <img src={logo} alt="RokaFlow" className="h-9 object-contain select-none opacity-80" />
+        </div>
+      </div>
+
+      {/* ── Body ────────────────────────────────────────────────────────── */}
+      <div className="flex flex-1 overflow-hidden">
 
       {/* ── Sidebar ─────────────────────────────────────────────────────── */}
       <aside className="w-56 bg-slate-900 dark:bg-slate-950 flex flex-col flex-shrink-0">
-
-        <div className="px-4 py-4 border-b border-slate-800 flex-shrink-0">
-          <div className="flex items-center gap-2">
-            <span className="font-bold text-white text-sm truncate">{tenantName}</span>
-          </div>
-          <p className="text-xs text-slate-500 mt-0.5">Portaal</p>
-        </div>
 
         <nav className="flex-1 px-2 py-3 overflow-y-auto space-y-1">
           <SectionLabel label="Medewerkers" />
@@ -2620,15 +2751,6 @@ export default function ClientPortal() {
           </div>
         )}
 
-        <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-6 py-3.5 flex-shrink-0 flex items-center justify-between">
-          <h1 className="text-sm font-semibold text-slate-800 dark:text-slate-100">{VIEW_TITLES[view]}</h1>
-          <img
-            src={logo}
-            alt="RokaFlow"
-            className="h-14 object-contain select-none opacity-80"
-          />
-        </div>
-
         <div className="flex-1 overflow-hidden p-6">
           {view === 'employees' && (
             <EmployeeListView
@@ -2680,14 +2802,18 @@ export default function ClientPortal() {
             <DepartmentsView />
           )}
 
-          {(view === 'locations' ||
-            view === 'software' ||
+          {view === 'locations' && (
+            <LocationsView />
+          )}
+
+          {(view === 'software' ||
             view === 'starter-checklist' || view === 'leaver-checklist' ||
             view === 'overviews' || view === 'history' ||
             view === 'contracts' || view === 'help') && (
             <PlaceholderView title={VIEW_TITLES[view]} />
           )}
         </div>
+      </div>
       </div>
 
       <AddUserModal

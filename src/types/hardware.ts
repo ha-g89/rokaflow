@@ -18,6 +18,8 @@ export interface HardwareAssetListItem {
   purchaseValue: number | null
   assignedToUserId: string | null
   assignedToName: string | null
+  locationId: string | null
+  locationName: string | null
   issuedAt: string | null
   returnedAt: string | null
 }
