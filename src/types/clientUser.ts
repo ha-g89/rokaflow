@@ -7,6 +7,7 @@ export interface ClientUserListItem {
   jobTitle: string
   status: 'InService' | 'LeavePlanned' | 'Left' | 'StartPlanned'
   startDate: string | null
+  leaveDate: string | null
   isActive: boolean
   isPortalUser: boolean
   hardwareCount: number

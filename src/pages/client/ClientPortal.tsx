@@ -1524,7 +1524,14 @@ function EmployeeListView({ teammates, loading, search, currentUserId, departmen
                   <p className="text-sm text-slate-500">{fmtDate(u.startDate)}</p>
 
                   {/* Status */}
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium w-fit ${STATUS_TONE[u.status]}`}>
+                  <span
+                    className={`text-xs px-2 py-0.5 rounded-full font-medium w-fit ${STATUS_TONE[u.status]}`}
+                    title={
+                      u.status === 'StartPlanned' && u.startDate ? `In dienst per ${fmtDate(u.startDate)}`
+                      : u.status === 'LeavePlanned' && u.leaveDate ? `Uit dienst per ${fmtDate(u.leaveDate)}`
+                      : undefined
+                    }
+                  >
                     {STATUS_LABEL[u.status]}
                   </span>
 
