@@ -36,6 +36,7 @@ import { SIM_STATUS_LABEL, SIM_STATUS_TONE, SIM_TYPE_LABEL } from '@/types/simca
 import type { SubscriptionListItem } from '@/types/subscription'
 import { SUB_STATUS_LABEL, SUB_STATUS_TONE, SUB_TYPE_LABEL } from '@/types/subscription'
 import type { DepartmentListItem, DepartmentDetailResponse } from '@/types/department'
+import logo from '@/assets/RokaFlow_icon_dark_transparent.png'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -183,17 +184,61 @@ function licenseAuditLabel(entry: AuditEntry): string {
   }
 }
 
+const LICENSE_FIELD_LABEL: Record<string, string> = {
+  Name: 'Naam', Vendor: 'Leverancier', Type: 'Type',
+  MaxUsers: 'Max. seats', StartsAt: 'Startdatum', ExpiresAt: 'Vervaldatum',
+  IsActive: 'Actief', Notes: 'Notities',
+}
+
+function licenseDescriptionFn(entry: AuditEntry): string {
+  const c = parseAuditChanges(entry.changes)
+  if (entry.action === 'Created') {
+    const parts: string[] = []
+    for (const [k, v] of Object.entries(c)) {
+      if (k.startsWith('_') || v === null || v === undefined || v === '') continue
+      const label = LICENSE_FIELD_LABEL[k] ?? k
+      const val = (k === 'StartsAt' || k === 'ExpiresAt') && typeof v === 'string'
+        ? new Date(v).toLocaleDateString('nl-NL', { day: '2-digit', month: '2-digit', year: 'numeric' })
+        : k === 'IsActive' ? (v ? 'Ja' : 'Nee') : String(v)
+      parts.push(`${label}: ${val}`)
+    }
+    return parts.join('\n')
+  }
+  if (entry.action === 'Updated') {
+    const parts: string[] = []
+    for (const [k, v] of Object.entries(c)) {
+      if (k.startsWith('_') || !Array.isArray(v)) continue
+      const label = LICENSE_FIELD_LABEL[k] ?? k
+      const fmt = (raw: unknown) => {
+        if (raw === null || raw === undefined) return '—'
+        if ((k === 'StartsAt' || k === 'ExpiresAt') && typeof raw === 'string')
+          return new Date(raw).toLocaleDateString('nl-NL', { day: '2-digit', month: '2-digit', year: 'numeric' })
+        if (k === 'IsActive') return raw ? 'Ja' : 'Nee'
+        return String(raw)
+      }
+      const oldStr = fmt(v[0])
+      const newStr = fmt(v[1])
+      if (oldStr !== newStr) parts.push(`${label}: ${oldStr} → ${newStr}`)
+    }
+    return parts.join('\n')
+  }
+  return ''
+}
+
 function fmtAuditDate(d: string) {
   return new Date(d).toLocaleDateString('nl-NL', { day: '2-digit', month: '2-digit', year: 'numeric' })
 }
 
-function HistoryBlock({ entityType, entityId, labelFn }: {
+function HistoryBlock({ entityType, entityId, labelFn, descriptionFn }: {
   entityType: string
   entityId: string
   labelFn: (entry: AuditEntry) => string
+  descriptionFn?: (entry: AuditEntry) => string
 }) {
   const [entries, setEntries] = useState<AuditEntry[]>([])
   const [loading, setLoading] = useState(true)
+  const [selectedEntry, setSelectedEntry] = useState<AuditEntry | null>(null)
+  const [showAllModal, setShowAllModal] = useState(false)
 
   useEffect(() => {
     setLoading(true)
@@ -204,25 +249,108 @@ function HistoryBlock({ entityType, entityId, labelFn }: {
   }, [entityType, entityId])
 
   return (
-    <div className="pt-4 border-t border-slate-100">
-      <p className="flex items-center gap-1.5 text-xs font-bold text-slate-600 uppercase tracking-wide mb-2">
-        <History size={12} /> Historie
-      </p>
-      {loading ? (
-        <p className="text-xs text-slate-400">Laden…</p>
-      ) : entries.length === 0 ? (
-        <p className="text-xs text-slate-400">Nog geen activiteiten.</p>
-      ) : (
-        <div className="space-y-1.5">
-          {entries.map(e => (
-            <div key={e.id} className="rounded-xl bg-slate-50 px-3 py-2">
-              <p className="text-xs font-medium text-slate-700">{labelFn(e)}</p>
-              <p className="text-xs text-slate-400">{fmtAuditDate(e.createdAt)}{e.userName ? ` • ${e.userName}` : ''}</p>
+    <>
+      <div className="pt-4 border-t border-slate-100">
+        <div className="flex items-center justify-between mb-2">
+          <p className="flex items-center gap-1.5 text-xs font-bold text-slate-600 uppercase tracking-wide">
+            <History size={12} /> Historie
+          </p>
+          {entries.length > 5 && (
+            <button onClick={() => setShowAllModal(true)} className="text-xs text-violet-600 hover:text-violet-800 font-medium">
+              Alles bekijken ({entries.length})
+            </button>
+          )}
+        </div>
+        {loading ? (
+          <p className="text-xs text-slate-400">Laden…</p>
+        ) : entries.length === 0 ? (
+          <p className="text-xs text-slate-400">Nog geen activiteiten.</p>
+        ) : (
+          <div className="space-y-1">
+            {entries.slice(0, 5).map(e => (
+              <button
+                key={e.id}
+                onClick={() => setSelectedEntry(e)}
+                className="w-full text-left rounded-lg bg-slate-50 hover:bg-violet-50 px-3 py-2 transition-colors cursor-pointer group"
+              >
+                <p className="text-xs font-medium text-slate-700 group-hover:text-violet-700">{labelFn(e)}</p>
+                <p className="text-xs text-slate-400">{fmtAuditDate(e.createdAt)}{e.userName ? ` · ${e.userName}` : ''}</p>
+              </button>
+            ))}
+            {entries.length > 5 && (
+              <button onClick={() => setShowAllModal(true)} className="w-full text-xs text-violet-600 hover:text-violet-800 font-medium py-1">
+                + {entries.length - 5} meer bekijken
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+
+      {showAllModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg flex flex-col max-h-[80vh]">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 flex-shrink-0">
+              <h2 className="text-base font-bold text-slate-900">Volledige geschiedenis</h2>
+              <button onClick={() => setShowAllModal(false)} className="text-slate-400 hover:text-slate-600">
+                <XCircle size={20} />
+              </button>
             </div>
-          ))}
+            <div className="overflow-y-auto flex-1 px-6 py-4">
+              <div className="space-y-2">
+                {entries.map(e => {
+                  const desc = descriptionFn?.(e) ?? ''
+                  return (
+                    <div key={e.id} className="rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
+                      <p className="text-sm font-semibold text-slate-800">{labelFn(e)}</p>
+                      {desc && (
+                        <div className="mt-1.5 space-y-0.5">
+                          {desc.split('\n').map((line, i) => (
+                            <p key={i} className="text-xs text-slate-600 leading-snug">{line}</p>
+                          ))}
+                        </div>
+                      )}
+                      <p className="text-xs text-slate-400 mt-1.5">
+                        {fmtAuditDate(e.createdAt)}{e.userName ? ` · ${e.userName}` : ''}
+                      </p>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
         </div>
       )}
-    </div>
+
+      {selectedEntry && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+              <h2 className="text-base font-bold text-slate-900">{labelFn(selectedEntry)}</h2>
+              <button onClick={() => setSelectedEntry(null)} className="text-slate-400 hover:text-slate-600">
+                <XCircle size={20} />
+              </button>
+            </div>
+            <div className="px-6 py-4">
+              {(() => {
+                const desc = descriptionFn?.(selectedEntry) ?? ''
+                return desc ? (
+                  <div className="space-y-1 mb-4">
+                    {desc.split('\n').map((line, i) => (
+                      <p key={i} className="text-sm text-slate-700 leading-snug">{line}</p>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-slate-400 mb-4">Geen aanvullende details.</p>
+                )
+              })()}
+              <p className="text-xs text-slate-400">
+                {fmtAuditDate(selectedEntry.createdAt)}{selectedEntry.userName ? ` · ${selectedEntry.userName}` : ''}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   )
 }
 
@@ -236,7 +364,8 @@ function HardwareDetailPanel({ asset, onEdit, onDelete }: {
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [history, setHistory] = useState<HardwareHistoryItem[]>([])
   const [historyLoading, setHistoryLoading] = useState(false)
-  const [showHistoryModal, setShowHistoryModal] = useState(false)
+  const [selectedEntry, setSelectedEntry] = useState<HardwareHistoryItem | null>(null)
+  const [showAllModal, setShowAllModal] = useState(false)
 
   useEffect(() => {
     setHistoryLoading(true)
@@ -286,7 +415,7 @@ function HardwareDetailPanel({ asset, onEdit, onDelete }: {
             <div className="flex items-center justify-between mb-2">
               <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Geschiedenis</p>
               {history.length > 5 && (
-                <button onClick={() => setShowHistoryModal(true)} className="text-xs text-violet-600 hover:text-violet-800 font-medium">
+                <button onClick={() => setShowAllModal(true)} className="text-xs text-violet-600 hover:text-violet-800 font-medium">
                   Alles bekijken ({history.length})
                 </button>
               )}
@@ -296,17 +425,21 @@ function HardwareDetailPanel({ asset, onEdit, onDelete }: {
             ) : history.length === 0 ? (
               <p className="text-xs text-slate-400">Geen geschiedenis beschikbaar.</p>
             ) : (
-              <div className="space-y-1.5">
+              <div className="space-y-1">
                 {history.slice(0, 5).map(h => (
-                  <div key={h.id} className="rounded-lg bg-slate-50 px-3 py-2">
-                    <p className="text-xs text-slate-700 leading-snug">{h.description}</p>
+                  <button
+                    key={h.id}
+                    onClick={() => setSelectedEntry(h)}
+                    className="w-full text-left rounded-lg bg-slate-50 hover:bg-violet-50 px-3 py-2 transition-colors cursor-pointer group"
+                  >
+                    <p className="text-xs font-medium text-slate-700 group-hover:text-violet-700">{h.summary}</p>
                     <p className="text-xs text-slate-400 mt-0.5">
                       {fmtDateTime(h.occurredAt)}{h.performedBy ? ` · ${h.performedBy}` : ''}
                     </p>
-                  </div>
+                  </button>
                 ))}
                 {history.length > 5 && (
-                  <button onClick={() => setShowHistoryModal(true)} className="w-full text-xs text-violet-600 hover:text-violet-800 font-medium py-1">
+                  <button onClick={() => setShowAllModal(true)} className="w-full text-xs text-violet-600 hover:text-violet-800 font-medium py-1">
                     + {history.length - 5} meer bekijken
                   </button>
                 )}
@@ -337,15 +470,15 @@ function HardwareDetailPanel({ asset, onEdit, onDelete }: {
         </CardContent>
       </Card>
 
-      {showHistoryModal && (
+      {showAllModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg flex flex-col max-h-[80vh]">
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 flex-shrink-0">
               <div>
-                <h2 className="text-base font-bold text-slate-900">Geschiedenis</h2>
+                <h2 className="text-base font-bold text-slate-900">Volledige geschiedenis</h2>
                 <p className="text-xs text-slate-400 mt-0.5">{asset.brand} {asset.name}</p>
               </div>
-              <button onClick={() => setShowHistoryModal(false)} className="text-slate-400 hover:text-slate-600">
+              <button onClick={() => setShowAllModal(false)} className="text-slate-400 hover:text-slate-600">
                 <XCircle size={20} />
               </button>
             </div>
@@ -353,13 +486,47 @@ function HardwareDetailPanel({ asset, onEdit, onDelete }: {
               <div className="space-y-2">
                 {history.map(h => (
                   <div key={h.id} className="rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
-                    <p className="text-sm text-slate-800 leading-snug">{h.description}</p>
-                    <p className="text-xs text-slate-400 mt-1">
+                    <p className="text-sm font-semibold text-slate-800">{h.summary}</p>
+                    {h.description && (
+                      <div className="mt-1.5 space-y-0.5">
+                        {h.description.split('\n').map((line, i) => (
+                          <p key={i} className="text-xs text-slate-600 leading-snug">{line}</p>
+                        ))}
+                      </div>
+                    )}
+                    <p className="text-xs text-slate-400 mt-1.5">
                       {fmtDateTime(h.occurredAt)}{h.performedBy ? ` · ${h.performedBy}` : ''}
                     </p>
                   </div>
                 ))}
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {selectedEntry && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+              <h2 className="text-base font-bold text-slate-900">{selectedEntry.summary}</h2>
+              <button onClick={() => setSelectedEntry(null)} className="text-slate-400 hover:text-slate-600">
+                <XCircle size={20} />
+              </button>
+            </div>
+            <div className="px-6 py-4">
+              {selectedEntry.description ? (
+                <div className="space-y-1 mb-4">
+                  {selectedEntry.description.split('\n').map((line, i) => (
+                    <p key={i} className="text-sm text-slate-700 leading-snug">{line}</p>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-slate-400 mb-4">Geen aanvullende details.</p>
+              )}
+              <p className="text-xs text-slate-400">
+                {fmtDateTime(selectedEntry.occurredAt)}{selectedEntry.performedBy ? ` · ${selectedEntry.performedBy}` : ''}
+              </p>
             </div>
           </div>
         </div>
@@ -657,7 +824,7 @@ function LicenseDetailPanel({ license, teammates, onEdit, onDelete, onAssign, on
           )}
         </div>
 
-        <HistoryBlock entityType="License" entityId={license.id} labelFn={licenseAuditLabel} />
+        <HistoryBlock entityType="License" entityId={license.id} labelFn={licenseAuditLabel} descriptionFn={licenseDescriptionFn} />
       </CardContent>
     </Card>
   )
@@ -935,7 +1102,8 @@ function PhonesTab({ teammates }: { teammates: ClientUserListItem[] }) {
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [history, setHistory] = useState<PhoneHistoryItem[]>([])
   const [historyLoading, setHistoryLoading] = useState(false)
-  const [showHistoryModal, setShowHistoryModal] = useState(false)
+  const [selectedEntry, setSelectedEntry] = useState<PhoneHistoryItem | null>(null)
+  const [showAllModal, setShowAllModal] = useState(false)
 
   const fetchPhones = useCallback(async () => {
     try {
@@ -1114,7 +1282,7 @@ function PhonesTab({ teammates }: { teammates: ClientUserListItem[] }) {
                     <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Geschiedenis</p>
                     {history.length > 5 && (
                       <button
-                        onClick={() => setShowHistoryModal(true)}
+                        onClick={() => setShowAllModal(true)}
                         className="text-xs text-violet-600 hover:text-violet-800 font-medium"
                       >
                         Alles bekijken ({history.length})
@@ -1126,18 +1294,22 @@ function PhonesTab({ teammates }: { teammates: ClientUserListItem[] }) {
                   ) : history.length === 0 ? (
                     <p className="text-xs text-slate-400">Geen geschiedenis beschikbaar.</p>
                   ) : (
-                    <div className="space-y-1.5">
+                    <div className="space-y-1">
                       {history.slice(0, 5).map(h => (
-                        <div key={h.id} className="rounded-lg bg-slate-50 px-3 py-2">
-                          <p className="text-xs text-slate-700 leading-snug">{h.description}</p>
+                        <button
+                          key={h.id}
+                          onClick={() => setSelectedEntry(h)}
+                          className="w-full text-left rounded-lg bg-slate-50 hover:bg-violet-50 px-3 py-2 transition-colors cursor-pointer group"
+                        >
+                          <p className="text-xs font-medium text-slate-700 group-hover:text-violet-700">{h.summary}</p>
                           <p className="text-xs text-slate-400 mt-0.5">
                             {fmtDateTime(h.occurredAt)}{h.performedBy ? ` · ${h.performedBy}` : ''}
                           </p>
-                        </div>
+                        </button>
                       ))}
                       {history.length > 5 && (
                         <button
-                          onClick={() => setShowHistoryModal(true)}
+                          onClick={() => setShowAllModal(true)}
                           className="w-full text-xs text-violet-600 hover:text-violet-800 font-medium py-1"
                         >
                           + {history.length - 5} meer bekijken
@@ -1186,16 +1358,16 @@ function PhonesTab({ teammates }: { teammates: ClientUserListItem[] }) {
         phone={editTarget}
       />
 
-      {/* ── History modal ── */}
-      {showHistoryModal && (
+      {/* ── History modals ── */}
+      {showAllModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg flex flex-col max-h-[80vh]">
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 flex-shrink-0">
               <div>
-                <h2 className="text-base font-bold text-slate-900">Geschiedenis</h2>
+                <h2 className="text-base font-bold text-slate-900">Volledige geschiedenis</h2>
                 <p className="text-xs text-slate-400 mt-0.5">{selected?.brand} {selected?.model}</p>
               </div>
-              <button onClick={() => setShowHistoryModal(false)} className="text-slate-400 hover:text-slate-600">
+              <button onClick={() => setShowAllModal(false)} className="text-slate-400 hover:text-slate-600">
                 <XCircle size={20} />
               </button>
             </div>
@@ -1206,14 +1378,48 @@ function PhonesTab({ teammates }: { teammates: ClientUserListItem[] }) {
                 <div className="space-y-2">
                   {history.map(h => (
                     <div key={h.id} className="rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
-                      <p className="text-sm text-slate-800 leading-snug">{h.description}</p>
-                      <p className="text-xs text-slate-400 mt-1">
+                      <p className="text-sm font-semibold text-slate-800">{h.summary}</p>
+                      {h.description && (
+                        <div className="mt-1.5 space-y-0.5">
+                          {h.description.split('\n').map((line, i) => (
+                            <p key={i} className="text-xs text-slate-600 leading-snug">{line}</p>
+                          ))}
+                        </div>
+                      )}
+                      <p className="text-xs text-slate-400 mt-1.5">
                         {fmtDateTime(h.occurredAt)}{h.performedBy ? ` · ${h.performedBy}` : ''}
                       </p>
                     </div>
                   ))}
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {selectedEntry && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+              <h2 className="text-base font-bold text-slate-900">{selectedEntry.summary}</h2>
+              <button onClick={() => setSelectedEntry(null)} className="text-slate-400 hover:text-slate-600">
+                <XCircle size={20} />
+              </button>
+            </div>
+            <div className="px-6 py-4">
+              {selectedEntry.description ? (
+                <div className="space-y-1 mb-4">
+                  {selectedEntry.description.split('\n').map((line, i) => (
+                    <p key={i} className="text-sm text-slate-700 leading-snug">{line}</p>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-slate-400 mb-4">Geen aanvullende details.</p>
+              )}
+              <p className="text-xs text-slate-400">
+                {fmtDateTime(selectedEntry.occurredAt)}{selectedEntry.performedBy ? ` · ${selectedEntry.performedBy}` : ''}
+              </p>
             </div>
           </div>
         </div>
@@ -2310,8 +2516,13 @@ export default function ClientPortal() {
           </div>
         )}
 
-        <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-6 py-3.5 flex-shrink-0">
+        <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-6 py-3.5 flex-shrink-0 flex items-center justify-between">
           <h1 className="text-sm font-semibold text-slate-800 dark:text-slate-100">{VIEW_TITLES[view]}</h1>
+          <img
+            src={logo}
+            alt="RokaFlow"
+            className="h-14 object-contain select-none opacity-80"
+          />
         </div>
 
         <div className="flex-1 overflow-hidden p-6">

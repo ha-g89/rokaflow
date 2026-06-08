@@ -18,6 +18,7 @@ export interface PhoneListItem {
 export interface PhoneHistoryItem {
   id: string
   occurredAt: string
+  summary: string
   description: string
   performedBy: string | null
 }

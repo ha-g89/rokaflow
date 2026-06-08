@@ -6,6 +6,7 @@ import { z } from 'zod'
 import { useAuthStore } from '@/store/authStore'
 import api from '@/lib/axios'
 import type { LoginResponse } from '@/types/auth'
+import logo from '@/assets/RokaFlow_icon_dark_transparent.png'
 
 const schema = z.object({
   email: z.string().email('Voer een geldig e-mailadres in'),
@@ -137,17 +138,20 @@ export default function SuperUserLoginPage() {
           backgroundSize: '28px 28px',
         }} />
 
-        <div className="rf-admin-card" style={{ width: '100%', maxWidth: '380px', position: 'relative', zIndex: 1 }}>
+        {/* Giant background watermark */}
+        <img src={logo} alt="" aria-hidden="true" style={{
+          position: 'absolute',
+          width: '60vw',
+          opacity: 0.055,
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          pointerEvents: 'none',
+          userSelect: 'none',
+          filter: 'blur(1px)',
+        }} />
 
-          {/* Brand */}
-          <div style={{ textAlign: 'center', marginBottom: '28px' }}>
-            <h1 style={{ margin: 0, fontSize: '21px', fontWeight: 700, color: '#f8fafc', letterSpacing: '-0.02em' }}>
-              Admin Panel
-            </h1>
-            <p style={{ margin: '5px 0 0', fontSize: '13px', color: 'rgba(148,163,184,0.6)' }}>
-              Platformbeheer
-            </p>
-          </div>
+        <div className="rf-admin-card" style={{ width: '100%', maxWidth: '380px', position: 'relative', zIndex: 1 }}>
 
           {/* Card */}
           <div style={{
@@ -158,6 +162,12 @@ export default function SuperUserLoginPage() {
             backdropFilter: 'blur(24px)',
             boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06), 0 28px 60px rgba(0,0,0,0.6)',
           }}>
+            <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+              <img src={logo} alt="RokaFlow" style={{ height: '56px', margin: '0 auto 10px', display: 'block', objectFit: 'contain' }} />
+              <p style={{ margin: 0, fontSize: '13px', color: 'rgba(148,163,184,0.6)' }}>
+                Platformbeheer
+              </p>
+            </div>
             <form onSubmit={handleSubmit(onSubmit)} noValidate style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
 
               {/* Email */}

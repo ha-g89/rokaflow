@@ -1,6 +1,7 @@
 export interface HardwareHistoryItem {
   id: string
   occurredAt: string
+  summary: string
   description: string
   performedBy: string | null
 }
