@@ -1402,8 +1402,8 @@ function SubscriptionsTab() {
         </div>
 
         <Card className="flex-1 overflow-hidden flex flex-col">
-          <div className="grid grid-cols-[2fr_1.2fr_1fr_1fr_1.5fr_1.3fr_0.9fr] gap-3 px-4 py-2.5 border-b border-slate-100 bg-slate-50 flex-shrink-0">
-            {['Naam', 'Provider', 'Type', 'Kosten/mnd', 'Toegewezen aan', 'Simkaart', 'Status'].map(h => (
+          <div className="grid grid-cols-[1.2fr_2fr_1fr_1fr_1.5fr_1.3fr_0.9fr] gap-3 px-4 py-2.5 border-b border-slate-100 bg-slate-50 flex-shrink-0">
+            {['Provider', 'Naam', 'Type', 'Kosten/mnd', 'Toegewezen aan', 'Simkaart', 'Status'].map(h => (
               <span key={h} className="text-xs font-semibold text-slate-500 uppercase tracking-wider truncate">{h}</span>
             ))}
           </div>
@@ -1421,12 +1421,12 @@ function SubscriptionsTab() {
                   <li
                     key={s.id}
                     onClick={() => { setSelected(s); setConfirmDelete(false) }}
-                    className={`grid grid-cols-[2fr_1.2fr_1fr_1fr_1.5fr_1.3fr_0.9fr] gap-3 px-4 py-3 items-center cursor-pointer transition-colors hover:bg-slate-100 ${selected?.id === s.id ? 'bg-violet-50 border-l-2 border-violet-500' : ''}`}
+                    className={`grid grid-cols-[1.2fr_2fr_1fr_1fr_1.5fr_1.3fr_0.9fr] gap-3 px-4 py-3 items-center cursor-pointer transition-colors hover:bg-slate-100 ${selected?.id === s.id ? 'bg-violet-50 border-l-2 border-violet-500' : ''}`}
                   >
+                    <p className="text-sm font-semibold text-slate-800 truncate">{s.provider || '—'}</p>
                     <div className="min-w-0">
-                      <p className="text-sm font-semibold text-slate-800 truncate">{s.name}</p>
+                      <p className="text-xs text-slate-600 truncate">{s.name}</p>
                     </div>
-                    <p className="text-xs text-slate-600 truncate">{s.provider || '—'}</p>
                     <p className="text-xs text-slate-600 truncate">{SUB_TYPE_LABEL[s.type] ?? s.type}</p>
                     <p className="text-xs text-slate-600 truncate tabular-nums">{s.monthlyCost != null ? `€${s.monthlyCost.toFixed(2)}` : '—'}</p>
                     <p className="text-xs text-slate-600 truncate">{s.assignedToName || '—'}</p>
