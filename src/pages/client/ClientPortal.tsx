@@ -354,6 +354,130 @@ function HistoryBlock({ entityType, entityId, labelFn, descriptionFn }: {
   )
 }
 
+// ── Item history block (phones / simcards / subscriptions) ────────────────────
+// Uses endpoints that return { id, occurredAt, summary, description, performedBy }
+
+function ItemHistoryBlock({ url, subtitle }: { url: string; subtitle?: string }) {
+  const [entries, setEntries] = useState<PhoneHistoryItem[]>([])
+  const [loading, setLoading] = useState(true)
+  const [selectedEntry, setSelectedEntry] = useState<PhoneHistoryItem | null>(null)
+  const [showAllModal, setShowAllModal] = useState(false)
+
+  function fmtDT(d: string) {
+    return new Date(d).toLocaleString('nl-NL', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+  }
+
+  useEffect(() => {
+    setLoading(true)
+    api.get<PhoneHistoryItem[]>(url)
+      .then(r => setEntries(r.data))
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [url])
+
+  return (
+    <>
+      <div className="pt-4 border-t border-slate-100">
+        <div className="flex items-center justify-between mb-2">
+          <p className="flex items-center gap-1.5 text-xs font-bold text-slate-600 uppercase tracking-wide">
+            <History size={12} /> Historie
+          </p>
+          {entries.length > 5 && (
+            <button onClick={() => setShowAllModal(true)} className="text-xs text-violet-600 hover:text-violet-800 font-medium">
+              Alles bekijken ({entries.length})
+            </button>
+          )}
+        </div>
+        {loading ? (
+          <p className="text-xs text-slate-400">Laden…</p>
+        ) : entries.length === 0 ? (
+          <p className="text-xs text-slate-400">Nog geen activiteiten.</p>
+        ) : (
+          <div className="space-y-1">
+            {entries.slice(0, 5).map(e => (
+              <button
+                key={e.id}
+                onClick={() => setSelectedEntry(e)}
+                className="w-full text-left rounded-lg bg-slate-50 hover:bg-violet-50 px-3 py-2 transition-colors cursor-pointer group"
+              >
+                <p className="text-xs font-medium text-slate-700 group-hover:text-violet-700">{e.summary}</p>
+                <p className="text-xs text-slate-400 mt-0.5">{fmtDT(e.occurredAt)}{e.performedBy ? ` · ${e.performedBy}` : ''}</p>
+              </button>
+            ))}
+            {entries.length > 5 && (
+              <button onClick={() => setShowAllModal(true)} className="w-full text-xs text-violet-600 hover:text-violet-800 font-medium py-1">
+                + {entries.length - 5} meer bekijken
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+
+      {showAllModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg flex flex-col max-h-[80vh]">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 flex-shrink-0">
+              <div>
+                <h2 className="text-base font-bold text-slate-900">Volledige geschiedenis</h2>
+                {subtitle && <p className="text-xs text-slate-400 mt-0.5">{subtitle}</p>}
+              </div>
+              <button onClick={() => setShowAllModal(false)} className="text-slate-400 hover:text-slate-600">
+                <XCircle size={20} />
+              </button>
+            </div>
+            <div className="overflow-y-auto flex-1 px-6 py-4">
+              <div className="space-y-2">
+                {entries.map(e => (
+                  <div key={e.id} className="rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
+                    <p className="text-sm font-semibold text-slate-800">{e.summary}</p>
+                    {e.description && (
+                      <div className="mt-1.5 space-y-0.5">
+                        {e.description.split('\n').map((line, i) => (
+                          <p key={i} className="text-xs text-slate-600 leading-snug">{line}</p>
+                        ))}
+                      </div>
+                    )}
+                    <p className="text-xs text-slate-400 mt-1.5">
+                      {fmtDT(e.occurredAt)}{e.performedBy ? ` · ${e.performedBy}` : ''}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {selectedEntry && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+              <h2 className="text-base font-bold text-slate-900">{selectedEntry.summary}</h2>
+              <button onClick={() => setSelectedEntry(null)} className="text-slate-400 hover:text-slate-600">
+                <XCircle size={20} />
+              </button>
+            </div>
+            <div className="px-6 py-4">
+              {selectedEntry.description ? (
+                <div className="space-y-1 mb-4">
+                  {selectedEntry.description.split('\n').map((line, i) => (
+                    <p key={i} className="text-sm text-slate-700 leading-snug">{line}</p>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-slate-400 mb-4">Geen aanvullende details.</p>
+              )}
+              <p className="text-xs text-slate-400">
+                {fmtDT(selectedEntry.occurredAt)}{selectedEntry.performedBy ? ` · ${selectedEntry.performedBy}` : ''}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  )
+}
+
 // ── Hardware detail panel ─────────────────────────────────────────────────────
 
 function HardwareDetailPanel({ asset, onEdit, onDelete }: {
@@ -606,7 +730,7 @@ function HardwareView({ teammates }: { teammates: ClientUserListItem[] }) {
           </div>
 
           <Card className="flex-1 overflow-hidden flex flex-col">
-            <div className="grid grid-cols-[1fr_1.2fr_2fr_1.2fr_1.5fr_0.9fr] gap-3 px-4 py-2.5 border-b border-slate-100 bg-slate-50 flex-shrink-0">
+            <div className="grid grid-cols-[1fr_1.2fr_2fr_1.2fr_1.5fr_0.9fr] gap-3 px-4 py-2.5 bg-slate-50 border-b border-slate-100 flex-shrink-0">
               {['Type', 'Merk', 'Naam', 'Serienummer', 'Toegewezen aan', 'Status'].map(h => (
                 <span key={h} className="text-xs font-semibold text-slate-500 uppercase tracking-wider truncate">{h}</span>
               ))}
@@ -918,7 +1042,7 @@ function LicenseView({ teammates }: { teammates: ClientUserListItem[] }) {
           </div>
 
           <Card className="flex-1 overflow-hidden flex flex-col">
-            <div className="grid grid-cols-[2fr_1.5fr_0.8fr_1fr_0.7fr] gap-3 px-4 py-2.5 border-b border-slate-100 bg-slate-50 flex-shrink-0">
+            <div className="grid grid-cols-[2fr_1.5fr_0.8fr_1fr_0.7fr] gap-3 px-4 py-2.5 bg-slate-50 border-b border-slate-100 flex-shrink-0">
               {['Naam', 'Seats', 'Beschikbaar', 'Vervaldatum', 'Status'].map(h => (
                 <span key={h} className="text-xs font-semibold text-slate-500 uppercase tracking-wider truncate">{h}</span>
               ))}
@@ -1100,10 +1224,7 @@ function PhonesTab({ teammates }: { teammates: ClientUserListItem[] }) {
   const [showModal, setShowModal] = useState(false)
   const [editTarget, setEditTarget] = useState<PhoneListItem | null>(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
-  const [history, setHistory] = useState<PhoneHistoryItem[]>([])
-  const [historyLoading, setHistoryLoading] = useState(false)
-  const [selectedEntry, setSelectedEntry] = useState<PhoneHistoryItem | null>(null)
-  const [showAllModal, setShowAllModal] = useState(false)
+  const [historyKey, setHistoryKey] = useState(0)
 
   const fetchPhones = useCallback(async () => {
     try {
@@ -1116,21 +1237,9 @@ function PhonesTab({ teammates }: { teammates: ClientUserListItem[] }) {
 
   useEffect(() => { fetchPhones() }, [fetchPhones])
 
-  const fetchHistory = useCallback(async (phoneId: string) => {
-    setHistoryLoading(true)
-    try {
-      const { data } = await api.get<PhoneHistoryItem[]>(`/portal/phones/${phoneId}/history`)
-      setHistory(data)
-    } finally {
-      setHistoryLoading(false)
-    }
-  }, [])
-
   const handleSelect = (p: PhoneListItem) => {
     setSelected(p)
     setConfirmDelete(false)
-    setHistory([])
-    fetchHistory(p.id)
   }
 
   const filtered = phones.filter(p =>
@@ -1148,23 +1257,19 @@ function PhonesTab({ teammates }: { teammates: ClientUserListItem[] }) {
   const handleSaved = async () => {
     await fetchPhones()
     setShowModal(false)
-    if (selected) fetchHistory(selected.id)
+    setHistoryKey(k => k + 1)
   }
 
   const handleUnlinkSim = async (phoneId: string) => {
     const { data } = await api.delete<PhoneListItem>(`/portal/phones/${phoneId}/simcard`)
     setPhones(prev => prev.map(p => p.id === phoneId ? data : p))
     setSelected(data)
-    fetchHistory(phoneId)
+    setHistoryKey(k => k + 1)
   }
 
   function fmt(d: string | null | undefined) {
     if (!d) return '—'
     return new Date(d).toLocaleDateString('nl-NL', { day: '2-digit', month: '2-digit', year: 'numeric' })
-  }
-
-  function fmtDateTime(d: string) {
-    return new Date(d).toLocaleString('nl-NL', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
   }
 
   return (
@@ -1187,7 +1292,7 @@ function PhonesTab({ teammates }: { teammates: ClientUserListItem[] }) {
           </div>
 
           <Card className="flex-1 overflow-hidden flex flex-col">
-            <div className="grid grid-cols-[1fr_1.2fr_1.3fr_1.3fr_1.2fr_1.5fr_1fr_0.9fr] gap-3 px-4 py-2.5 border-b border-slate-100 bg-slate-50 flex-shrink-0">
+            <div className="grid grid-cols-[1fr_1.2fr_1.3fr_1.3fr_1.2fr_1.5fr_1fr_0.9fr] gap-3 px-4 py-2.5 bg-slate-50 border-b border-slate-100 flex-shrink-0">
               {['Merk', 'Model', 'Serienummer', 'IMEI-nummer', 'Telefoonnummer', 'Toegewezen aan', 'Uitgiftedatum', 'Status'].map(h => (
                 <span key={h} className="text-xs font-semibold text-slate-500 uppercase tracking-wider truncate">{h}</span>
               ))}
@@ -1276,48 +1381,11 @@ function PhonesTab({ teammates }: { teammates: ClientUserListItem[] }) {
                     </div>
                   </div>
                 )}
-                {/* ── History ── */}
-                <div className="mt-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Geschiedenis</p>
-                    {history.length > 5 && (
-                      <button
-                        onClick={() => setShowAllModal(true)}
-                        className="text-xs text-violet-600 hover:text-violet-800 font-medium"
-                      >
-                        Alles bekijken ({history.length})
-                      </button>
-                    )}
-                  </div>
-                  {historyLoading ? (
-                    <p className="text-xs text-slate-400">Laden…</p>
-                  ) : history.length === 0 ? (
-                    <p className="text-xs text-slate-400">Geen geschiedenis beschikbaar.</p>
-                  ) : (
-                    <div className="space-y-1">
-                      {history.slice(0, 5).map(h => (
-                        <button
-                          key={h.id}
-                          onClick={() => setSelectedEntry(h)}
-                          className="w-full text-left rounded-lg bg-slate-50 hover:bg-violet-50 px-3 py-2 transition-colors cursor-pointer group"
-                        >
-                          <p className="text-xs font-medium text-slate-700 group-hover:text-violet-700">{h.summary}</p>
-                          <p className="text-xs text-slate-400 mt-0.5">
-                            {fmtDateTime(h.occurredAt)}{h.performedBy ? ` · ${h.performedBy}` : ''}
-                          </p>
-                        </button>
-                      ))}
-                      {history.length > 5 && (
-                        <button
-                          onClick={() => setShowAllModal(true)}
-                          className="w-full text-xs text-violet-600 hover:text-violet-800 font-medium py-1"
-                        >
-                          + {history.length - 5} meer bekijken
-                        </button>
-                      )}
-                    </div>
-                  )}
-                </div>
+                <ItemHistoryBlock
+                  key={`${selected.id}-${historyKey}`}
+                  url={`/portal/phones/${selected.id}/history`}
+                  subtitle={`${selected.brand} ${selected.model}`}
+                />
 
                 <div className="mt-4 flex flex-wrap gap-2">
                   <Button size="sm" variant="secondary" onClick={() => { setEditTarget(selected); setShowModal(true) }}>
@@ -1357,73 +1425,6 @@ function PhonesTab({ teammates }: { teammates: ClientUserListItem[] }) {
         teammates={teammates}
         phone={editTarget}
       />
-
-      {/* ── History modals ── */}
-      {showAllModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg flex flex-col max-h-[80vh]">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 flex-shrink-0">
-              <div>
-                <h2 className="text-base font-bold text-slate-900">Volledige geschiedenis</h2>
-                <p className="text-xs text-slate-400 mt-0.5">{selected?.brand} {selected?.model}</p>
-              </div>
-              <button onClick={() => setShowAllModal(false)} className="text-slate-400 hover:text-slate-600">
-                <XCircle size={20} />
-              </button>
-            </div>
-            <div className="overflow-y-auto flex-1 px-6 py-4">
-              {history.length === 0 ? (
-                <p className="text-sm text-slate-400 text-center py-8">Geen geschiedenis beschikbaar.</p>
-              ) : (
-                <div className="space-y-2">
-                  {history.map(h => (
-                    <div key={h.id} className="rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
-                      <p className="text-sm font-semibold text-slate-800">{h.summary}</p>
-                      {h.description && (
-                        <div className="mt-1.5 space-y-0.5">
-                          {h.description.split('\n').map((line, i) => (
-                            <p key={i} className="text-xs text-slate-600 leading-snug">{line}</p>
-                          ))}
-                        </div>
-                      )}
-                      <p className="text-xs text-slate-400 mt-1.5">
-                        {fmtDateTime(h.occurredAt)}{h.performedBy ? ` · ${h.performedBy}` : ''}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {selectedEntry && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
-              <h2 className="text-base font-bold text-slate-900">{selectedEntry.summary}</h2>
-              <button onClick={() => setSelectedEntry(null)} className="text-slate-400 hover:text-slate-600">
-                <XCircle size={20} />
-              </button>
-            </div>
-            <div className="px-6 py-4">
-              {selectedEntry.description ? (
-                <div className="space-y-1 mb-4">
-                  {selectedEntry.description.split('\n').map((line, i) => (
-                    <p key={i} className="text-sm text-slate-700 leading-snug">{line}</p>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-slate-400 mb-4">Geen aanvullende details.</p>
-              )}
-              <p className="text-xs text-slate-400">
-                {fmtDateTime(selectedEntry.occurredAt)}{selectedEntry.performedBy ? ` · ${selectedEntry.performedBy}` : ''}
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }
@@ -1439,6 +1440,7 @@ function SimCardsTab({ teammates }: { teammates: ClientUserListItem[] }) {
   const [showModal, setShowModal] = useState(false)
   const [editTarget, setEditTarget] = useState<SimCardListItem | null>(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [historyKey, setHistoryKey] = useState(0)
 
   const fetchData = useCallback(async () => {
     try {
@@ -1467,7 +1469,7 @@ function SimCardsTab({ teammates }: { teammates: ClientUserListItem[] }) {
     setConfirmDelete(false)
   }
 
-  const handleSaved = async () => { await fetchData(); setShowModal(false) }
+  const handleSaved = async () => { await fetchData(); setShowModal(false); setHistoryKey(k => k + 1) }
 
   return (
     <div className="flex gap-4 flex-1 min-h-0">
@@ -1488,7 +1490,7 @@ function SimCardsTab({ teammates }: { teammates: ClientUserListItem[] }) {
         </div>
 
         <Card className="flex-1 overflow-hidden flex flex-col">
-          <div className="grid grid-cols-[1.5fr_1.2fr_1fr_1.5fr_1.3fr_0.9fr] gap-3 px-4 py-2.5 border-b border-slate-100 bg-slate-50 flex-shrink-0">
+          <div className="grid grid-cols-[1.5fr_1.2fr_1fr_1.5fr_1.3fr_0.9fr] gap-3 px-4 py-2.5 bg-slate-50 border-b border-slate-100 flex-shrink-0">
             {['Kaartnummer', 'Telefoonnummer', 'Type', 'Toegewezen aan', 'Gekoppelde telefoon', 'Status'].map(h => (
               <span key={h} className="text-xs font-semibold text-slate-500 uppercase tracking-wider truncate">{h}</span>
             ))}
@@ -1562,6 +1564,11 @@ function SimCardsTab({ teammates }: { teammates: ClientUserListItem[] }) {
                   <p className="text-sm font-medium text-violet-700 truncate">{selected.subscriptionName}</p>
                 </div>
               )}
+              <ItemHistoryBlock
+                key={`${selected.id}-${historyKey}`}
+                url={`/portal/simcards/${selected.id}/history`}
+                subtitle={selected.kaartNummer}
+              />
               <div className="mt-4 flex flex-wrap gap-2">
                 <Button size="sm" variant="secondary" onClick={() => { setEditTarget(selected); setShowModal(true) }}>
                   <Pencil size={13} /> Wijzigen
@@ -1615,6 +1622,7 @@ function SubscriptionsTab() {
   const [showModal, setShowModal] = useState(false)
   const [editTarget, setEditTarget] = useState<SubscriptionListItem | null>(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [historyKey, setHistoryKey] = useState(0)
 
   const fetchData = useCallback(async () => {
     try {
@@ -1643,7 +1651,7 @@ function SubscriptionsTab() {
     setConfirmDelete(false)
   }
 
-  const handleSaved = async () => { await fetchData(); setShowModal(false) }
+  const handleSaved = async () => { await fetchData(); setShowModal(false); setHistoryKey(k => k + 1) }
 
   function fmt(d: string | null | undefined) {
     if (!d) return '—'
@@ -1674,7 +1682,7 @@ function SubscriptionsTab() {
         </div>
 
         <Card className="flex-1 overflow-hidden flex flex-col">
-          <div className="grid grid-cols-[1.2fr_2fr_1fr_1fr_1.5fr_1.3fr_0.9fr] gap-3 px-4 py-2.5 border-b border-slate-100 bg-slate-50 flex-shrink-0">
+          <div className="grid grid-cols-[1.2fr_2fr_1fr_1fr_1.5fr_1.3fr_0.9fr] gap-3 px-4 py-2.5 bg-slate-50 border-b border-slate-100 flex-shrink-0">
             {['Provider', 'Naam', 'Type', 'Kosten/mnd', 'Toegewezen aan', 'Simkaart', 'Status'].map(h => (
               <span key={h} className="text-xs font-semibold text-slate-500 uppercase tracking-wider truncate">{h}</span>
             ))}
@@ -1752,6 +1760,11 @@ function SubscriptionsTab() {
                   </p>
                 </div>
               )}
+              <ItemHistoryBlock
+                key={`${selected.id}-${historyKey}`}
+                url={`/portal/subscriptions/${selected.id}/history`}
+                subtitle={selected.name}
+              />
               <div className="mt-4 flex flex-wrap gap-2">
                 <Button size="sm" variant="secondary" onClick={() => { setEditTarget(selected); setShowModal(true) }}>
                   <Pencil size={13} /> Wijzigen
@@ -1843,7 +1856,7 @@ function EmployeeListView({ teammates, loading, search, currentUserId, departmen
 
       {/* Table card */}
       <Card className="flex-1 overflow-hidden flex flex-col">
-        <div className={`grid ${cols} gap-3 px-5 py-3 border-b border-slate-100 bg-slate-50`}>
+        <div className={`grid ${cols} gap-3 px-5 py-3 bg-slate-50 border-b border-slate-100`}>
           {['Naam', 'Manager', 'Afdeling', 'Functie', 'Startdatum', 'Status', 'Assets', 'Licenties', ''].map(h => (
             <span key={h} className="text-xs font-semibold text-slate-500 uppercase tracking-wider truncate">{h}</span>
           ))}
