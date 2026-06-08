@@ -924,8 +924,8 @@ function PhonesTab({ teammates }: { teammates: ClientUserListItem[] }) {
           </div>
 
           <Card className="flex-1 overflow-hidden flex flex-col">
-            <div className="grid grid-cols-[2fr_1.3fr_1.5fr_1.5fr_0.9fr] gap-3 px-4 py-2.5 border-b border-slate-100 bg-slate-50 flex-shrink-0">
-              {['Merk & model', 'Serienummer', 'Toegewezen aan', 'Simnummer', 'Status'].map(h => (
+            <div className="grid grid-cols-[1fr_1.2fr_1.3fr_1.3fr_1.2fr_1.5fr_1fr_0.9fr] gap-3 px-4 py-2.5 border-b border-slate-100 bg-slate-50 flex-shrink-0">
+              {['Merk', 'Model', 'Serienummer', 'IMEI-nummer', 'Telefoonnummer', 'Toegewezen aan', 'Uitgiftedatum', 'Status'].map(h => (
                 <span key={h} className="text-xs font-semibold text-slate-500 uppercase tracking-wider truncate">{h}</span>
               ))}
             </div>
@@ -943,14 +943,15 @@ function PhonesTab({ teammates }: { teammates: ClientUserListItem[] }) {
                     <li
                       key={p.id}
                       onClick={() => { setSelected(p); setConfirmDelete(false) }}
-                      className={`grid grid-cols-[2fr_1.3fr_1.5fr_1.5fr_0.9fr] gap-3 px-4 py-3 items-center cursor-pointer transition-colors hover:bg-slate-100 ${selected?.id === p.id ? 'bg-violet-50 border-l-2 border-violet-500' : ''}`}
+                      className={`grid grid-cols-[1fr_1.2fr_1.3fr_1.3fr_1.2fr_1.5fr_1fr_0.9fr] gap-3 px-4 py-3 items-center cursor-pointer transition-colors hover:bg-slate-100 ${selected?.id === p.id ? 'bg-violet-50 border-l-2 border-violet-500' : ''}`}
                     >
-                      <div className="min-w-0">
-                        <p className="text-sm font-semibold text-slate-800 truncate">{p.brand} {p.model || ''}</p>
-                      </div>
+                      <p className="text-sm font-semibold text-slate-800 truncate">{p.brand}</p>
+                      <p className="text-xs text-slate-600 truncate">{p.model || '—'}</p>
                       <p className="text-xs text-slate-600 truncate tabular-nums">{p.serialNumber || '—'}</p>
+                      <p className="text-xs text-slate-600 truncate tabular-nums">{p.imeiNumber || '—'}</p>
+                      <p className="text-xs text-slate-600 truncate tabular-nums">{p.simPhoneNumber || '—'}</p>
                       <p className="text-xs text-slate-600 truncate">{p.assignedToName || '—'}</p>
-                      <p className="text-xs text-slate-600 truncate">{p.simPhoneNumber || p.simCardNumber || '—'}</p>
+                      <p className="text-xs text-slate-600 truncate tabular-nums">{fmt(p.issuedAt)}</p>
                       <span className={`text-xs px-2 py-0.5 rounded-full font-medium truncate ${PHONE_STATUS_TONE[p.status] ?? 'bg-slate-100 text-slate-500'}`}>
                         {PHONE_STATUS_LABEL[p.status] ?? p.status}
                       </span>
