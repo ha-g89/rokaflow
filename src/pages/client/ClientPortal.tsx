@@ -29,7 +29,7 @@ import type { HardwareAssetListItem } from '@/types/hardware'
 import { HARDWARE_STATUS_LABEL, HARDWARE_STATUS_TONE, HARDWARE_TYPE_LABEL } from '@/types/hardware'
 import type { LicenseListItem } from '@/types/license'
 import { LICENSE_TYPE_LABEL, LICENSE_TYPE_TONE } from '@/types/license'
-import type { PhoneListItem } from '@/types/phone'
+import type { PhoneListItem, PhoneHistoryItem } from '@/types/phone'
 import { PHONE_STATUS_LABEL, PHONE_STATUS_TONE } from '@/types/phone'
 import type { SimCardListItem } from '@/types/simcard'
 import { SIM_STATUS_LABEL, SIM_STATUS_TONE, SIM_TYPE_LABEL } from '@/types/simcard'
@@ -867,6 +867,9 @@ function PhonesTab({ teammates }: { teammates: ClientUserListItem[] }) {
   const [showModal, setShowModal] = useState(false)
   const [editTarget, setEditTarget] = useState<PhoneListItem | null>(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [history, setHistory] = useState<PhoneHistoryItem[]>([])
+  const [historyLoading, setHistoryLoading] = useState(false)
+  const [showHistoryModal, setShowHistoryModal] = useState(false)
 
   const fetchPhones = useCallback(async () => {
     try {
@@ -878,6 +881,23 @@ function PhonesTab({ teammates }: { teammates: ClientUserListItem[] }) {
   }, [])
 
   useEffect(() => { fetchPhones() }, [fetchPhones])
+
+  const fetchHistory = useCallback(async (phoneId: string) => {
+    setHistoryLoading(true)
+    try {
+      const { data } = await api.get<PhoneHistoryItem[]>(`/portal/phones/${phoneId}/history`)
+      setHistory(data)
+    } finally {
+      setHistoryLoading(false)
+    }
+  }, [])
+
+  const handleSelect = (p: PhoneListItem) => {
+    setSelected(p)
+    setConfirmDelete(false)
+    setHistory([])
+    fetchHistory(p.id)
+  }
 
   const filtered = phones.filter(p =>
     `${p.brand} ${p.model} ${p.serialNumber} ${p.imeiNumber} ${p.assignedToName ?? ''}`
@@ -891,17 +911,26 @@ function PhonesTab({ teammates }: { teammates: ClientUserListItem[] }) {
     setConfirmDelete(false)
   }
 
-  const handleSaved = async () => { await fetchPhones(); setShowModal(false) }
+  const handleSaved = async () => {
+    await fetchPhones()
+    setShowModal(false)
+    if (selected) fetchHistory(selected.id)
+  }
 
   const handleUnlinkSim = async (phoneId: string) => {
     const { data } = await api.delete<PhoneListItem>(`/portal/phones/${phoneId}/simcard`)
     setPhones(prev => prev.map(p => p.id === phoneId ? data : p))
     setSelected(data)
+    fetchHistory(phoneId)
   }
 
   function fmt(d: string | null | undefined) {
     if (!d) return '—'
     return new Date(d).toLocaleDateString('nl-NL', { day: '2-digit', month: '2-digit', year: 'numeric' })
+  }
+
+  function fmtDateTime(d: string) {
+    return new Date(d).toLocaleString('nl-NL', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
   }
 
   return (
@@ -942,7 +971,7 @@ function PhonesTab({ teammates }: { teammates: ClientUserListItem[] }) {
                   {filtered.map(p => (
                     <li
                       key={p.id}
-                      onClick={() => { setSelected(p); setConfirmDelete(false) }}
+                      onClick={() => handleSelect(p)}
                       className={`grid grid-cols-[1fr_1.2fr_1.3fr_1.3fr_1.2fr_1.5fr_1fr_0.9fr] gap-3 px-4 py-3 items-center cursor-pointer transition-colors hover:bg-slate-100 ${selected?.id === p.id ? 'bg-violet-50 border-l-2 border-violet-500' : ''}`}
                     >
                       <p className="text-sm font-semibold text-slate-800 truncate">{p.brand}</p>
@@ -1013,6 +1042,45 @@ function PhonesTab({ teammates }: { teammates: ClientUserListItem[] }) {
                     </div>
                   </div>
                 )}
+                {/* ── History ── */}
+                <div className="mt-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Geschiedenis</p>
+                    {history.length > 5 && (
+                      <button
+                        onClick={() => setShowHistoryModal(true)}
+                        className="text-xs text-violet-600 hover:text-violet-800 font-medium"
+                      >
+                        Alles bekijken ({history.length})
+                      </button>
+                    )}
+                  </div>
+                  {historyLoading ? (
+                    <p className="text-xs text-slate-400">Laden…</p>
+                  ) : history.length === 0 ? (
+                    <p className="text-xs text-slate-400">Geen geschiedenis beschikbaar.</p>
+                  ) : (
+                    <div className="space-y-1.5">
+                      {history.slice(0, 5).map(h => (
+                        <div key={h.id} className="rounded-lg bg-slate-50 px-3 py-2">
+                          <p className="text-xs text-slate-700 leading-snug">{h.description}</p>
+                          <p className="text-xs text-slate-400 mt-0.5">
+                            {fmtDateTime(h.occurredAt)}{h.performedBy ? ` · ${h.performedBy}` : ''}
+                          </p>
+                        </div>
+                      ))}
+                      {history.length > 5 && (
+                        <button
+                          onClick={() => setShowHistoryModal(true)}
+                          className="w-full text-xs text-violet-600 hover:text-violet-800 font-medium py-1"
+                        >
+                          + {history.length - 5} meer bekijken
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+
                 <div className="mt-4 flex flex-wrap gap-2">
                   <Button size="sm" variant="secondary" onClick={() => { setEditTarget(selected); setShowModal(true) }}>
                     <Pencil size={13} /> Wijzigen
@@ -1051,6 +1119,39 @@ function PhonesTab({ teammates }: { teammates: ClientUserListItem[] }) {
         teammates={teammates}
         phone={editTarget}
       />
+
+      {/* ── History modal ── */}
+      {showHistoryModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg flex flex-col max-h-[80vh]">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 flex-shrink-0">
+              <div>
+                <h2 className="text-base font-bold text-slate-900">Geschiedenis</h2>
+                <p className="text-xs text-slate-400 mt-0.5">{selected?.brand} {selected?.model}</p>
+              </div>
+              <button onClick={() => setShowHistoryModal(false)} className="text-slate-400 hover:text-slate-600">
+                <XCircle size={20} />
+              </button>
+            </div>
+            <div className="overflow-y-auto flex-1 px-6 py-4">
+              {history.length === 0 ? (
+                <p className="text-sm text-slate-400 text-center py-8">Geen geschiedenis beschikbaar.</p>
+              ) : (
+                <div className="space-y-2">
+                  {history.map(h => (
+                    <div key={h.id} className="rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
+                      <p className="text-sm text-slate-800 leading-snug">{h.description}</p>
+                      <p className="text-xs text-slate-400 mt-1">
+                        {fmtDateTime(h.occurredAt)}{h.performedBy ? ` · ${h.performedBy}` : ''}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

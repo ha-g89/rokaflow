@@ -15,6 +15,13 @@ export interface PhoneListItem {
   createdAt: string
 }
 
+export interface PhoneHistoryItem {
+  id: string
+  occurredAt: string
+  description: string
+  performedBy: string | null
+}
+
 export type PhoneStatus = PhoneListItem['status']
 
 export const PHONE_STATUS_LABEL: Record<PhoneStatus, string> = {
