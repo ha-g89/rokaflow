@@ -926,6 +926,11 @@ function PhonesTab({ teammates }: { teammates: ClientUserListItem[] }) {
           </div>
 
           <Card className="flex-1 overflow-hidden flex flex-col">
+            <div className="grid grid-cols-[2fr_1.3fr_1.5fr_1.5fr_0.9fr] gap-3 px-4 py-2.5 border-b border-slate-100 bg-slate-50 flex-shrink-0">
+              {['Merk & model', 'Serienummer', 'Toegewezen aan', 'Simkaart', 'Status'].map(h => (
+                <span key={h} className="text-xs font-semibold text-slate-500 uppercase tracking-wider truncate">{h}</span>
+              ))}
+            </div>
             <div className="flex-1 overflow-y-auto">
               {loading ? (
                 <div className="p-10 text-center text-sm text-slate-400">Laden…</div>
@@ -937,25 +942,20 @@ function PhonesTab({ teammates }: { teammates: ClientUserListItem[] }) {
               ) : (
                 <ul className="divide-y divide-slate-100">
                   {filtered.map(p => (
-                    <li key={p.id}>
-                      <button
-                        onClick={() => { setSelected(p); setConfirmDelete(false) }}
-                        className={`w-full text-left px-4 py-3.5 transition-colors hover:bg-slate-100 ${selected?.id === p.id ? 'bg-violet-50 border-l-2 border-violet-500' : ''}`}
-                      >
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="min-w-0">
-                            <p className="text-sm font-semibold text-slate-800 truncate">{p.brand} {p.model || ''}</p>
-                            <p className="text-xs text-slate-400 truncate">{p.simPhoneNumber || p.serialNumber || '—'}</p>
-                          </div>
-                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${PHONE_STATUS_TONE[p.status] ?? 'bg-slate-100 text-slate-500'}`}>
-                            {PHONE_STATUS_LABEL[p.status] ?? p.status}
-                          </span>
-                        </div>
-                        {p.assignedToName && <p className="mt-1 text-xs text-slate-400 truncate">{p.assignedToName}</p>}
-                        {p.simCardNumber && (
-                          <p className="mt-0.5 text-xs text-violet-500 truncate">Simkaart: {p.simPhoneNumber || p.simCardNumber}</p>
-                        )}
-                      </button>
+                    <li
+                      key={p.id}
+                      onClick={() => { setSelected(p); setConfirmDelete(false) }}
+                      className={`grid grid-cols-[2fr_1.3fr_1.5fr_1.5fr_0.9fr] gap-3 px-4 py-3 items-center cursor-pointer transition-colors hover:bg-slate-100 ${selected?.id === p.id ? 'bg-violet-50 border-l-2 border-violet-500' : ''}`}
+                    >
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-slate-800 truncate">{p.brand} {p.model || ''}</p>
+                      </div>
+                      <p className="text-xs text-slate-600 truncate tabular-nums">{p.serialNumber || '—'}</p>
+                      <p className="text-xs text-slate-600 truncate">{p.assignedToName || '—'}</p>
+                      <p className="text-xs text-slate-600 truncate">{p.simPhoneNumber || p.simCardNumber || '—'}</p>
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium truncate ${PHONE_STATUS_TONE[p.status] ?? 'bg-slate-100 text-slate-500'}`}>
+                        {PHONE_STATUS_LABEL[p.status] ?? p.status}
+                      </span>
                     </li>
                   ))}
                 </ul>
@@ -977,19 +977,22 @@ function PhonesTab({ teammates }: { teammates: ClientUserListItem[] }) {
                     {PHONE_STATUS_LABEL[selected.status] ?? selected.status}
                   </span>
                 </div>
-                <div className="grid grid-cols-2 gap-2">
-                  {[
-                    { label: 'Serienummer', value: selected.serialNumber || '—' },
-                    { label: 'IMEI', value: selected.imeiNumber || '—' },
-                    { label: 'Toegewezen aan', value: selected.assignedToName || '—' },
-                    { label: 'Uitgiftedatum', value: fmt(selected.issuedAt) },
-                    { label: 'Inleverdatum', value: fmt(selected.returnedAt) },
-                  ].map(row => (
-                    <div key={row.label} className="rounded-xl bg-slate-50 p-3">
-                      <p className="text-xs text-slate-400 mb-0.5">{row.label}</p>
-                      <p className="text-sm font-medium text-slate-800 truncate">{row.value}</p>
-                    </div>
-                  ))}
+                <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-xs text-slate-600">
+                  {selected.serialNumber && (
+                    <p><span className="text-slate-400">Serienummer</span><br /><span className="font-medium text-slate-800">{selected.serialNumber}</span></p>
+                  )}
+                  {selected.imeiNumber && (
+                    <p><span className="text-slate-400">IMEI</span><br /><span className="font-medium text-slate-800">{selected.imeiNumber}</span></p>
+                  )}
+                  {selected.assignedToName && (
+                    <p className="col-span-2"><span className="text-slate-400">Toegewezen aan</span><br /><span className="font-medium text-slate-800">{selected.assignedToName}</span></p>
+                  )}
+                  {selected.issuedAt && (
+                    <p><span className="text-slate-400">Uitgiftedatum</span><br /><span className="font-medium text-slate-800">{fmt(selected.issuedAt)}</span></p>
+                  )}
+                  {selected.returnedAt && (
+                    <p><span className="text-slate-400">Inleverdatum</span><br /><span className="font-medium text-slate-800">{fmt(selected.returnedAt)}</span></p>
+                  )}
                 </div>
                 {selected.simCardNumber && (
                   <div className="mt-3 rounded-xl bg-violet-50 border border-violet-100 px-3 py-2.5">
