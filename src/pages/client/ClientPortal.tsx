@@ -927,7 +927,7 @@ function PhonesTab({ teammates }: { teammates: ClientUserListItem[] }) {
 
           <Card className="flex-1 overflow-hidden flex flex-col">
             <div className="grid grid-cols-[2fr_1.3fr_1.5fr_1.5fr_0.9fr] gap-3 px-4 py-2.5 border-b border-slate-100 bg-slate-50 flex-shrink-0">
-              {['Merk & model', 'Serienummer', 'Toegewezen aan', 'Simkaart', 'Status'].map(h => (
+              {['Merk & model', 'Serienummer', 'Toegewezen aan', 'Simnummer', 'Status'].map(h => (
                 <span key={h} className="text-xs font-semibold text-slate-500 uppercase tracking-wider truncate">{h}</span>
               ))}
             </div>
