@@ -50,6 +50,7 @@ export interface ClientUserDetailResponse {
   completeness: number
   createdAt: string
   hardware: HardwareAssetDto[]
+  phones: PhoneDto[]
   software: SoftwareAssignmentDto[]
   licenses: UserLicenseDto[]
   starterChecklist: ChecklistEntryDto[]
@@ -89,6 +90,18 @@ export interface SoftwareAssignmentDto {
   account: string
   issuedAt: string
   isActive: boolean
+}
+
+export interface PhoneDto {
+  id: string
+  brand: string
+  model: string
+  serialNumber: string
+  imeiNumber: string
+  status: string
+  issuedAt: string | null
+  simCardNumber: string | null
+  simPhoneNumber: string | null
 }
 
 export interface ChecklistEntryDto {
