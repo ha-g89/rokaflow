@@ -2,7 +2,7 @@
 import {
   Briefcase, Users, Plus, LogOut,
   Building2, Search, UserPlus, User, ExternalLink, Loader2,
-  MoreVertical, Pencil, X, Mail, Ban, ShieldCheck, Calendar,
+  MoreVertical, Pencil, X, Mail, Ban, ShieldCheck, Calendar, ImagePlus,
 } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { useNavigate } from 'react-router-dom'
@@ -275,6 +275,10 @@ export default function OrgDashboard() {
   const [editClient, setEditClient]         = useState<ClientListItem | null>(null)
   const [editName, setEditName]             = useState('')
   const [editSaving, setEditSaving]         = useState(false)
+  const [editLogoFile, setEditLogoFile]     = useState<File | null>(null)
+  const [editLogoPreview, setEditLogoPreview] = useState<string | null>(null)
+  const [editLogoDeleted, setEditLogoDeleted] = useState(false)
+  const editLogoInputRef                    = useRef<HTMLInputElement>(null)
 
   const fetchClients = useCallback(async () => {
     try {
@@ -320,14 +324,45 @@ export default function OrgDashboard() {
       fetchUserDetail(selectedClient.id, selectedUser.id)
   }
 
+  const handleEditClientFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setEditLogoFile(file)
+    setEditLogoDeleted(false)
+    const reader = new FileReader()
+    reader.onload = ev => setEditLogoPreview(ev.target?.result as string)
+    reader.readAsDataURL(file)
+  }
+
   const handleRenameClient = async () => {
     if (!editClient || !editName.trim()) return
     setEditSaving(true)
     try {
       await api.put(`/clients/${editClient.id}`, { name: editName.trim() })
-      setClients(prev => prev.map(c => c.id === editClient.id ? { ...c, name: editName.trim() } : c))
-      if (selectedClient?.id === editClient.id) setSelectedClient(prev => prev ? { ...prev, name: editName.trim() } : prev)
+
+      let newLogoUrl = editClient.logoDataUrl ?? null
+      if (editLogoDeleted) {
+        await api.delete(`/clients/${editClient.id}/logo`)
+        newLogoUrl = null
+      } else if (editLogoFile) {
+        const form = new FormData()
+        form.append('file', editLogoFile)
+        const { data } = await api.post<{ logoDataUrl: string }>(`/clients/${editClient.id}/logo`, form, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        })
+        newLogoUrl = data.logoDataUrl
+      }
+
+      setClients(prev => prev.map(c =>
+        c.id === editClient.id ? { ...c, name: editName.trim(), logoDataUrl: newLogoUrl } : c
+      ))
+      if (selectedClient?.id === editClient.id)
+        setSelectedClient(prev => prev ? { ...prev, name: editName.trim(), logoDataUrl: newLogoUrl } : prev)
+
       setEditClient(null)
+      setEditLogoFile(null)
+      setEditLogoPreview(null)
+      setEditLogoDeleted(false)
     } finally {
       setEditSaving(false)
     }
@@ -419,6 +454,12 @@ export default function OrgDashboard() {
                               className={`w-full text-left px-3 py-2.5 hover:bg-slate-100 transition-colors flex items-center justify-between gap-2 ${
                                 selectedClient?.id === c.id ? 'bg-violet-50 border-l-2 border-violet-500' : ''}`}
                             >
+                              {c.logoDataUrl
+                                ? <img src={c.logoDataUrl} alt="" className="w-7 h-7 rounded-lg object-contain bg-slate-100 flex-shrink-0" />
+                                : <div className="w-7 h-7 rounded-lg bg-violet-100 flex items-center justify-center flex-shrink-0">
+                                    <span className="text-xs font-bold text-violet-600">{c.name[0]?.toUpperCase()}</span>
+                                  </div>
+                              }
                               <div className="min-w-0 flex-1">
                                 <p className="text-xs font-semibold text-slate-800 truncate">{c.name}</p>
                                 <p className="text-xs text-slate-400">{c.userCount} gebruikers</p>
@@ -563,26 +604,69 @@ export default function OrgDashboard() {
         />
       )}
 
-      {/* Rename client modal */}
+      {/* Edit client modal */}
       {editClient && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
-          onMouseDown={e => { if (e.target === e.currentTarget) setEditClient(null) }}
-        >
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm">
             <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-slate-100">
-              <h2 className="text-base font-semibold text-slate-900">Naam wijzigen</h2>
-              <button onClick={() => setEditClient(null)} className="text-slate-400 hover:text-slate-600">
+              <h2 className="text-base font-semibold text-slate-900">Client wijzigen</h2>
+              <button
+                onClick={() => { setEditClient(null); setEditLogoFile(null); setEditLogoPreview(null); setEditLogoDeleted(false) }}
+                className="text-slate-400 hover:text-slate-600"
+              >
                 <X size={18} />
               </button>
             </div>
             <div className="p-5 space-y-4">
+
+              {/* Logo */}
               <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">Naam organisatie *</label>
+                <label className="block text-xs font-medium text-slate-600 mb-2">Logo</label>
+                <div className="flex items-center gap-3">
+                  {(() => {
+                    const previewSrc = editLogoPreview ?? (editLogoDeleted ? null : editClient.logoDataUrl)
+                    return previewSrc ? (
+                      <div className="relative w-16 h-16 rounded-xl border border-slate-200 overflow-hidden bg-slate-50 flex-shrink-0">
+                        <img src={previewSrc} alt="Logo" className="w-full h-full object-contain p-1" />
+                        <button
+                          type="button"
+                          onClick={() => { setEditLogoPreview(null); setEditLogoFile(null); setEditLogoDeleted(true); if (editLogoInputRef.current) editLogoInputRef.current.value = '' }}
+                          className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-slate-700/80 text-white flex items-center justify-center hover:bg-slate-900"
+                        >
+                          <X size={9} />
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => editLogoInputRef.current?.click()}
+                        className="w-16 h-16 rounded-xl border-2 border-dashed border-slate-300 hover:border-violet-400 flex flex-col items-center justify-center gap-1 text-slate-400 hover:text-violet-500 transition-colors flex-shrink-0"
+                      >
+                        <ImagePlus size={18} />
+                        <span className="text-[10px] leading-none">Upload</span>
+                      </button>
+                    )
+                  })()}
+                  <div className="text-xs text-slate-500 leading-relaxed">
+                    PNG, JPG of WebP<br />Maximaal 512×512px
+                  </div>
+                </div>
+                <input
+                  ref={editLogoInputRef}
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  className="hidden"
+                  onChange={handleEditClientFileChange}
+                />
+              </div>
+
+              {/* Name */}
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">Naam *</label>
                 <input
                   value={editName}
                   onChange={e => setEditName(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && handleRenameClient()}
+                  onKeyDown={e => { if (e.key === 'Enter') handleRenameClient() }}
                   className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm text-slate-900 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100"
                   autoFocus
                 />
@@ -590,7 +674,7 @@ export default function OrgDashboard() {
             </div>
             <div className="flex gap-3 px-5 pb-5">
               <button
-                onClick={() => setEditClient(null)}
+                onClick={() => { setEditClient(null); setEditLogoFile(null); setEditLogoPreview(null); setEditLogoDeleted(false) }}
                 className="flex-1 px-4 py-2 rounded-xl border border-slate-200 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
               >
                 Annuleren

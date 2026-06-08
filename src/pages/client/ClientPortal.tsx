@@ -3,7 +3,7 @@ import {
   Users, LogOut, Layers, Search, ChevronRight, ArrowLeft,
   Laptop, Shield, CreditCard, Phone as PhoneIcon,
   PackageCheck, BarChart3, History, FileText,
-  Settings, HelpCircle, Building2, MapPin, UserPlus,
+  Settings, Building2, MapPin, UserPlus,
   Plus, Pencil, Trash2,
   Package, Activity, Archive, XCircle, CheckCircle2, Clock,
   MoreVertical, Wifi, Moon, Sun, ArrowLeftCircle,
@@ -1987,6 +1987,7 @@ export default function ClientPortal() {
   const [search, setSearch] = useState('')
   const [showAddUser, setShowAddUser] = useState(false)
   const [showAddEmployee, setShowAddEmployee] = useState(false)
+  const [clientLogoUrl, setClientLogoUrl] = useState<string | null>(null)
   const [departmentOptions, setDepartmentOptions] = useState<{ id: string; name: string; managerName: string; managerId: string | null }[]>([])
   const [managers, setManagers] = useState<{ id: string; fullName: string }[]>([])
 
@@ -2047,6 +2048,12 @@ export default function ClientPortal() {
     fetchManagers()
   }
 
+  useEffect(() => {
+    api.get<{ logoDataUrl: string | null }>('/portal/logo')
+      .then(r => setClientLogoUrl(r.data.logoDataUrl))
+      .catch(() => {})
+  }, [])
+
   const handleLogout = () => { logout(); navigate('/login') }
   const tenantName = user?.tenantName ?? 'Portal'
 
@@ -2061,10 +2068,9 @@ export default function ClientPortal() {
 
         <div className="px-4 py-4 border-b border-slate-800 flex-shrink-0">
           <div className="flex items-center gap-2">
-            <Layers size={16} className="text-violet-400 flex-shrink-0" />
             <span className="font-bold text-white text-sm truncate">{tenantName}</span>
           </div>
-          <p className="text-xs text-slate-500 mt-0.5 ml-6">Portaal</p>
+          <p className="text-xs text-slate-500 mt-0.5">Portaal</p>
         </div>
 
         <nav className="flex-1 px-2 py-3 overflow-y-auto space-y-1">
@@ -2090,8 +2096,12 @@ export default function ClientPortal() {
         </nav>
 
         <div className="px-2 pb-3 flex-shrink-0 border-t border-slate-800 pt-2 space-y-1">
+          {clientLogoUrl && (
+            <div className="px-3 py-2">
+              <img src={clientLogoUrl} alt="Logo" className="h-8 max-w-full object-contain opacity-90" />
+            </div>
+          )}
           <NavItem icon={<Settings size={14} />} label="Instellingen" active={view === 'settings'} onClick={() => handleNavClick('settings')} />
-          <NavItem icon={<HelpCircle size={14} />} label="Help" active={view === 'help'} onClick={() => handleNavClick('help')} />
           <div className="mt-2 px-3 flex items-center gap-2">
             <div className="w-6 h-6 rounded-full bg-violet-700 text-white text-xs font-bold flex items-center justify-center flex-shrink-0">
               {(user?.email?.[0] ?? '').toUpperCase()}

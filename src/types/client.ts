@@ -4,6 +4,7 @@ export interface ClientListItem {
   isActive: boolean
   userCount: number
   createdAt: string
+  logoDataUrl?: string | null
 }
 
 export interface ClientResponse {
