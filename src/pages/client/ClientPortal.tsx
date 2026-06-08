@@ -373,6 +373,11 @@ function HardwareView({ teammates }: { teammates: ClientUserListItem[] }) {
           </div>
 
           <Card className="flex-1 overflow-hidden flex flex-col">
+            <div className="grid grid-cols-[2fr_1fr_1.2fr_1.5fr_0.9fr] gap-3 px-4 py-2.5 border-b border-slate-100 bg-slate-50 flex-shrink-0">
+              {['Naam', 'Type', 'Serienummer', 'Toegewezen aan', 'Status'].map(h => (
+                <span key={h} className="text-xs font-semibold text-slate-500 uppercase tracking-wider truncate">{h}</span>
+              ))}
+            </div>
             <div className="flex-1 overflow-y-auto">
               {loading ? (
                 <div className="p-10 text-center text-sm text-slate-400">Laden…</div>
@@ -386,28 +391,23 @@ function HardwareView({ teammates }: { teammates: ClientUserListItem[] }) {
               ) : (
                 <ul className="divide-y divide-slate-100">
                   {filtered.map(a => (
-                    <li key={a.id}>
-                      <button
-                        onClick={() => setSelected(a)}
-                        className={`w-full text-left px-4 py-3.5 transition-colors hover:bg-slate-100 ${
-                          selected?.id === a.id ? 'bg-violet-50 border-l-2 border-violet-500' : ''
-                        }`}
-                      >
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="min-w-0">
-                            <p className="text-sm font-semibold text-slate-800 truncate">{a.name}</p>
-                            <p className="text-xs text-slate-500 truncate">
-                              {a.brand || '—'} • {HARDWARE_TYPE_LABEL[a.type] ?? a.type}
-                            </p>
-                          </div>
-                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${HARDWARE_STATUS_TONE[a.status] ?? 'bg-slate-100 text-slate-600'}`}>
-                            {HARDWARE_STATUS_LABEL[a.status] ?? a.status}
-                          </span>
-                        </div>
-                        {a.assignedToName && (
-                          <p className="mt-1 text-xs text-slate-400 truncate">{a.assignedToName}</p>
-                        )}
-                      </button>
+                    <li
+                      key={a.id}
+                      onClick={() => setSelected(a)}
+                      className={`grid grid-cols-[2fr_1fr_1.2fr_1.5fr_0.9fr] gap-3 px-4 py-3 items-center cursor-pointer transition-colors hover:bg-slate-100 ${
+                        selected?.id === a.id ? 'bg-violet-50 border-l-2 border-violet-500' : ''
+                      }`}
+                    >
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-slate-800 truncate">{a.name}</p>
+                        {a.brand && <p className="text-xs text-slate-400 truncate">{a.brand}</p>}
+                      </div>
+                      <p className="text-xs text-slate-600 truncate">{HARDWARE_TYPE_LABEL[a.type] ?? a.type}</p>
+                      <p className="text-xs text-slate-600 truncate tabular-nums">{a.serialNumber || '—'}</p>
+                      <p className="text-xs text-slate-600 truncate">{a.assignedToName || '—'}</p>
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium truncate ${HARDWARE_STATUS_TONE[a.status] ?? 'bg-slate-100 text-slate-600'}`}>
+                        {HARDWARE_STATUS_LABEL[a.status] ?? a.status}
+                      </span>
                     </li>
                   ))}
                 </ul>
