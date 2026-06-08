@@ -180,7 +180,6 @@ function EditUserModal({ user, departments, managers, onClose, onSaved }: {
     <div
       ref={overlayRef}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
-      onMouseDown={e => { if (e.target === overlayRef.current) onClose() }}
     >
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg">
         <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-slate-100">
