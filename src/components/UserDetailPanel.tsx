@@ -3,7 +3,7 @@ import {
   Laptop, KeyRound, History, CheckCircle2, AlertTriangle,
   LogOut, ShieldCheck, ClipboardList, Mail,
   Briefcase, Calendar, User, RotateCcw, Smartphone, Phone,
-  Users, FileText, Pencil, X,
+  Users, FileText, Pencil, Trash2, X,
 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/Card'
 import type { ClientUserDetailResponse, UserStatus } from '@/types/clientUser'
@@ -321,9 +321,10 @@ interface Props {
   historyPath?: string
   onChecklistToggle?: (entryId: string, checked: boolean) => void
   onUserUpdated?: () => void
+  onDelete?: () => void
 }
 
-export function UserDetailPanel({ user, canEdit, departments = [], managers = [], checklistBasePath, historyPath, onChecklistToggle, onUserUpdated }: Props) {
+export function UserDetailPanel({ user, canEdit, departments = [], managers = [], checklistBasePath, historyPath, onChecklistToggle, onUserUpdated, onDelete }: Props) {
   const status = user.status as UserStatus
   const statusTone = status === 'InService' ? 'good' : status === 'StartPlanned' ? 'info' : status === 'LeavePlanned' ? 'warn' : 'bad'
 
@@ -383,13 +384,24 @@ export function UserDetailPanel({ user, canEdit, departments = [], managers = []
                     <Badge tone={statusTone}>{STATUS_LABEL[status]}</Badge>
                   </div>
                 </div>
-                <button
-                  onClick={() => setEditOpen(true)}
-                  className="flex-shrink-0 inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 hover:border-slate-300 transition-colors"
-                >
-                  <Pencil size={12} />
-                  Wijzigen
-                </button>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <button
+                    onClick={() => setEditOpen(true)}
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 hover:border-slate-300 transition-colors"
+                  >
+                    <Pencil size={12} />
+                    Wijzigen
+                  </button>
+                  {onDelete && (
+                    <button
+                      onClick={onDelete}
+                      className="inline-flex items-center gap-1.5 rounded-xl border border-red-200 bg-white px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 hover:border-red-300 transition-colors"
+                    >
+                      <Trash2 size={12} />
+                      Verwijderen
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           </div>

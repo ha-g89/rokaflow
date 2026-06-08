@@ -7,6 +7,7 @@ import {
   Plus, Pencil, Trash2,
   Package, Activity, Archive, XCircle, CheckCircle2, Clock,
   MoreVertical, Wifi, Moon, Sun, ArrowLeftCircle,
+  AlertTriangle, Smartphone,
 } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { useThemeStore } from '@/store/themeStore'
@@ -25,7 +26,7 @@ import { SubscriptionModal } from '@/components/SubscriptionModal'
 import { DepartmentModal } from '@/components/DepartmentModal'
 import type { ClientUserListItem, ClientUserDetailResponse } from '@/types/clientUser'
 import { STATUS_LABEL, STATUS_TONE } from '@/types/clientUser'
-import type { HardwareAssetListItem, HardwareHistoryItem } from '@/types/hardware'
+import type { HardwareAssetListItem } from '@/types/hardware'
 import { HARDWARE_STATUS_LABEL, HARDWARE_STATUS_TONE, HARDWARE_TYPE_LABEL } from '@/types/hardware'
 import type { LicenseListItem } from '@/types/license'
 import { LICENSE_TYPE_LABEL, LICENSE_TYPE_TONE } from '@/types/license'
@@ -480,32 +481,17 @@ function ItemHistoryBlock({ url, subtitle }: { url: string; subtitle?: string })
 
 // ── Hardware detail panel ─────────────────────────────────────────────────────
 
-function HardwareDetailPanel({ asset, onEdit, onDelete }: {
+function HardwareDetailPanel({ asset, onEdit, onDelete, historyKey }: {
   asset: HardwareAssetListItem
   onEdit: () => void
   onDelete: () => void
+  historyKey: number
 }) {
   const [confirmDelete, setConfirmDelete] = useState(false)
-  const [history, setHistory] = useState<HardwareHistoryItem[]>([])
-  const [historyLoading, setHistoryLoading] = useState(false)
-  const [selectedEntry, setSelectedEntry] = useState<HardwareHistoryItem | null>(null)
-  const [showAllModal, setShowAllModal] = useState(false)
-
-  useEffect(() => {
-    setHistoryLoading(true)
-    api.get<HardwareHistoryItem[]>(`/portal/hardware/${asset.id}/history`)
-      .then(r => setHistory(r.data))
-      .catch(() => {})
-      .finally(() => setHistoryLoading(false))
-  }, [asset.id])
 
   function fmt(d: string | null | undefined) {
     if (!d) return '—'
     return new Date(d).toLocaleDateString('nl-NL', { day: '2-digit', month: '2-digit', year: 'numeric' })
-  }
-
-  function fmtDateTime(d: string) {
-    return new Date(d).toLocaleString('nl-NL', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
   }
 
   return (
@@ -534,43 +520,6 @@ function HardwareDetailPanel({ asset, onEdit, onDelete }: {
             {asset.returnedAt && <p><span className="text-slate-400">Inleverdatum</span><br /><span className="font-medium text-slate-800">{fmt(asset.returnedAt)}</span></p>}
           </div>
 
-          {/* ── History ── */}
-          <div className="mt-4 pt-4 border-t border-slate-100">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Geschiedenis</p>
-              {history.length > 5 && (
-                <button onClick={() => setShowAllModal(true)} className="text-xs text-violet-600 hover:text-violet-800 font-medium">
-                  Alles bekijken ({history.length})
-                </button>
-              )}
-            </div>
-            {historyLoading ? (
-              <p className="text-xs text-slate-400">Laden…</p>
-            ) : history.length === 0 ? (
-              <p className="text-xs text-slate-400">Geen geschiedenis beschikbaar.</p>
-            ) : (
-              <div className="space-y-1">
-                {history.slice(0, 5).map(h => (
-                  <button
-                    key={h.id}
-                    onClick={() => setSelectedEntry(h)}
-                    className="w-full text-left rounded-lg bg-slate-50 hover:bg-violet-50 px-3 py-2 transition-colors cursor-pointer group"
-                  >
-                    <p className="text-xs font-medium text-slate-700 group-hover:text-violet-700">{h.summary}</p>
-                    <p className="text-xs text-slate-400 mt-0.5">
-                      {fmtDateTime(h.occurredAt)}{h.performedBy ? ` · ${h.performedBy}` : ''}
-                    </p>
-                  </button>
-                ))}
-                {history.length > 5 && (
-                  <button onClick={() => setShowAllModal(true)} className="w-full text-xs text-violet-600 hover:text-violet-800 font-medium py-1">
-                    + {history.length - 5} meer bekijken
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
-
           <div className="mt-4 flex flex-wrap gap-2">
             <Button size="sm" variant="secondary" onClick={onEdit}>
               <Pencil size={13} /> Wijzigen
@@ -591,70 +540,14 @@ function HardwareDetailPanel({ asset, onEdit, onDelete }: {
               </>
             )}
           </div>
+
+          <ItemHistoryBlock
+            key={`${asset.id}-${historyKey}`}
+            url={`/portal/hardware/${asset.id}/history`}
+            subtitle={`${asset.brand} ${asset.name}`}
+          />
         </CardContent>
       </Card>
-
-      {showAllModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg flex flex-col max-h-[80vh]">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 flex-shrink-0">
-              <div>
-                <h2 className="text-base font-bold text-slate-900">Volledige geschiedenis</h2>
-                <p className="text-xs text-slate-400 mt-0.5">{asset.brand} {asset.name}</p>
-              </div>
-              <button onClick={() => setShowAllModal(false)} className="text-slate-400 hover:text-slate-600">
-                <XCircle size={20} />
-              </button>
-            </div>
-            <div className="overflow-y-auto flex-1 px-6 py-4">
-              <div className="space-y-2">
-                {history.map(h => (
-                  <div key={h.id} className="rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
-                    <p className="text-sm font-semibold text-slate-800">{h.summary}</p>
-                    {h.description && (
-                      <div className="mt-1.5 space-y-0.5">
-                        {h.description.split('\n').map((line, i) => (
-                          <p key={i} className="text-xs text-slate-600 leading-snug">{line}</p>
-                        ))}
-                      </div>
-                    )}
-                    <p className="text-xs text-slate-400 mt-1.5">
-                      {fmtDateTime(h.occurredAt)}{h.performedBy ? ` · ${h.performedBy}` : ''}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {selectedEntry && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
-              <h2 className="text-base font-bold text-slate-900">{selectedEntry.summary}</h2>
-              <button onClick={() => setSelectedEntry(null)} className="text-slate-400 hover:text-slate-600">
-                <XCircle size={20} />
-              </button>
-            </div>
-            <div className="px-6 py-4">
-              {selectedEntry.description ? (
-                <div className="space-y-1 mb-4">
-                  {selectedEntry.description.split('\n').map((line, i) => (
-                    <p key={i} className="text-sm text-slate-700 leading-snug">{line}</p>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-slate-400 mb-4">Geen aanvullende details.</p>
-              )}
-              <p className="text-xs text-slate-400">
-                {fmtDateTime(selectedEntry.occurredAt)}{selectedEntry.performedBy ? ` · ${selectedEntry.performedBy}` : ''}
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
     </>
   )
 }
@@ -668,6 +561,7 @@ function HardwareView({ teammates }: { teammates: ClientUserListItem[] }) {
   const [selected, setSelected] = useState<HardwareAssetListItem | null>(null)
   const [showModal, setShowModal] = useState(false)
   const [editTarget, setEditTarget] = useState<HardwareAssetListItem | null>(null)
+  const [historyKey, setHistoryKey] = useState(0)
 
   const fetchAssets = useCallback(async () => {
     try {
@@ -694,11 +588,12 @@ function HardwareView({ teammates }: { teammates: ClientUserListItem[] }) {
     await api.delete(`/portal/hardware/${id}`)
     setAssets(prev => prev.filter(a => a.id !== id))
     if (selected?.id === id) setSelected(null)
+    setHistoryKey(k => k + 1)
   }
 
   const handleOpenAdd = () => { setEditTarget(null); setShowModal(true) }
   const handleOpenEdit = (asset: HardwareAssetListItem) => { setEditTarget(asset); setShowModal(true) }
-  const handleSaved = async () => { await fetchAssets(); setShowModal(false) }
+  const handleSaved = async () => { await fetchAssets(); setShowModal(false); setHistoryKey(k => k + 1) }
 
   return (
     <div className="flex flex-col gap-4 h-full">
@@ -778,6 +673,7 @@ function HardwareView({ teammates }: { teammates: ClientUserListItem[] }) {
               asset={selected}
               onEdit={() => handleOpenEdit(selected)}
               onDelete={() => handleDelete(selected.id)}
+              historyKey={historyKey}
             />
           ) : (
             <div className="h-full flex items-center justify-center">
@@ -1815,7 +1711,178 @@ function fmtDate(d: string | null | undefined) {
   return new Date(d).toLocaleDateString('nl-NL', { day: '2-digit', month: '2-digit', year: 'numeric' })
 }
 
-function EmployeeListView({ teammates, loading, search, currentUserId, departmentOptions, onSearch, onSelect, onAddEmployee }: {
+// ── Delete employee modal ─────────────────────────────────────────────────────
+
+type Blocker = { icon: React.ReactNode; type: string; name: string }
+
+function DeleteEmployeeModal({ userId, userName, onClose, onDeleted }: {
+  userId: string
+  userName: string
+  onClose: () => void
+  onDeleted: () => void
+}) {
+  const [detail, setDetail]       = useState<ClientUserDetailResponse | null>(null)
+  const [loading, setLoading]     = useState(true)
+  const [deleting, setDeleting]   = useState(false)
+  const [apiError, setApiError]   = useState<string | null>(null)
+  const [acknowledged, setAcknowledged] = useState(false)
+
+  useEffect(() => {
+    api.get<ClientUserDetailResponse>(`/portal/users/${userId}`)
+      .then(r => setDetail(r.data))
+      .catch(() => setApiError('Kan medewerkergegevens niet ophalen.'))
+      .finally(() => setLoading(false))
+  }, [userId])
+
+  const blockers: Blocker[] = detail ? [
+    ...detail.hardware
+      .filter(h => !h.isReturned)
+      .map(h => ({ icon: <Laptop size={12} />, type: 'Hardware', name: `${h.brand} ${h.name}`.trim() || h.name })),
+    ...detail.licenses
+      .filter(l => l.isActive)
+      .map(l => ({ icon: <CreditCard size={12} />, type: 'Licentie', name: l.name })),
+    ...detail.phones
+      .map(p => ({ icon: <Smartphone size={12} />, type: 'Telefoon', name: `${p.brand} ${p.model}`.trim() })),
+  ] : []
+
+  const isBlocked = blockers.length > 0
+  const canDelete = !loading && !isBlocked && !apiError && acknowledged
+
+  const handleDelete = async () => {
+    setDeleting(true)
+    setApiError(null)
+    try {
+      await api.delete(`/portal/employees/${userId}`)
+      onDeleted()
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail
+      setApiError(msg ?? 'Verwijderen mislukt. Controleer of alle zaken zijn ontkoppeld.')
+      setDeleting(false)
+    }
+  }
+
+  // Group blockers by type for display
+  const grouped = blockers.reduce<Record<string, Blocker[]>>((acc, b) => {
+    ;(acc[b.type] ??= []).push(b)
+    return acc
+  }, {})
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+
+        {/* Header */}
+        <div className="px-6 pt-6 pb-4">
+          <div className="flex items-start gap-3">
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${isBlocked ? 'bg-amber-100' : 'bg-red-100'}`}>
+              {isBlocked
+                ? <AlertTriangle size={18} className="text-amber-600" />
+                : <Trash2 size={18} className="text-red-600" />
+              }
+            </div>
+            <div>
+              <h2 className="text-base font-bold text-slate-900">Medewerker verwijderen</h2>
+              <p className="text-sm text-slate-500 mt-0.5">{userName}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Body */}
+        <div className="px-6 pb-6">
+          {loading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="w-6 h-6 border-2 border-violet-400 border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : apiError && !detail ? (
+            <div className="flex items-center gap-2 p-3 rounded-lg bg-red-50 border border-red-100 text-sm text-red-700">
+              <AlertTriangle size={14} className="flex-shrink-0" /> {apiError}
+            </div>
+          ) : isBlocked ? (
+            <>
+              <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 border border-amber-100 mb-4">
+                <AlertTriangle size={14} className="text-amber-500 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-amber-800">
+                  <span className="font-semibold">Verwijderen geblokkeerd.</span> Ontkoppel eerst alle gekoppelde zaken van deze medewerker.
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                {Object.entries(grouped).map(([type, items]) => (
+                  <div key={type}>
+                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                      {items[0].icon}
+                      {type} <span className="font-normal text-slate-400">({items.length})</span>
+                    </p>
+                    <div className="space-y-1">
+                      {items.map((item, i) => (
+                        <div key={i} className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-100">
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0" />
+                          <p className="text-sm text-slate-700 truncate">{item.name}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="flex items-start gap-2 p-3 rounded-lg bg-emerald-50 border border-emerald-100 mb-4">
+                <CheckCircle2 size={14} className="text-emerald-500 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-emerald-600">
+                  Alle zaken zijn ontkoppeld. Deze medewerker kan definitief worden verwijderd.
+                </p>
+              </div>
+              <p className="text-sm text-slate-400 mb-4">
+                Het account van <span className="font-medium text-slate-500">{userName}</span> en alle bijbehorende gegevens worden permanent verwijderd.
+              </p>
+              <label className="flex items-start gap-3 cursor-pointer select-none group">
+                <input
+                  type="checkbox"
+                  checked={acknowledged}
+                  onChange={e => setAcknowledged(e.target.checked)}
+                  className="mt-0.5 w-4 h-4 rounded accent-red-600 cursor-pointer flex-shrink-0"
+                />
+                <span className="text-sm text-slate-400 group-hover:text-slate-600 transition-colors">
+                  Ik begrijp dat dit <span className="font-medium text-red-400">niet ongedaan kan worden gemaakt</span>.
+                </span>
+              </label>
+            </>
+          )}
+
+          {apiError && detail && (
+            <div className="flex items-center gap-2 p-3 rounded-lg bg-red-50 border border-red-100 text-sm text-red-700 mt-3">
+              <AlertTriangle size={14} className="flex-shrink-0" /> {apiError}
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50">
+          <Button variant="secondary" size="sm" onClick={onClose}>
+            Annuleren
+          </Button>
+          <Button
+            variant="danger"
+            size="sm"
+            disabled={!canDelete || deleting}
+            onClick={handleDelete}
+          >
+            {deleting ? (
+              <><div className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" /> Verwijderen…</>
+            ) : (
+              <><Trash2 size={13} /> Definitief verwijderen</>
+            )}
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Employee list view ────────────────────────────────────────────────────────
+
+function EmployeeListView({ teammates, loading, search, currentUserId, departmentOptions, onSearch, onSelect, onAddEmployee, onDelete }: {
   teammates: ClientUserListItem[]
   loading: boolean
   search: string
@@ -1824,6 +1891,7 @@ function EmployeeListView({ teammates, loading, search, currentUserId, departmen
   onSearch: (v: string) => void
   onSelect: (id: string) => void
   onAddEmployee: () => void
+  onDelete: (id: string, name: string) => void
 }) {
   const [openMenu, setOpenMenu] = useState<string | null>(null)
 
@@ -1943,12 +2011,19 @@ function EmployeeListView({ teammates, loading, search, currentUserId, departmen
                       <MoreVertical size={15} />
                     </button>
                     {openMenu === u.id && (
-                      <div className="absolute right-0 top-7 z-20 w-44 bg-white rounded-xl shadow-lg border border-slate-200 py-1 text-sm">
+                      <div className="absolute right-0 top-7 z-20 w-48 bg-white rounded-xl shadow-lg border border-slate-200 py-1 text-sm">
                         <button
                           onClick={() => { setOpenMenu(null); onSelect(u.id) }}
                           className="w-full text-left px-4 py-2 text-slate-700 hover:bg-slate-100 flex items-center gap-2"
                         >
                           <ChevronRight size={13} className="text-slate-400" /> Details bekijken
+                        </button>
+                        <div className="my-1 border-t border-slate-100" />
+                        <button
+                          onClick={() => { setOpenMenu(null); onDelete(u.id, `${u.firstName} ${u.lastName}`) }}
+                          className="w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 flex items-center gap-2"
+                        >
+                          <Trash2 size={13} /> Verwijderen
                         </button>
                       </div>
                     )}
@@ -1965,11 +2040,12 @@ function EmployeeListView({ teammates, loading, search, currentUserId, departmen
 
 // ── Employee detail view (full-page) ──────────────────────────────────────────
 
-function EmployeeDetailView({ user, loading, onBack, onUserUpdated, departments, managers }: {
+function EmployeeDetailView({ user, loading, onBack, onUserUpdated, onDelete, departments, managers }: {
   user: ClientUserDetailResponse | null
   loading: boolean
   onBack: () => void
   onUserUpdated?: () => void
+  onDelete?: (id: string, name: string) => void
   departments?: { id: string; name: string; managerId: string | null }[]
   managers?: { id: string; fullName: string }[]
 }) {
@@ -1999,6 +2075,7 @@ function EmployeeDetailView({ user, loading, onBack, onUserUpdated, departments,
             checklistBasePath={`/portal/users/${user.id}`}
             historyPath={`/portal/history/ClientUser/${user.id}`}
             onUserUpdated={onUserUpdated}
+            onDelete={onDelete ? () => onDelete(user.id, `${user.firstName} ${user.lastName}`) : undefined}
           />
         )}
       </div>
@@ -2374,6 +2451,7 @@ export default function ClientPortal() {
   const [search, setSearch] = useState('')
   const [showAddUser, setShowAddUser] = useState(false)
   const [showAddEmployee, setShowAddEmployee] = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null)
   const [clientLogoUrl, setClientLogoUrl] = useState<string | null>(null)
   const [departmentOptions, setDepartmentOptions] = useState<{ id: string; name: string; managerName: string; managerId: string | null }[]>([])
   const [managers, setManagers] = useState<{ id: string; fullName: string }[]>([])
@@ -2424,6 +2502,17 @@ export default function ClientPortal() {
   const handleBackToList = () => {
     setView('employees')
     setSelectedUser(null)
+  }
+
+  const handleOpenDelete = (id: string, name: string) => {
+    setDeleteTarget({ id, name })
+  }
+
+  const handleEmployeeDeleted = () => {
+    setDeleteTarget(null)
+    setView('employees')
+    setSelectedUser(null)
+    fetchUsers()
   }
 
   const handleNavClick = (v: View) => {
@@ -2551,6 +2640,7 @@ export default function ClientPortal() {
               onSearch={setSearch}
               onSelect={handleSelectEmployee}
               onAddEmployee={() => { fetchDepartmentOptions(); setShowAddEmployee(true) }}
+              onDelete={handleOpenDelete}
             />
           )}
 
@@ -2560,6 +2650,7 @@ export default function ClientPortal() {
               loading={loadingDetail}
               onBack={handleBackToList}
               onUserUpdated={() => { if (selectedUser) { fetchUserDetail(selectedUser.id); fetchUsers() } }}
+              onDelete={handleOpenDelete}
               departments={departmentOptions}
               managers={managers}
             />
@@ -2615,6 +2706,15 @@ export default function ClientPortal() {
         departments={departmentOptions}
         managers={managers}
       />
+
+      {deleteTarget && (
+        <DeleteEmployeeModal
+          userId={deleteTarget.id}
+          userName={deleteTarget.name}
+          onClose={() => setDeleteTarget(null)}
+          onDeleted={handleEmployeeDeleted}
+        />
+      )}
     </div>
   )
 }
