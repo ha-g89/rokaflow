@@ -826,8 +826,8 @@ function TelefonieView({ teammates }: { teammates: ClientUserListItem[] }) {
     <div className="flex flex-col gap-4 h-full">
       {/* Totalen */}
       <div className="grid grid-cols-3 gap-3 flex-shrink-0">
-        <StatCard label="Abonnementen" value={totals.subscriptions} icon={<Layers size={18} />} tone="violet" />
         <StatCard label="Telefoons in gebruik" value={totals.phonesInUse} icon={<PhoneIcon size={18} />} tone="emerald" />
+        <StatCard label="Abonnementen" value={totals.subscriptions} icon={<Layers size={18} />} tone="violet" />
         <StatCard label="Simkaarten in gebruik" value={totals.simCardsInUse} icon={<Wifi size={18} />} tone="blue" />
       </div>
 
