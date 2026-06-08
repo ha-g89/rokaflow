@@ -1,3 +1,10 @@
+export interface HardwareHistoryItem {
+  id: string
+  occurredAt: string
+  description: string
+  performedBy: string | null
+}
+
 export interface HardwareAssetListItem {
   id: string
   name: string

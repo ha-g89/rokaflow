@@ -25,7 +25,7 @@ import { SubscriptionModal } from '@/components/SubscriptionModal'
 import { DepartmentModal } from '@/components/DepartmentModal'
 import type { ClientUserListItem, ClientUserDetailResponse } from '@/types/clientUser'
 import { STATUS_LABEL, STATUS_TONE } from '@/types/clientUser'
-import type { HardwareAssetListItem } from '@/types/hardware'
+import type { HardwareAssetListItem, HardwareHistoryItem } from '@/types/hardware'
 import { HARDWARE_STATUS_LABEL, HARDWARE_STATUS_TONE, HARDWARE_TYPE_LABEL } from '@/types/hardware'
 import type { LicenseListItem } from '@/types/license'
 import { LICENSE_TYPE_LABEL, LICENSE_TYPE_TONE } from '@/types/license'
@@ -234,71 +234,137 @@ function HardwareDetailPanel({ asset, onEdit, onDelete }: {
   onDelete: () => void
 }) {
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [history, setHistory] = useState<HardwareHistoryItem[]>([])
+  const [historyLoading, setHistoryLoading] = useState(false)
+  const [showHistoryModal, setShowHistoryModal] = useState(false)
+
+  useEffect(() => {
+    setHistoryLoading(true)
+    api.get<HardwareHistoryItem[]>(`/portal/hardware/${asset.id}/history`)
+      .then(r => setHistory(r.data))
+      .catch(() => {})
+      .finally(() => setHistoryLoading(false))
+  }, [asset.id])
 
   function fmt(d: string | null | undefined) {
     if (!d) return '—'
     return new Date(d).toLocaleDateString('nl-NL', { day: '2-digit', month: '2-digit', year: 'numeric' })
   }
 
+  function fmtDateTime(d: string) {
+    return new Date(d).toLocaleString('nl-NL', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+  }
+
   return (
-    <Card>
-      <CardContent className="p-5">
-        <div className="flex items-start justify-between mb-5 gap-3">
-          <div>
-            <h2 className="text-base font-bold text-slate-900">{asset.name}</h2>
-            <p className="text-sm text-slate-500 mt-0.5">
-              {asset.brand || '—'} • {HARDWARE_TYPE_LABEL[asset.type] ?? asset.type}
-            </p>
-          </div>
-          <span className={`text-xs px-2.5 py-1 rounded-full font-medium flex-shrink-0 ${HARDWARE_STATUS_TONE[asset.status] ?? 'bg-slate-100 text-slate-600'}`}>
-            {HARDWARE_STATUS_LABEL[asset.status] ?? asset.status}
-          </span>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          {[
-            { label: 'Assetnummer', value: asset.assetNumber || '—' },
-            { label: 'Serienummer', value: asset.serialNumber || '—' },
-            { label: 'Locatie', value: asset.location || '—' },
-            {
-              label: 'Aanschafwaarde',
-              value: asset.purchaseValue != null ? `€ ${asset.purchaseValue.toFixed(2)}` : '—',
-            },
-            { label: 'Toegewezen aan', value: asset.assignedToName || '—' },
-            { label: 'Uitgiftedatum', value: fmt(asset.issuedAt) },
-            ...(asset.returnedAt ? [{ label: 'Inleverdatum', value: fmt(asset.returnedAt) }] : []),
-          ].map(row => (
-            <div key={row.label} className="rounded-xl bg-slate-50 p-3">
-              <p className="text-xs text-slate-400 mb-0.5">{row.label}</p>
-              <p className="text-sm font-medium text-slate-800 truncate">{row.value}</p>
+    <>
+      <Card>
+        <CardContent className="p-5">
+          <div className="flex items-start justify-between mb-5 gap-3">
+            <div>
+              <h2 className="text-base font-bold text-slate-900">{asset.name}</h2>
+              <p className="text-sm text-slate-500 mt-0.5">
+                {asset.brand || '—'} • {HARDWARE_TYPE_LABEL[asset.type] ?? asset.type}
+              </p>
             </div>
-          ))}
-        </div>
+            <span className={`text-xs px-2.5 py-1 rounded-full font-medium flex-shrink-0 ${HARDWARE_STATUS_TONE[asset.status] ?? 'bg-slate-100 text-slate-600'}`}>
+              {HARDWARE_STATUS_LABEL[asset.status] ?? asset.status}
+            </span>
+          </div>
 
-        <div className="mt-5 flex flex-wrap gap-2">
-          <Button size="sm" variant="secondary" onClick={onEdit}>
-            <Pencil size={13} /> Wijzigen
-          </Button>
-          {!confirmDelete ? (
-            <Button size="sm" variant="danger" onClick={() => setConfirmDelete(true)}>
-              <Trash2 size={13} /> Verwijderen
+          <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-xs text-slate-600">
+            {asset.assetNumber && <p><span className="text-slate-400">Assetnummer</span><br /><span className="font-medium text-slate-800">{asset.assetNumber}</span></p>}
+            {asset.serialNumber && <p><span className="text-slate-400">Serienummer</span><br /><span className="font-medium text-slate-800">{asset.serialNumber}</span></p>}
+            {asset.location && <p><span className="text-slate-400">Locatie</span><br /><span className="font-medium text-slate-800">{asset.location}</span></p>}
+            {asset.purchaseValue != null && <p><span className="text-slate-400">Aanschafwaarde</span><br /><span className="font-medium text-slate-800">€ {asset.purchaseValue.toFixed(2)}</span></p>}
+            {asset.assignedToName && <p className="col-span-2"><span className="text-slate-400">Toegewezen aan</span><br /><span className="font-medium text-slate-800">{asset.assignedToName}</span></p>}
+            {asset.issuedAt && <p><span className="text-slate-400">Uitgiftedatum</span><br /><span className="font-medium text-slate-800">{fmt(asset.issuedAt)}</span></p>}
+            {asset.returnedAt && <p><span className="text-slate-400">Inleverdatum</span><br /><span className="font-medium text-slate-800">{fmt(asset.returnedAt)}</span></p>}
+          </div>
+
+          {/* ── History ── */}
+          <div className="mt-4 pt-4 border-t border-slate-100">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Geschiedenis</p>
+              {history.length > 5 && (
+                <button onClick={() => setShowHistoryModal(true)} className="text-xs text-violet-600 hover:text-violet-800 font-medium">
+                  Alles bekijken ({history.length})
+                </button>
+              )}
+            </div>
+            {historyLoading ? (
+              <p className="text-xs text-slate-400">Laden…</p>
+            ) : history.length === 0 ? (
+              <p className="text-xs text-slate-400">Geen geschiedenis beschikbaar.</p>
+            ) : (
+              <div className="space-y-1.5">
+                {history.slice(0, 5).map(h => (
+                  <div key={h.id} className="rounded-lg bg-slate-50 px-3 py-2">
+                    <p className="text-xs text-slate-700 leading-snug">{h.description}</p>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      {fmtDateTime(h.occurredAt)}{h.performedBy ? ` · ${h.performedBy}` : ''}
+                    </p>
+                  </div>
+                ))}
+                {history.length > 5 && (
+                  <button onClick={() => setShowHistoryModal(true)} className="w-full text-xs text-violet-600 hover:text-violet-800 font-medium py-1">
+                    + {history.length - 5} meer bekijken
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Button size="sm" variant="secondary" onClick={onEdit}>
+              <Pencil size={13} /> Wijzigen
             </Button>
-          ) : (
-            <>
-              <span className="flex items-center text-xs text-red-700 font-medium">Zeker weten?</span>
-              <Button size="sm" variant="danger" onClick={() => { setConfirmDelete(false); onDelete() }}>
-                Ja, verwijder
+            {!confirmDelete ? (
+              <Button size="sm" variant="danger" onClick={() => setConfirmDelete(true)}>
+                <Trash2 size={13} /> Verwijderen
               </Button>
-              <Button size="sm" variant="secondary" onClick={() => setConfirmDelete(false)}>
-                Nee
-              </Button>
-            </>
-          )}
-        </div>
+            ) : (
+              <>
+                <span className="flex items-center text-xs text-red-700 font-medium">Zeker weten?</span>
+                <Button size="sm" variant="danger" onClick={() => { setConfirmDelete(false); onDelete() }}>
+                  Ja, verwijder
+                </Button>
+                <Button size="sm" variant="secondary" onClick={() => setConfirmDelete(false)}>
+                  Nee
+                </Button>
+              </>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
-        <HistoryBlock entityType="HardwareAsset" entityId={asset.id} labelFn={hardwareAuditLabel} />
-      </CardContent>
-    </Card>
+      {showHistoryModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg flex flex-col max-h-[80vh]">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 flex-shrink-0">
+              <div>
+                <h2 className="text-base font-bold text-slate-900">Geschiedenis</h2>
+                <p className="text-xs text-slate-400 mt-0.5">{asset.brand} {asset.name}</p>
+              </div>
+              <button onClick={() => setShowHistoryModal(false)} className="text-slate-400 hover:text-slate-600">
+                <XCircle size={20} />
+              </button>
+            </div>
+            <div className="overflow-y-auto flex-1 px-6 py-4">
+              <div className="space-y-2">
+                {history.map(h => (
+                  <div key={h.id} className="rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
+                    <p className="text-sm text-slate-800 leading-snug">{h.description}</p>
+                    <p className="text-xs text-slate-400 mt-1">
+                      {fmtDateTime(h.occurredAt)}{h.performedBy ? ` · ${h.performedBy}` : ''}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   )
 }
 
