@@ -3,8 +3,10 @@ import {
   Briefcase, Users, Plus, LogOut,
   Building2, Search, UserPlus, User, ExternalLink, Loader2,
   MoreVertical, Pencil, X, Mail, Ban, ShieldCheck, Calendar, ImagePlus,
+  Moon, Sun,
 } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
+import { useThemeStore } from '@/store/themeStore'
 import { useNavigate } from 'react-router-dom'
 import api from '@/lib/axios'
 import type { SwitchToClientResponse } from '@/types/auth'
@@ -32,8 +34,8 @@ function StatCard({ icon, label, value, color }: {
       <CardContent className="flex items-center gap-4">
         <div className={`p-2.5 rounded-lg ${color}`}>{icon}</div>
         <div>
-          <p className="text-2xl font-bold text-slate-900">{value}</p>
-          <p className="text-xs text-slate-500">{label}</p>
+          <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{value}</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400">{label}</p>
         </div>
       </CardContent>
     </Card>
@@ -75,7 +77,7 @@ function OrgEditUserModal({ user, clientId, onClose, onSaved }: {
   const [error, setError]         = useState<string | null>(null)
   const overlayRef                = useRef<HTMLDivElement>(null)
 
-  const field = 'w-full px-3 py-2 rounded-lg border border-slate-300 text-sm text-slate-900 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-colors'
+  const field = 'w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-sm text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-700 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 dark:focus:ring-violet-900 transition-colors'
 
   const handleSave = async () => {
     if (!firstName.trim() || !lastName.trim()) { setError('Voor- en achternaam zijn verplicht.'); return }
@@ -101,10 +103,10 @@ function OrgEditUserModal({ user, clientId, onClose, onSaved }: {
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
       onMouseDown={e => { if (e.target === overlayRef.current) onClose() }}
     >
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm">
-        <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-slate-100">
-          <h2 className="text-base font-semibold text-slate-900">Gebruiker wijzigen</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition-colors">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-sm">
+        <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-slate-100 dark:border-slate-700">
+          <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">Gebruiker wijzigen</h2>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
             <X size={18} />
           </button>
         </div>
@@ -123,12 +125,12 @@ function OrgEditUserModal({ user, clientId, onClose, onSaved }: {
             <label className="block text-xs font-medium text-slate-600 mb-1">E-mailadres</label>
             <input type="email" value={email} onChange={e => setEmail(e.target.value)} className={field} placeholder="jan@bedrijf.nl" />
           </div>
-          {error && <p className="text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>}
+          {error && <p className="text-xs text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg px-3 py-2">{error}</p>}
         </div>
         <div className="flex gap-3 px-5 pb-5">
           <button
             onClick={onClose}
-            className="flex-1 px-4 py-2 rounded-xl border border-slate-200 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+            className="flex-1 px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-600 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
           >
             Annuleren
           </button>
@@ -181,14 +183,14 @@ function OrgPortalUserPanel({ user, clientId, onUserUpdated }: {
 
           {/* Avatar + naam + email + badge */}
           <div className="flex items-start gap-4">
-            <div className="w-16 h-16 rounded-2xl bg-violet-100 text-violet-700 flex items-center justify-center font-bold text-2xl flex-shrink-0 select-none">
+            <div className="w-16 h-16 rounded-2xl bg-violet-100 dark:bg-violet-950/50 text-violet-700 dark:text-violet-300 flex items-center justify-center font-bold text-2xl flex-shrink-0 select-none">
               {(user.firstName[0] ?? '').toUpperCase()}{(user.lastName[0] ?? '').toUpperCase()}
             </div>
             <div className="flex-1 min-w-0">
-              <h2 className="text-xl font-bold text-slate-900 leading-tight truncate">
+              <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 leading-tight truncate">
                 {user.firstName} {user.lastName}
               </h2>
-              <p className="text-sm text-slate-500 truncate mt-0.5">{user.email}</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400 truncate mt-0.5">{user.email}</p>
               <div className="mt-2">
                 <ActiveBadge isActive={user.isActive} />
               </div>
@@ -196,23 +198,23 @@ function OrgPortalUserPanel({ user, clientId, onUserUpdated }: {
           </div>
 
           {/* Info blok */}
-          <div className="mt-5 rounded-xl bg-slate-50 divide-y divide-slate-100">
+          <div className="mt-5 rounded-xl bg-slate-50 dark:bg-slate-700/40 divide-y divide-slate-100 dark:divide-slate-700">
             <div className="flex items-center gap-3 px-4 py-3">
               <Mail size={14} className="text-slate-400 flex-shrink-0" />
               <span className="text-xs text-slate-400 w-20 flex-shrink-0">E-mail</span>
-              <span className="text-xs font-medium text-slate-700 truncate">{user.email || '—'}</span>
+              <span className="text-xs font-medium text-slate-700 dark:text-slate-200 truncate">{user.email || '—'}</span>
             </div>
             {(user.departmentName || user.department) && (
               <div className="flex items-center gap-3 px-4 py-3">
                 <Briefcase size={14} className="text-slate-400 flex-shrink-0" />
                 <span className="text-xs text-slate-400 w-20 flex-shrink-0">Afdeling</span>
-                <span className="text-xs font-medium text-slate-700 truncate">{user.departmentName || user.department}</span>
+                <span className="text-xs font-medium text-slate-700 dark:text-slate-200 truncate">{user.departmentName || user.department}</span>
               </div>
             )}
             <div className="flex items-center gap-3 px-4 py-3">
               <Calendar size={14} className="text-slate-400 flex-shrink-0" />
               <span className="text-xs text-slate-400 w-20 flex-shrink-0">Aangemaakt</span>
-              <span className="text-xs font-medium text-slate-700">{fmt(user.createdAt)}</span>
+              <span className="text-xs font-medium text-slate-700 dark:text-slate-200">{fmt(user.createdAt)}</span>
             </div>
           </div>
 
@@ -220,7 +222,7 @@ function OrgPortalUserPanel({ user, clientId, onUserUpdated }: {
           <div className="mt-5 flex gap-3">
             <button
               onClick={() => setEditOpen(true)}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-medium text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-colors"
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 hover:border-slate-300 transition-colors"
             >
               <Pencil size={14} />
               Wijzigen
@@ -256,6 +258,7 @@ type View = 'clients' | 'users' | 'detail'
 
 export default function OrgDashboard() {
   const { user, logout, switchToClient } = useAuthStore()
+  const { darkMode, toggleDarkMode } = useThemeStore()
   const navigate = useNavigate()
 
   const [clients, setClients]               = useState<ClientListItem[]>([])
@@ -396,16 +399,23 @@ export default function OrgDashboard() {
   const activeClients = clients.filter(c => c.isActive).length
 
   return (
-    <div className="min-h-screen bg-slate-100 flex flex-col">
+    <div className="min-h-screen bg-slate-100 dark:bg-slate-950 flex flex-col">
       {/* Header */}
-      <header className="bg-slate-900 text-white px-6 py-3.5 flex items-center justify-between shadow-md flex-shrink-0">
+      <header className="bg-slate-900 dark:bg-slate-950 border-b border-slate-800 text-white px-6 py-3.5 flex items-center justify-between shadow-md flex-shrink-0">
         <div className="flex items-center gap-2.5">
           <Building2 size={20} className="text-violet-400" />
           <span className="font-bold text-base">{user?.tenantName ?? 'Organisatie'}</span>
           <span className="text-slate-500 text-xs ml-1.5 uppercase tracking-wider">Admin</span>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           <span className="text-sm text-slate-400">{user?.email}</span>
+          <button
+            onClick={toggleDarkMode}
+            title={darkMode ? 'Lichte modus' : 'Donkere modus'}
+            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+          >
+            {darkMode ? <Sun size={14} /> : <Moon size={14} />}
+          </button>
           <Button variant="ghost" size="sm" onClick={handleLogout} className="text-slate-400 hover:text-white">
             <LogOut size={14} /> Logout
           </Button>
@@ -430,15 +440,15 @@ export default function OrgDashboard() {
                 <Search size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input value={clientSearch} onChange={e => setClientSearch(e.target.value)}
                   placeholder="Zoek client…"
-                  className="w-full pl-7 pr-2 py-1.5 text-xs rounded-lg border border-slate-200 bg-white focus:outline-none focus:border-violet-400" />
+                  className="w-full pl-7 pr-2 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:border-violet-400 dark:focus:border-violet-500" />
               </div>
               <Button size="sm" onClick={() => setShowAddClient(true)} title="Client toevoegen">
                 <Plus size={13} />
               </Button>
             </div>
             <Card className="flex-1 overflow-hidden flex flex-col">
-              <div className="px-3 py-2 border-b border-slate-100 flex items-center justify-between">
-                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Clients</span>
+              <div className="px-3 py-2 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
+                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Clients</span>
                 <span className="text-xs text-slate-400">{filteredClients.length}</span>
               </div>
               <div className="flex-1 overflow-y-auto">
@@ -451,8 +461,8 @@ export default function OrgDashboard() {
                           <li key={c.id}>
                             <button
                               onClick={() => handleSelectClient(c)}
-                              className={`w-full text-left px-3 py-2.5 hover:bg-slate-100 transition-colors flex items-center justify-between gap-2 ${
-                                selectedClient?.id === c.id ? 'bg-violet-50 border-l-2 border-violet-500' : ''}`}
+                              className={`w-full text-left px-3 py-2.5 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors flex items-center justify-between gap-2 ${
+                                selectedClient?.id === c.id ? 'bg-violet-50 dark:bg-violet-950/40 border-l-2 border-violet-500' : ''}`}
                             >
                               {c.logoDataUrl
                                 ? <img src={c.logoDataUrl} alt="" className="w-7 h-7 rounded-lg object-contain bg-slate-100 flex-shrink-0" />
@@ -461,7 +471,7 @@ export default function OrgDashboard() {
                                   </div>
                               }
                               <div className="min-w-0 flex-1">
-                                <p className="text-xs font-semibold text-slate-800 truncate">{c.name}</p>
+                                <p className="text-xs font-semibold text-slate-800 dark:text-slate-100 truncate">{c.name}</p>
                                 <p className="text-xs text-slate-400">{c.userCount} gebruikers</p>
                               </div>
                               <div className="flex items-center gap-1 flex-shrink-0">
@@ -469,7 +479,7 @@ export default function OrgDashboard() {
                                   onClick={(e) => { e.stopPropagation(); handleSwitchToClient(c.id) }}
                                   disabled={switchingClientId === c.id}
                                   title="Beheer portaal"
-                                  className="p-1 rounded hover:bg-violet-100 text-violet-400 hover:text-violet-600 transition-colors disabled:opacity-50"
+                                  className="p-1 rounded hover:bg-violet-100 dark:hover:bg-violet-900/40 text-violet-400 hover:text-violet-600 transition-colors disabled:opacity-50"
                                 >
                                   {switchingClientId === c.id
                                     ? <Loader2 size={13} className="animate-spin" />
@@ -479,15 +489,15 @@ export default function OrgDashboard() {
                                 <div className="relative">
                                   <button
                                     onClick={(e) => { e.stopPropagation(); setOpenMenuId(openMenuId === c.id ? null : c.id) }}
-                                    className="p-1 rounded hover:bg-slate-200 text-slate-400 hover:text-slate-600 transition-colors"
+                                    className="p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
                                   >
                                     <MoreVertical size={13} />
                                   </button>
                                   {openMenuId === c.id && (
-                                    <div className="absolute right-0 top-6 z-20 w-36 rounded-xl border border-slate-200 bg-white shadow-lg py-1">
+                                    <div className="absolute right-0 top-6 z-20 w-36 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-lg py-1">
                                       <button
                                         onClick={(e) => { e.stopPropagation(); setEditClient(c); setEditName(c.name); setOpenMenuId(null) }}
-                                        className="w-full flex items-center gap-2 px-3 py-2 text-xs text-slate-700 hover:bg-slate-50 transition-colors"
+                                        className="w-full flex items-center gap-2 px-3 py-2 text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
                                       >
                                         <Pencil size={12} /> Wijzigen
                                       </button>
@@ -516,15 +526,15 @@ export default function OrgDashboard() {
                       <Search size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400" />
                       <input value={userSearch} onChange={e => setUserSearch(e.target.value)}
                         placeholder="Zoek gebruiker…"
-                        className="w-full pl-7 pr-2 py-1.5 text-xs rounded-lg border border-slate-200 bg-white focus:outline-none focus:border-violet-400" />
+                        className="w-full pl-7 pr-2 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:border-violet-400 dark:focus:border-violet-500" />
                     </div>
                     <Button size="sm" onClick={() => setShowAddUser(true)} title="Gebruiker toevoegen">
                       <UserPlus size={13} />
                     </Button>
                   </div>
                   <Card className="flex-1 overflow-hidden flex flex-col">
-                    <div className="px-3 py-2 border-b border-slate-100 flex items-center justify-between">
-                      <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider truncate">{selectedClient.name}</span>
+                    <div className="px-3 py-2 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
+                      <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider truncate">{selectedClient.name}</span>
                       <span className="text-xs text-slate-400 flex-shrink-0 ml-1">{filteredUsers.length}</span>
                     </div>
                     <div className="flex-1 overflow-y-auto">
@@ -541,13 +551,13 @@ export default function OrgDashboard() {
                                 <li key={u.id}>
                                   <button
                                     onClick={() => handleSelectUser(u.id)}
-                                    className={`w-full text-left px-3 py-2.5 hover:bg-slate-100 transition-colors ${
-                                      selectedUser?.id === u.id ? 'bg-violet-50 border-l-2 border-violet-500' : ''}`}
+                                    className={`w-full text-left px-3 py-2.5 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors ${
+                                      selectedUser?.id === u.id ? 'bg-violet-50 dark:bg-violet-950/40 border-l-2 border-violet-500' : ''}`}
                                   >
                                     <div className="flex items-center gap-2">
                                       <Avatar first={u.firstName} last={u.lastName} size={7} />
                                       <div className="min-w-0 flex-1">
-                                        <p className="text-xs font-semibold text-slate-800 truncate">
+                                        <p className="text-xs font-semibold text-slate-800 dark:text-slate-100 truncate">
                                           {u.firstName} {u.lastName}
                                         </p>
                                         <p className="text-xs text-slate-400 truncate">{u.email}</p>
@@ -607,12 +617,12 @@ export default function OrgDashboard() {
       {/* Edit client modal */}
       {editClient && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm">
-            <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-slate-100">
-              <h2 className="text-base font-semibold text-slate-900">Client wijzigen</h2>
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-sm">
+            <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-slate-100 dark:border-slate-700">
+              <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">Client wijzigen</h2>
               <button
                 onClick={() => { setEditClient(null); setEditLogoFile(null); setEditLogoPreview(null); setEditLogoDeleted(false) }}
-                className="text-slate-400 hover:text-slate-600"
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
               >
                 <X size={18} />
               </button>
@@ -621,7 +631,7 @@ export default function OrgDashboard() {
 
               {/* Logo */}
               <div>
-                <label className="block text-xs font-medium text-slate-600 mb-2">Logo</label>
+                <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-2">Logo</label>
                 <div className="flex items-center gap-3">
                   {(() => {
                     const previewSrc = editLogoPreview ?? (editLogoDeleted ? null : editClient.logoDataUrl)
@@ -662,12 +672,12 @@ export default function OrgDashboard() {
 
               {/* Name */}
               <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">Naam *</label>
+                <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">Naam *</label>
                 <input
                   value={editName}
                   onChange={e => setEditName(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter') handleRenameClient() }}
-                  className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm text-slate-900 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100"
+                  className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-sm text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-700 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 dark:focus:ring-violet-900"
                   autoFocus
                 />
               </div>
@@ -675,7 +685,7 @@ export default function OrgDashboard() {
             <div className="flex gap-3 px-5 pb-5">
               <button
                 onClick={() => { setEditClient(null); setEditLogoFile(null); setEditLogoPreview(null); setEditLogoDeleted(false) }}
-                className="flex-1 px-4 py-2 rounded-xl border border-slate-200 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+                className="flex-1 px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-600 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
               >
                 Annuleren
               </button>
