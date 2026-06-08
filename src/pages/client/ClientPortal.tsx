@@ -2049,41 +2049,44 @@ function SettingsView({ teammates, tenantName, onAddUser }: {
         <CardContent className="p-5">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h2 className="text-sm font-bold text-slate-800">Gebruikersbeheer</h2>
-              <p className="text-xs text-slate-500 mt-0.5">Voeg medewerkers toe aan {tenantName}</p>
+              <h2 className="text-sm font-bold text-slate-800">Portaalgebruikers</h2>
+              <p className="text-xs text-slate-500 mt-0.5">Medewerkers met toegang tot het portaal van {tenantName}</p>
             </div>
             <Button size="sm" onClick={onAddUser}>
               <UserPlus size={13} /> Gebruiker toevoegen
             </Button>
           </div>
-          <div className="rounded-xl border border-slate-100 overflow-hidden">
-            <div className="px-4 py-2 bg-slate-50 border-b border-slate-100 grid grid-cols-[1fr_1fr_auto] gap-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-              <span>Naam</span>
-              <span>Afdeling</span>
-              <span>Status</span>
-            </div>
-            {teammates.length === 0 ? (
-              <div className="p-6 text-center text-xs text-slate-400">Geen gebruikers gevonden.</div>
-            ) : (
-              <ul className="divide-y divide-slate-100">
-                {teammates.map(u => (
-                  <li key={u.id} className="px-4 py-3 grid grid-cols-[1fr_1fr_auto] gap-4 items-center">
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <Avatar first={u.firstName} last={u.lastName} size={28} />
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium text-slate-800 truncate">{u.firstName} {u.lastName}</p>
-                        <p className="text-xs text-slate-400 truncate">{u.email}</p>
-                      </div>
-                    </div>
-                    <p className="text-sm text-slate-500 truncate">{u.department || '—'}</p>
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_TONE[u.status]}`}>
-                      {STATUS_LABEL[u.status]}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
+          {(() => {
+            const portalUsers = teammates.filter(u => u.isPortalUser)
+            return (
+              <div className="rounded-xl border border-slate-100 overflow-hidden">
+                <div className="px-4 py-2 bg-slate-50 border-b border-slate-100 grid grid-cols-[1fr_auto] gap-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                  <span>Gebruiker</span>
+                  <span>Status</span>
+                </div>
+                {portalUsers.length === 0 ? (
+                  <div className="p-6 text-center text-xs text-slate-400">Nog geen portaalgebruikers aangemaakt.</div>
+                ) : (
+                  <ul className="divide-y divide-slate-100">
+                    {portalUsers.map(u => (
+                      <li key={u.id} className="px-4 py-3 grid grid-cols-[1fr_auto] gap-4 items-center">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <Avatar first={u.firstName} last={u.lastName} size={28} />
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-slate-800 truncate">{u.firstName} {u.lastName}</p>
+                            <p className="text-xs text-slate-400 truncate">{u.email}</p>
+                          </div>
+                        </div>
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium whitespace-nowrap ${u.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
+                          {u.isActive ? 'Actief' : 'Inactief'}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )
+          })()}
         </CardContent>
       </Card>
     </div>
