@@ -1381,12 +1381,6 @@ function PhonesTab({ teammates }: { teammates: ClientUserListItem[] }) {
                     </div>
                   </div>
                 )}
-                <ItemHistoryBlock
-                  key={`${selected.id}-${historyKey}`}
-                  url={`/portal/phones/${selected.id}/history`}
-                  subtitle={`${selected.brand} ${selected.model}`}
-                />
-
                 <div className="mt-4 flex flex-wrap gap-2">
                   <Button size="sm" variant="secondary" onClick={() => { setEditTarget(selected); setShowModal(true) }}>
                     <Pencil size={13} /> Wijzigen
@@ -1403,6 +1397,11 @@ function PhonesTab({ teammates }: { teammates: ClientUserListItem[] }) {
                     </>
                   )}
                 </div>
+                <ItemHistoryBlock
+                  key={`${selected.id}-${historyKey}`}
+                  url={`/portal/phones/${selected.id}/history`}
+                  subtitle={`${selected.brand} ${selected.model}`}
+                />
               </CardContent>
             </Card>
           ) : (
@@ -1564,11 +1563,6 @@ function SimCardsTab({ teammates }: { teammates: ClientUserListItem[] }) {
                   <p className="text-sm font-medium text-violet-700 truncate">{selected.subscriptionName}</p>
                 </div>
               )}
-              <ItemHistoryBlock
-                key={`${selected.id}-${historyKey}`}
-                url={`/portal/simcards/${selected.id}/history`}
-                subtitle={selected.kaartNummer}
-              />
               <div className="mt-4 flex flex-wrap gap-2">
                 <Button size="sm" variant="secondary" onClick={() => { setEditTarget(selected); setShowModal(true) }}>
                   <Pencil size={13} /> Wijzigen
@@ -1585,6 +1579,11 @@ function SimCardsTab({ teammates }: { teammates: ClientUserListItem[] }) {
                   </>
                 )}
               </div>
+              <ItemHistoryBlock
+                key={`${selected.id}-${historyKey}`}
+                url={`/portal/simcards/${selected.id}/history`}
+                subtitle={selected.kaartNummer}
+              />
             </CardContent>
           </Card>
         ) : (
@@ -1760,11 +1759,6 @@ function SubscriptionsTab() {
                   </p>
                 </div>
               )}
-              <ItemHistoryBlock
-                key={`${selected.id}-${historyKey}`}
-                url={`/portal/subscriptions/${selected.id}/history`}
-                subtitle={selected.name}
-              />
               <div className="mt-4 flex flex-wrap gap-2">
                 <Button size="sm" variant="secondary" onClick={() => { setEditTarget(selected); setShowModal(true) }}>
                   <Pencil size={13} /> Wijzigen
@@ -1781,6 +1775,11 @@ function SubscriptionsTab() {
                   </>
                 )}
               </div>
+              <ItemHistoryBlock
+                key={`${selected.id}-${historyKey}`}
+                url={`/portal/subscriptions/${selected.id}/history`}
+                subtitle={selected.name}
+              />
             </CardContent>
           </Card>
         ) : (
