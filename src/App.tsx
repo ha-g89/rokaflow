@@ -5,6 +5,7 @@ import SuperUserLoginPage from '@/pages/SuperUserLoginPage'
 import SuperUserDashboard from '@/pages/superuser/SuperUserDashboard'
 import OrgDashboard from '@/pages/org/OrgDashboard'
 import OrgSettings from '@/pages/org/OrgSettings'
+import RegisterPage from '@/pages/RegisterPage'
 import ClientPortal from '@/pages/client/ClientPortal'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import { useAuthStore } from '@/store/authStore'
@@ -40,6 +41,7 @@ export default function App() {
       <Routes>
         {/* Public */}
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
         <Route path="/superuser/login" element={<SuperUserLoginPage />} />
 
         {/* SuperUser */}

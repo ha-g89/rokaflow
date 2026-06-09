@@ -94,6 +94,12 @@ const CSS = `
     display: block;
   }
 
+  .rf-nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+
   .rf-nav-btn {
     display: flex;
     align-items: center;
@@ -116,6 +122,33 @@ const CSS = `
     font-style: normal;
   }
   .rf-nav-btn:hover .rf-arr { transform: translateX(3px); }
+
+  .rf-nav-register {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: 'DM Sans', sans-serif;
+    letter-spacing: 0.025em;
+    color: var(--text);
+    background: var(--accent);
+    border: none;
+    cursor: pointer;
+    padding: 8px 18px;
+    border-radius: 6px;
+    transition: background 0.2s, box-shadow 0.2s;
+  }
+  .rf-nav-register:hover {
+    background: #6d28d9;
+    box-shadow: 0 0 16px rgba(124,58,237,0.35);
+  }
+  .rf-nav-register .rf-arr {
+    display: inline-block;
+    transition: transform 0.2s;
+    font-style: normal;
+  }
+  .rf-nav-register:hover .rf-arr { transform: translateX(3px); }
 
   /* ── Hero ───────────────────────────────────────────────────── */
   .rf-hero {
@@ -465,6 +498,8 @@ export default function LandingPage() {
     }
   }
 
+  const handleRegister = () => navigate('/register')
+
   // Intersection observer for feature items + rule line
   useEffect(() => {
     const items = document.querySelectorAll<HTMLElement>('.rf-feat-item')
@@ -494,9 +529,16 @@ export default function LandingPage() {
         {/* ── Nav ── */}
         <nav className="rf-nav">
           <img src={logo} alt="RokaFlow" className="rf-nav-logo" />
-          <button className="rf-nav-btn" onClick={handleLogin}>
-            {ctaLabel} <i className="rf-arr">→</i>
-          </button>
+          <div className="rf-nav-actions">
+            <button className="rf-nav-btn" onClick={handleLogin}>
+              {ctaLabel} <i className="rf-arr">→</i>
+            </button>
+            {!isLoggedIn && (
+              <button className="rf-nav-register" onClick={handleRegister}>
+                Gratis starten <i className="rf-arr">→</i>
+              </button>
+            )}
+          </div>
         </nav>
 
         {/* ── Hero ── */}
@@ -518,16 +560,26 @@ export default function LandingPage() {
                 en telefonie voor elke medewerker in uw organisatie.
               </p>
 
-              <button className="rf-cta" onClick={handleLogin}>
-                <span className="rf-cta-inner">
-                  {ctaLabel}
-                  <i className="rf-arr">→</i>
-                </span>
-              </button>
+              <div style={{ display: 'flex', gap: '14px', alignItems: 'center', flexWrap: 'wrap' }}>
+                <button className="rf-cta" onClick={handleLogin}>
+                  <span className="rf-cta-inner">
+                    {ctaLabel}
+                    <i className="rf-arr">→</i>
+                  </span>
+                </button>
 
-              <p className="rf-no-reg">
-                Registreren is niet mogelijk — neem contact op met uw beheerder voor toegang.
-              </p>
+                {!isLoggedIn && (
+                  <button className="rf-nav-register" onClick={handleRegister} style={{ animation: 'rfRevealUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.72s both' }}>
+                    Gratis starten <i className="rf-arr">→</i>
+                  </button>
+                )}
+              </div>
+
+              {!isLoggedIn && (
+                <p className="rf-no-reg">
+                  Geen creditcard vereist · Direct toegang tot alle functies
+                </p>
+              )}
             </div>
 
             <div className="rf-hero-emblem" aria-hidden="true">
