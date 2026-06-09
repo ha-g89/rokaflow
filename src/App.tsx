@@ -4,6 +4,7 @@ import LandingPage from '@/pages/LandingPage'
 import SuperUserLoginPage from '@/pages/SuperUserLoginPage'
 import SuperUserDashboard from '@/pages/superuser/SuperUserDashboard'
 import OrgDashboard from '@/pages/org/OrgDashboard'
+import OrgSettings from '@/pages/org/OrgSettings'
 import ClientPortal from '@/pages/client/ClientPortal'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import { useAuthStore } from '@/store/authStore'
@@ -52,6 +53,14 @@ export default function App() {
         />
 
         {/* Organisation */}
+        <Route
+          path="/org/settings"
+          element={
+            <ProtectedRoute roles={['org_admin', 'org_member']}>
+              <OrgSettings />
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="/org/*"
           element={

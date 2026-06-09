@@ -3,7 +3,7 @@ import {
   Briefcase, Users, Plus, LogOut,
   Building2, Search, UserPlus, User, ExternalLink, Loader2,
   MoreVertical, Pencil, X, Mail, Ban, ShieldCheck, Calendar, ImagePlus,
-  Moon, Sun,
+  Moon, Sun, Settings, ChevronDown,
 } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { useThemeStore } from '@/store/themeStore'
@@ -282,6 +282,19 @@ export default function OrgDashboard() {
   const [editLogoPreview, setEditLogoPreview] = useState<string | null>(null)
   const [editLogoDeleted, setEditLogoDeleted] = useState(false)
   const editLogoInputRef                    = useRef<HTMLInputElement>(null)
+  const [showUserMenu, setShowUserMenu]     = useState(false)
+  const userMenuRef                         = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!showUserMenu) return
+    const handler = (e: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setShowUserMenu(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [showUserMenu])
 
   const fetchClients = useCallback(async () => {
     try {
@@ -407,18 +420,72 @@ export default function OrgDashboard() {
           <span className="font-bold text-base">{user?.tenantName ?? 'Organisatie'}</span>
           <span className="text-slate-500 text-xs ml-1.5 uppercase tracking-wider">Admin</span>
         </div>
-        <div className="flex items-center gap-3">
-          <span className="text-sm text-slate-400">{user?.email}</span>
+        {/* User avatar + dropdown */}
+        <div className="relative" ref={userMenuRef}>
           <button
-            onClick={toggleDarkMode}
-            title={darkMode ? 'Lichte modus' : 'Donkere modus'}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+            onClick={() => setShowUserMenu(v => !v)}
+            className="flex items-center gap-2 pl-1 pr-2 py-1 rounded-xl hover:bg-slate-800 transition-colors group"
           >
-            {darkMode ? <Sun size={14} /> : <Moon size={14} />}
+            <div className="w-8 h-8 rounded-full bg-violet-600 group-hover:bg-violet-500 text-white text-sm font-bold flex items-center justify-center flex-shrink-0 transition-colors select-none">
+              {(user?.email?.[0] ?? '?').toUpperCase()}
+            </div>
+            <ChevronDown size={13} className={`text-slate-400 transition-transform duration-150 ${showUserMenu ? 'rotate-180' : ''}`} />
           </button>
-          <Button variant="ghost" size="sm" onClick={handleLogout} className="text-slate-400 hover:text-white">
-            <LogOut size={14} /> Logout
-          </Button>
+
+          {showUserMenu && (
+            <div className="absolute right-0 top-12 z-50 w-60 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+
+              {/* User info header */}
+              <div className="px-4 py-4 bg-slate-50 dark:bg-slate-700/50 border-b border-slate-100 dark:border-slate-700">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-violet-600 text-white text-base font-bold flex items-center justify-center flex-shrink-0 select-none">
+                    {(user?.email?.[0] ?? '?').toUpperCase()}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">{user?.tenantName}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{user?.email}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="py-1">
+                {/* Settings */}
+                <button
+                  onClick={() => { setShowUserMenu(false); navigate('/org/settings') }}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
+                >
+                  <Settings size={15} className="text-slate-400 flex-shrink-0" />
+                  Instellingen
+                </button>
+
+                {/* Theme toggle */}
+                <button
+                  onClick={toggleDarkMode}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
+                >
+                  {darkMode
+                    ? <Sun size={15} className="text-slate-400 flex-shrink-0" />
+                    : <Moon size={15} className="text-slate-400 flex-shrink-0" />
+                  }
+                  <span className="flex-1 text-left">{darkMode ? 'Lichte modus' : 'Donkere modus'}</span>
+                  <span className={`w-9 h-5 rounded-full flex items-center px-0.5 flex-shrink-0 transition-colors ${darkMode ? 'bg-violet-600' : 'bg-slate-300'}`}>
+                    <span className={`w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${darkMode ? 'translate-x-4' : 'translate-x-0'}`} />
+                  </span>
+                </button>
+              </div>
+
+              <div className="border-t border-slate-100 dark:border-slate-700 py-1">
+                {/* Logout */}
+                <button
+                  onClick={() => { setShowUserMenu(false); handleLogout() }}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                >
+                  <LogOut size={15} className="flex-shrink-0" />
+                  Uitloggen
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </header>
 
