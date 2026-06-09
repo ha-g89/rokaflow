@@ -334,11 +334,14 @@ export function UserDetailPanel({ user, canEdit, departments = [], managers = []
 
   useEffect(() => {
     if (!historyPath) return
+    const controller = new AbortController()
     setHistoryLoading(true)
-    api.get<AuditLogEntry[]>(historyPath)
+    setAuditHistory([])
+    api.get<AuditLogEntry[]>(historyPath, { signal: controller.signal })
       .then(r => setAuditHistory(r.data))
-      .catch(() => {})
+      .catch(err => { if (err?.code !== 'ERR_CANCELED') console.error(err) })
       .finally(() => setHistoryLoading(false))
+    return () => controller.abort()
   }, [historyPath])
 
   const handleToggle = async (entryId: string, checked: boolean) => {

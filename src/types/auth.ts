@@ -1,4 +1,4 @@
-export type UserRole = 'superuser' | 'org_admin' | 'org_member' | 'client_user'
+export type UserRole = 'superuser' | 'msp_admin' | 'msp_member' | 'portal_admin' | 'employee'
 
 export interface AuthUser {
   id: string

@@ -1,4 +1,4 @@
-﻿import { useEffect, useState, useCallback } from 'react'
+﻿import { useEffect, useState, useCallback, useRef } from 'react'
 import {
   Users, LogOut, Layers, Search, ChevronRight, ArrowLeft,
   Laptop, Shield, CreditCard, Phone as PhoneIcon,
@@ -7,7 +7,7 @@ import {
   Plus, Pencil, Trash2,
   Package, Activity, Archive, XCircle, CheckCircle2, Clock,
   MoreVertical, Wifi, Moon, Sun, ArrowLeftCircle,
-  AlertTriangle, Smartphone,
+  AlertTriangle, Smartphone, ChevronDown,
 } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { useThemeStore } from '@/store/themeStore'
@@ -2093,12 +2093,35 @@ function EmployeeDetailView({ user, loading, onBack, onUserUpdated, onDelete, de
 
 // ── Settings view ─────────────────────────────────────────────────────────────
 
-function SettingsView({ teammates, tenantName, onAddUser }: {
+function SettingsView({ teammates, tenantName, onAddUser, mspStatus, onMspStatusRefresh, onSwitchToMsp, mspSwitching }: {
   teammates: ClientUserListItem[]
   tenantName: string
   onAddUser: () => void
+  mspStatus: { hasMspAccount: boolean; orgName?: string; hasMspManager: boolean; mspManagerName?: string } | null
+  onMspStatusRefresh: () => void
+  onSwitchToMsp: () => void
+  mspSwitching: boolean
 }) {
   const { darkMode, toggleDarkMode } = useThemeStore()
+
+  const [upgradeLoading, setUpgradeLoading] = useState(false)
+  const [upgradeError, setUpgradeError] = useState<string | null>(null)
+  const [upgradeSuccess, setUpgradeSuccess] = useState(false)
+
+  const handleUpgrade = async () => {
+    setUpgradeLoading(true)
+    setUpgradeError(null)
+    try {
+      await api.post('/portal/upgrade-to-msp')
+      setUpgradeSuccess(true)
+      onMspStatusRefresh()
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail
+      setUpgradeError(msg ?? 'Er is een fout opgetreden. Probeer het opnieuw.')
+    } finally {
+      setUpgradeLoading(false)
+    }
+  }
 
   return (
     <div className="max-w-2xl space-y-6">
@@ -2106,14 +2129,14 @@ function SettingsView({ teammates, tenantName, onAddUser }: {
       {/* Weergave */}
       <Card>
         <CardContent className="p-5">
-          <h2 className="text-sm font-bold text-slate-800 mb-4">Weergave</h2>
-          <div className="flex items-center justify-between py-3 border-b border-slate-100 dark:border-slate-700 last:border-0">
+          <h2 className="text-sm font-bold text-slate-800 dark:text-slate-100 mb-4">Weergave</h2>
+          <div className="flex items-center justify-between py-3">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center flex-shrink-0">
                 {darkMode ? <Moon size={15} className="text-violet-400" /> : <Sun size={15} className="text-amber-500" />}
               </div>
               <div>
-                <p className="text-sm font-medium text-slate-800">Donkere modus</p>
+                <p className="text-sm font-medium text-slate-800 dark:text-slate-100">Donkere modus</p>
                 <p className="text-xs text-slate-400 mt-0.5">Schakel tussen licht en donker thema</p>
               </div>
             </div>
@@ -2130,11 +2153,13 @@ function SettingsView({ teammates, tenantName, onAddUser }: {
           </div>
         </CardContent>
       </Card>
+
+      {/* Portaalgebruikers */}
       <Card>
         <CardContent className="p-5">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h2 className="text-sm font-bold text-slate-800">Portaalgebruikers</h2>
+              <h2 className="text-sm font-bold text-slate-800 dark:text-slate-100">Portaalgebruikers</h2>
               <p className="text-xs text-slate-500 mt-0.5">Medewerkers met toegang tot het portaal van {tenantName}</p>
             </div>
             <Button size="sm" onClick={onAddUser}>
@@ -2144,21 +2169,21 @@ function SettingsView({ teammates, tenantName, onAddUser }: {
           {(() => {
             const portalUsers = teammates.filter(u => u.isPortalUser)
             return (
-              <div className="rounded-xl border border-slate-100 overflow-hidden">
-                <div className="px-4 py-2 bg-slate-50 border-b border-slate-100 grid grid-cols-[1fr_auto] gap-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+              <div className="rounded-xl border border-slate-100 dark:border-slate-700 overflow-hidden">
+                <div className="px-4 py-2 bg-slate-50 dark:bg-slate-800 border-b border-slate-100 dark:border-slate-700 grid grid-cols-[1fr_auto] gap-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
                   <span>Gebruiker</span>
                   <span>Status</span>
                 </div>
                 {portalUsers.length === 0 ? (
                   <div className="p-6 text-center text-xs text-slate-400">Nog geen portaalgebruikers aangemaakt.</div>
                 ) : (
-                  <ul className="divide-y divide-slate-100">
+                  <ul className="divide-y divide-slate-100 dark:divide-slate-700">
                     {portalUsers.map(u => (
                       <li key={u.id} className="px-4 py-3 grid grid-cols-[1fr_auto] gap-4 items-center">
                         <div className="flex items-center gap-2.5 min-w-0">
                           <Avatar first={u.firstName} last={u.lastName} size={28} />
                           <div className="min-w-0">
-                            <p className="text-sm font-medium text-slate-800 truncate">{u.firstName} {u.lastName}</p>
+                            <p className="text-sm font-medium text-slate-800 dark:text-slate-100 truncate">{u.firstName} {u.lastName}</p>
                             <p className="text-xs text-slate-400 truncate">{u.email}</p>
                           </div>
                         </div>
@@ -2174,6 +2199,107 @@ function SettingsView({ teammates, tenantName, onAddUser }: {
           })()}
         </CardContent>
       </Card>
+
+      {/* MSP Partner */}
+      {mspStatus !== null && (
+        <Card>
+          <CardContent className="p-5">
+            {mspStatus.hasMspAccount ? (
+              /* ── Already an MSP ── */
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-violet-100 dark:bg-violet-900/40 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <CheckCircle2 size={15} className="text-violet-600 dark:text-violet-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">MSP Partner</p>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Uw account is gekoppeld aan <span className="font-medium text-violet-600 dark:text-violet-400">{mspStatus.orgName}</span>
+                    </p>
+                    <p className="text-xs text-slate-400 mt-1">
+                      U kunt vanuit het MSP-portaal klanten beheren en toevoegen.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={onSwitchToMsp}
+                  disabled={mspSwitching}
+                  className="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-white bg-violet-600 hover:bg-violet-700 rounded-lg transition-colors disabled:opacity-50"
+                >
+                  <ArrowLeftCircle size={13} className="rotate-180" />
+                  {mspSwitching ? 'Even wachten…' : 'Naar MSP Portaal'}
+                </button>
+              </div>
+            ) : mspStatus.hasMspManager ? (
+              /* ── Client already managed by external MSP ── */
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <Shield size={15} className="text-amber-600 dark:text-amber-400" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">Beheerd door MSP</p>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Dit portaal wordt al beheerd door{' '}
+                    <span className="font-medium text-amber-600 dark:text-amber-400">
+                      {mspStatus.mspManagerName ?? 'een MSP'}
+                    </span>. Het is niet mogelijk om een eigen MSP-account aan te maken.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              /* ── Upgrade to MSP ── */
+              <div>
+                <div className="flex items-start gap-3 mb-4">
+                  <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <Shield size={15} className="text-slate-400" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">Wordt MSP Partner</p>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Upgrade uw account om meerdere klanten te beheren vanuit een eigen MSP-omgeving. Uw huidige bedrijfsnaam en logo worden overgenomen.
+                    </p>
+                  </div>
+                </div>
+
+                {upgradeSuccess ? (
+                  <div className="flex items-center gap-3 p-4 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-xl">
+                    <CheckCircle2 size={18} className="text-emerald-500 flex-shrink-0" />
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-emerald-800 dark:text-emerald-300">MSP account aangemaakt!</p>
+                      <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-0.5">Log nu in op het MSP Portaal met hetzelfde e-mailadres en wachtwoord.</p>
+                    </div>
+                    <button
+                      onClick={onSwitchToMsp}
+                      disabled={mspSwitching}
+                      className="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-white bg-violet-600 hover:bg-violet-700 rounded-lg transition-colors disabled:opacity-50"
+                    >
+                      <ArrowLeftCircle size={13} className="rotate-180" />
+                      {mspSwitching ? 'Even wachten…' : 'Naar MSP Portaal'}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {upgradeError && (
+                      <div className="flex items-start gap-2 px-3 py-2.5 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-xs text-red-600 dark:text-red-400">
+                        <AlertTriangle size={13} className="flex-shrink-0 mt-0.5" />
+                        {upgradeError}
+                      </div>
+                    )}
+                    <button
+                      onClick={handleUpgrade}
+                      disabled={upgradeLoading}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-700 bg-violet-50 dark:bg-violet-900/20 hover:bg-violet-100 dark:hover:bg-violet-900/40 rounded-xl transition-colors disabled:opacity-50"
+                    >
+                      <ArrowLeftCircle size={14} className="rotate-180" />
+                      {upgradeLoading ? 'Bezig…' : 'MSP account aanmaken'}
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }
@@ -2554,7 +2680,7 @@ function DepartmentsView() {
 // ── Main component ────────────────────────────────────────────────────────────
 
 export default function ClientPortal() {
-  const { user, logout, switchBack } = useAuthStore()
+  const { user, login, logout, switchBack } = useAuthStore()
   const { darkMode, toggleDarkMode } = useThemeStore()
   const navigate = useNavigate()
 
@@ -2578,6 +2704,45 @@ export default function ClientPortal() {
   const [clientLogoUrl, setClientLogoUrl] = useState<string | null>(null)
   const [departmentOptions, setDepartmentOptions] = useState<{ id: string; name: string; managerName: string; managerId: string | null }[]>([])
   const [managers, setManagers] = useState<{ id: string; fullName: string }[]>([])
+
+  // ── User menu + MSP ───────────────────────────────────────────────────────
+  const [showUserMenu, setShowUserMenu] = useState(false)
+  const [mspStatus, setMspStatus] = useState<{ hasMspAccount: boolean; orgName?: string; hasMspManager: boolean; mspManagerName?: string } | null>(null)
+  const [mspSwitching, setMspSwitching] = useState(false)
+  const userMenuRef = useRef<HTMLDivElement>(null)
+
+  const fetchMspStatus = useCallback(async () => {
+    try {
+      const { data } = await api.get<{ hasMspAccount: boolean; orgName?: string; hasMspManager: boolean; mspManagerName?: string }>('/portal/msp-status')
+      setMspStatus(data)
+    } catch { /* non-critical */ }
+  }, [])
+
+  const handleSwitchToMsp = async () => {
+    setMspSwitching(true)
+    setShowUserMenu(false)
+    try {
+      const { data } = await api.post<import('@/types/auth').LoginResponse>('/portal/msp-token')
+      login(data.accessToken, data.refreshToken, data.user)
+      navigate('/org')
+    } catch { /* ignore */ } finally {
+      setMspSwitching(false)
+    }
+  }
+
+  useEffect(() => {
+    if (!isMspMode) fetchMspStatus()
+  }, [fetchMspStatus, isMspMode])
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setShowUserMenu(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
 
   const fetchDepartmentOptions = useCallback(async () => {
     try {
@@ -2670,7 +2835,85 @@ export default function ClientPortal() {
         </div>
         <div className="flex-1 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-6 flex items-center justify-between">
           <h1 className="text-sm font-semibold text-slate-800 dark:text-slate-100">{VIEW_TITLES[view]}</h1>
-          <img src={logo} alt="RokaFlow" className="h-9 object-contain select-none opacity-80" />
+
+          {/* Account dropdown */}
+          <div className="relative" ref={userMenuRef}>
+            <button
+              onClick={() => setShowUserMenu(v => !v)}
+              className="flex items-center gap-2 pl-1 pr-2 py-1 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors group"
+            >
+              <div className="w-8 h-8 rounded-full bg-violet-600 group-hover:bg-violet-500 text-white text-sm font-bold flex items-center justify-center flex-shrink-0 transition-colors select-none">
+                {(user?.email?.[0] ?? '?').toUpperCase()}
+              </div>
+              <ChevronDown size={13} className={`text-slate-400 dark:text-slate-500 transition-transform duration-150 ${showUserMenu ? 'rotate-180' : ''}`} />
+            </button>
+
+            {showUserMenu && (
+              <div className="absolute right-0 top-12 z-50 w-64 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+
+                {/* User info */}
+                <div className="px-4 py-4 bg-slate-50 dark:bg-slate-700/50 border-b border-slate-100 dark:border-slate-700">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-violet-600 text-white text-base font-bold flex items-center justify-center flex-shrink-0 select-none">
+                      {(user?.email?.[0] ?? '?').toUpperCase()}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">{tenantName}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{user?.email}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="py-1">
+                  {/* MSP Portal (only if MSP account exists) */}
+                  {mspStatus?.hasMspAccount && (
+                    <button
+                      onClick={handleSwitchToMsp}
+                      disabled={mspSwitching}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors disabled:opacity-50"
+                    >
+                      <ArrowLeftCircle size={15} className="flex-shrink-0 rotate-180" />
+                      <span className="flex-1 text-left">{mspSwitching ? 'Even wachten…' : `MSP Portaal — ${mspStatus.orgName}`}</span>
+                    </button>
+                  )}
+
+                  {/* Settings */}
+                  <button
+                    onClick={() => { setShowUserMenu(false); handleNavClick('settings') }}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
+                  >
+                    <Settings size={15} className="text-slate-400 flex-shrink-0" />
+                    Instellingen
+                  </button>
+
+                  {/* Dark mode */}
+                  <button
+                    onClick={toggleDarkMode}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
+                  >
+                    {darkMode
+                      ? <Sun size={15} className="text-slate-400 flex-shrink-0" />
+                      : <Moon size={15} className="text-slate-400 flex-shrink-0" />
+                    }
+                    <span className="flex-1 text-left">{darkMode ? 'Lichte modus' : 'Donkere modus'}</span>
+                    <span className={`w-9 h-5 rounded-full flex items-center px-0.5 flex-shrink-0 transition-colors ${darkMode ? 'bg-violet-600' : 'bg-slate-300'}`}>
+                      <span className={`w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${darkMode ? 'translate-x-4' : 'translate-x-0'}`} />
+                    </span>
+                  </button>
+                </div>
+
+                <div className="border-t border-slate-100 dark:border-slate-700 py-1">
+                  <button
+                    onClick={() => { setShowUserMenu(false); handleLogout() }}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                  >
+                    <LogOut size={15} className="flex-shrink-0" />
+                    Uitloggen
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -2709,22 +2952,6 @@ export default function ClientPortal() {
             </div>
           )}
           <NavItem icon={<Settings size={14} />} label="Instellingen" active={view === 'settings'} onClick={() => handleNavClick('settings')} />
-          <div className="mt-2 px-3 flex items-center gap-2">
-            <div className="w-6 h-6 rounded-full bg-violet-700 text-white text-xs font-bold flex items-center justify-center flex-shrink-0">
-              {(user?.email?.[0] ?? '').toUpperCase()}
-            </div>
-            <p className="text-xs text-slate-400 truncate flex-1">{user?.email}</p>
-            <button
-              onClick={toggleDarkMode}
-              title={darkMode ? 'Lichte modus' : 'Donkere modus'}
-              className="text-slate-500 hover:text-white transition-colors flex-shrink-0"
-            >
-              {darkMode ? <Sun size={13} /> : <Moon size={13} />}
-            </button>
-            <button onClick={handleLogout} title="Uitloggen" className="text-slate-500 hover:text-white transition-colors flex-shrink-0">
-              <LogOut size={13} />
-            </button>
-          </div>
         </div>
       </aside>
 
@@ -2783,6 +3010,10 @@ export default function ClientPortal() {
               teammates={teammates}
               tenantName={tenantName}
               onAddUser={() => setShowAddUser(true)}
+              mspStatus={mspStatus}
+              onMspStatusRefresh={fetchMspStatus}
+              onSwitchToMsp={handleSwitchToMsp}
+              mspSwitching={mspSwitching}
             />
           )}
 
@@ -2841,6 +3072,7 @@ export default function ClientPortal() {
           onDeleted={handleEmployeeDeleted}
         />
       )}
+
     </div>
   )
 }

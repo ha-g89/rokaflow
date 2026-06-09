@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -308,6 +308,56 @@ const CSS = `
   }
   .rfr-footer a:hover { color: #c4b5fd; }
 
+  /* ── Logo upload ── */
+  .rfr-logo-upload {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    background: var(--field-bg);
+    border: 1px dashed var(--field-bd);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .rfr-logo-upload:hover {
+    border-color: rgba(139,92,246,0.4);
+    background: rgba(139,92,246,0.04);
+  }
+  .rfr-logo-preview {
+    width: 36px;
+    height: 36px;
+    border-radius: 6px;
+    object-fit: contain;
+    background: rgba(255,255,255,0.07);
+    flex-shrink: 0;
+  }
+  .rfr-logo-placeholder {
+    width: 36px;
+    height: 36px;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.05);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: rgba(238,240,246,0.25);
+  }
+  .rfr-logo-text { flex: 1; min-width: 0; }
+  .rfr-logo-text-main {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .rfr-logo-text-sub {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 1px;
+  }
+
   /* ── Right panel ── */
   .rfr-right {
     flex: 1;
@@ -390,11 +440,26 @@ export default function RegisterPage() {
   const [apiError,     setApiError]     = useState<string | null>(null)
   const [showPass,     setShowPass]     = useState(false)
   const [showConfirm,  setShowConfirm]  = useState(false)
+  const [logoFile,     setLogoFile]     = useState<File | null>(null)
+  const [logoPreview,  setLogoPreview]  = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const { login }  = useAuthStore()
   const navigate   = useNavigate()
 
   const { register, handleSubmit, formState: { errors, isSubmitting } } =
     useForm<FormValues>({ resolver: zodResolver(schema) })
+
+  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] ?? null
+    setLogoFile(file)
+    if (file) {
+      const reader = new FileReader()
+      reader.onload = ev => setLogoPreview(ev.target?.result as string)
+      reader.readAsDataURL(file)
+    } else {
+      setLogoPreview(null)
+    }
+  }
 
   const onSubmit = async (values: FormValues) => {
     setApiError(null)
@@ -405,8 +470,22 @@ export default function RegisterPage() {
         lastName:    values.lastName,
         email:       values.email,
         password:    values.password,
+      }, {
+        headers: { Authorization: undefined },
       })
       login(data.accessToken, data.refreshToken, data.user)
+
+      if (logoFile) {
+        const form = new FormData()
+        form.append('file', logoFile)
+        await api.post('/portal/logo', form, {
+          headers: {
+            Authorization: `Bearer ${data.accessToken}`,
+            'Content-Type': undefined,
+          },
+        })
+      }
+
       navigate('/client', { replace: true })
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail
@@ -446,6 +525,35 @@ export default function RegisterPage() {
                     className={`rfr-input${errors.companyName ? ' rfr-err' : ''}`}
                   />
                   {errors.companyName && <p className="rfr-err-msg">{errors.companyName.message}</p>}
+                </div>
+
+                {/* Logo upload */}
+                <div className="rfr-field">
+                  <label className="rfr-label">Bedrijfslogo <span style={{ opacity: 0.5, fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(optioneel)</span></label>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/svg+xml,image/webp"
+                    style={{ display: 'none' }}
+                    onChange={handleLogoChange}
+                  />
+                  <div className="rfr-logo-upload" onClick={() => fileInputRef.current?.click()}>
+                    {logoPreview ? (
+                      <img src={logoPreview} alt="Logo preview" className="rfr-logo-preview" />
+                    ) : (
+                      <div className="rfr-logo-placeholder">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                          <circle cx="8.5" cy="8.5" r="1.5" />
+                          <polyline points="21 15 16 10 5 21" />
+                        </svg>
+                      </div>
+                    )}
+                    <div className="rfr-logo-text">
+                      <p className="rfr-logo-text-main">{logoFile ? logoFile.name : 'Klik om een logo te uploaden'}</p>
+                      <p className="rfr-logo-text-sub">PNG, JPEG, SVG of WebP · max 2 MB</p>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Voornaam + Achternaam */}

@@ -4,6 +4,8 @@ export interface ClientListItem {
   isActive: boolean
   userCount: number
   createdAt: string
+  organisationId?: string | null
+  organisationName?: string | null
   logoDataUrl?: string | null
 }
 

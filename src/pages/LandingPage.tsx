@@ -4,10 +4,11 @@ import { useAuthStore } from '@/store/authStore'
 import logo from '@/assets/RokaFlow_icon_dark_transparent.png'
 
 const ROLE_HOME: Record<string, string> = {
-  superuser:   '/superuser',
-  org_admin:   '/org',
-  org_member:  '/org',
-  client_user: '/client',
+  superuser:    '/superuser',
+  msp_admin:    '/org',
+  msp_member:   '/org',
+  portal_admin: '/client',
+  employee:     '/client',
 }
 
 const FEATURES = [

@@ -11,10 +11,11 @@ import ProtectedRoute from '@/components/ProtectedRoute'
 import { useAuthStore } from '@/store/authStore'
 
 const ROLE_HOME: Record<string, string> = {
-  superuser:   '/superuser',
-  org_admin:   '/org',
-  org_member:  '/org',
-  client_user: '/client',
+  superuser:    '/superuser',
+  msp_admin:    '/org',
+  msp_member:   '/org',
+  portal_admin: '/client',
+  employee:     '/client',
 }
 
 function RootRedirect() {
@@ -58,7 +59,7 @@ export default function App() {
         <Route
           path="/org/settings"
           element={
-            <ProtectedRoute roles={['org_admin', 'org_member']}>
+            <ProtectedRoute roles={['msp_admin', 'msp_member']}>
               <OrgSettings />
             </ProtectedRoute>
           }
@@ -66,7 +67,7 @@ export default function App() {
         <Route
           path="/org/*"
           element={
-            <ProtectedRoute roles={['org_admin', 'org_member']}>
+            <ProtectedRoute roles={['msp_admin', 'msp_member']}>
               <OrgDashboard />
             </ProtectedRoute>
           }
@@ -76,7 +77,7 @@ export default function App() {
         <Route
           path="/client/*"
           element={
-            <ProtectedRoute roles={['client_user']}>
+            <ProtectedRoute roles={['portal_admin', 'employee']}>
               <ClientPortal />
             </ProtectedRoute>
           }

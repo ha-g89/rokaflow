@@ -8,7 +8,7 @@ function parseTokenUser(token: string): AuthUser {
   return {
     id:                   payload.sub       ?? '',
     email:                payload.email     ?? '',
-    role:                 payload.role      ?? 'client_user',
+    role:                 payload.role      ?? 'employee',
     tenantId:             payload.tenant_id ?? null,
     tenantName:           payload.tenant_name ?? null,
     switchedFromOrgId:    payload.switched_from      ?? null,

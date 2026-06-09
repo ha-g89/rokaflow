@@ -14,11 +14,14 @@ const schema = z.object({
 })
 type FormValues = z.infer<typeof schema>
 
+type LoginMode = 'portal' | 'msp'
+
 const ROLE_HOME = {
-  superuser:   '/superuser',
-  org_admin:   '/org',
-  org_member:  '/org',
-  client_user: '/client',
+  superuser:    '/superuser',
+  msp_admin:    '/org',
+  msp_member:   '/org',
+  portal_admin: '/client',
+  employee:     '/client',
 } as const
 
 const CSS = `
@@ -117,6 +120,37 @@ const CSS = `
     backdrop-filter: blur(20px);
     box-shadow: 0 24px 56px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.05);
     animation: rflSlideUp 0.5s cubic-bezier(0.16,1,0.3,1) 0.05s both;
+  }
+
+  /* ── Login mode tabs ── */
+  .rfl-tabs {
+    display: flex;
+    gap: 4px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--line-md);
+    border-radius: 10px;
+    padding: 4px;
+    margin-bottom: 24px;
+  }
+  .rfl-tab {
+    flex: 1;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 7px;
+    background: none;
+    color: var(--muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+    white-space: nowrap;
+  }
+  .rfl-tab:hover:not(.rfl-tab-active) { color: var(--text); background: rgba(255,255,255,0.05); }
+  .rfl-tab.rfl-tab-active {
+    background: rgba(124,58,237,0.18);
+    color: #c4b5fd;
+    border: 1px solid rgba(124,58,237,0.30);
   }
 
   .rfl-heading {
@@ -383,6 +417,7 @@ const CSS = `
 export default function LoginPage() {
   const [apiError, setApiError] = useState<string | null>(null)
   const [showPass, setShowPass]  = useState(false)
+  const [loginMode, setLoginMode] = useState<LoginMode>('portal')
   const { login }    = useAuthStore()
   const navigate     = useNavigate()
   const location     = useLocation()
@@ -390,17 +425,28 @@ export default function LoginPage() {
   const { register, handleSubmit, formState: { errors, isSubmitting } } =
     useForm<FormValues>({ resolver: zodResolver(schema) })
 
+  const switchMode = (mode: LoginMode) => {
+    setLoginMode(mode)
+    setApiError(null)
+  }
+
   const onSubmit = async (values: FormValues) => {
     setApiError(null)
     try {
-      const { data } = await api.post<LoginResponse>('/auth/login', values)
+      const endpoint = loginMode === 'msp' ? '/auth/msp/login' : '/auth/portal/login'
+      const { data } = await api.post<LoginResponse>(endpoint, values)
+
       login(data.accessToken, data.refreshToken, data.user)
       const home = ROLE_HOME[data.user.role]
       const from = (location.state as { from?: { pathname: string } })?.from?.pathname
       navigate(from?.startsWith(home) ? from : home, { replace: true })
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail
-      setApiError(msg ?? 'Ongeldig e-mailadres of wachtwoord.')
+      if (loginMode === 'msp' && !msg) {
+        setApiError('Geen MSP-account gevonden. Log in via het portaal en kies "Wordt MSP" om uw account te upgraden.')
+      } else {
+        setApiError(msg ?? 'Ongeldig e-mailadres of wachtwoord.')
+      }
     }
   }
 
@@ -420,8 +466,31 @@ export default function LoginPage() {
 
           <div className="rfl-form-wrap">
             <div className="rfl-card">
-              <h1 className="rfl-heading">Inloggen</h1>
-              <p className="rfl-sub">Log in op uw RokaFlow-account.</p>
+              <div className="rfl-tabs">
+                <button
+                  type="button"
+                  className={`rfl-tab${loginMode === 'portal' ? ' rfl-tab-active' : ''}`}
+                  onClick={() => switchMode('portal')}
+                >
+                  Portaal
+                </button>
+                <button
+                  type="button"
+                  className={`rfl-tab${loginMode === 'msp' ? ' rfl-tab-active' : ''}`}
+                  onClick={() => switchMode('msp')}
+                >
+                  MSP Portaal
+                </button>
+              </div>
+
+              <h1 className="rfl-heading">
+                {loginMode === 'msp' ? 'MSP Inloggen' : 'Inloggen'}
+              </h1>
+              <p className="rfl-sub">
+                {loginMode === 'msp'
+                  ? 'Log in op uw MSP-beheeromgeving.'
+                  : 'Log in op uw RokaFlow-account.'}
+              </p>
 
               <form onSubmit={handleSubmit(onSubmit)} noValidate>
                 {apiError && <div className="rfl-api-err">{apiError}</div>}

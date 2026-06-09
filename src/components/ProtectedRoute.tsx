@@ -8,10 +8,11 @@ interface Props {
 }
 
 const ROLE_HOME: Record<UserRole, string> = {
-  superuser:   '/superuser',
-  org_admin:   '/org',
-  org_member:  '/org',
-  client_user: '/client',
+  superuser:    '/superuser',
+  msp_admin:    '/org',
+  msp_member:   '/org',
+  portal_admin: '/client',
+  employee:     '/client',
 }
 
 export default function ProtectedRoute({ children, roles }: Props) {
@@ -30,14 +31,14 @@ export default function ProtectedRoute({ children, roles }: Props) {
     return <Navigate to="/login" state={{ from: location }} replace />
   }
 
-  // MSP context-switch: an org_admin operating inside a client portal
-  // is allowed to access /client/* even though their role is not client_user.
+  // MSP context-switch: an msp_admin operating inside a client portal
+  // is allowed to access /client/* even though their role is not portal_admin.
   // Use !! to treat both null and undefined as falsy (backend sends null explicitly,
   // but old persisted state might have undefined).
   const isMspAdminInClientPortal =
-    user.role === 'org_admin' &&
+    user.role === 'msp_admin' &&
     !!user.switchedFromOrgId &&
-    roles.includes('client_user')
+    roles.includes('portal_admin')
 
   if (!roles.includes(user.role) && !isMspAdminInClientPortal) {
     const home = ROLE_HOME[user.role]
