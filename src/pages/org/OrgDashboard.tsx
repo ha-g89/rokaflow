@@ -418,7 +418,7 @@ export default function OrgDashboard() {
         <div className="flex items-center gap-2.5">
           <Building2 size={20} className="text-violet-400" />
           <span className="font-bold text-base">{user?.tenantName ?? 'Organisatie'}</span>
-          <span className="text-slate-500 text-xs ml-1.5 uppercase tracking-wider">Admin</span>
+          <span className="text-slate-500 text-xs ml-1.5 uppercase tracking-wider">MSP Portal</span>
         </div>
         {/* User avatar + dropdown */}
         <div className="relative" ref={userMenuRef}>
