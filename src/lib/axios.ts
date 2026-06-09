@@ -43,9 +43,22 @@ api.interceptors.response.use(
     original._retry = true
     isRefreshing = true
 
+    // In context-switch mode the active token is a short-lived switch token that
+    // has no matching refresh token. Restore the org context and redirect back.
+    const { orgToken, orgUser, switchBack } = useAuthStore.getState()
+    if (orgToken && orgUser) {
+      isRefreshing = false
+      switchBack()
+      processQueue(null, orgToken)
+      original.headers.Authorization = `Bearer ${orgToken}`
+      window.location.href = '/org'
+      return Promise.reject(error)
+    }
+
     const refreshToken = localStorage.getItem('refreshToken')
     if (!refreshToken) {
       useAuthStore.getState().logout()
+      isRefreshing = false
       return Promise.reject(error)
     }
 
