@@ -2673,7 +2673,7 @@ function DepartmentsView() {
               )}
 
               {/* Stats row */}
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-4 gap-2 pt-2 border-t border-slate-100 dark:border-slate-700">
                 {[
                   { label: 'Medewerkers', value: d.memberCount,   color: 'text-slate-600 dark:text-slate-300' },
                   { label: 'Hardware',    value: d.hardwareCount, color: 'text-blue-600 dark:text-blue-400' },
