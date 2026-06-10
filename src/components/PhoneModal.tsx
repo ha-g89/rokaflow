@@ -41,6 +41,7 @@ export function PhoneModal({ open, onClose, onSuccess, teammates, phone }: Props
     register,
     handleSubmit,
     reset,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({ resolver: zodResolver(schema) })
 
@@ -135,7 +136,14 @@ export function PhoneModal({ open, onClose, onSuccess, teammates, phone }: Props
           </div>
           <div>
             <label className="block text-xs font-medium text-slate-600 mb-1">Toegewezen aan</label>
-            <select {...register('assignedToUserId')} className={field}>
+            <select
+              {...register('assignedToUserId')}
+              className={field}
+              onChange={e => {
+                setValue('assignedToUserId', e.target.value)
+                setValue('status', e.target.value ? '1' : '0')
+              }}
+            >
               <option value="">— Niemand —</option>
               {teammates.map(u => (
                 <option key={u.id} value={u.id}>{u.firstName} {u.lastName}</option>
