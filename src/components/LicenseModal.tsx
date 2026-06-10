@@ -2,7 +2,7 @@
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Search, X } from 'lucide-react'
+import { Lock, Search, X } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import api from '@/lib/axios'
@@ -13,6 +13,7 @@ import { LICENSE_TYPE_OPTIONS, LICENSE_TARGET_OPTIONS } from '@/types/license'
 const schema = z.object({
   name: z.string().min(1, 'Naam is verplicht').max(256),
   vendor: z.string().max(200),
+  supplier: z.string().max(200),
   type: z.string(),
   target: z.string(),
   maxUsers: z.string().min(1),
@@ -29,6 +30,7 @@ interface Props {
   onSuccess: () => void
   teammates: ClientUserListItem[]
   license?: LicenseListItem | null
+  lockedUser?: { id: string; name: string }
 }
 
 const field =
@@ -44,7 +46,7 @@ function typeNameToValue(name: string): number {
   return map[name] ?? 0
 }
 
-export function LicenseModal({ open, onClose, onSuccess, teammates, license }: Props) {
+export function LicenseModal({ open, onClose, onSuccess, teammates, license, lockedUser }: Props) {
   const [apiError, setApiError] = useState<string | null>(null)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [userSearch, setUserSearch] = useState('')
@@ -63,6 +65,7 @@ export function LicenseModal({ open, onClose, onSuccess, teammates, license }: P
         reset({
           name: license.name,
           vendor: license.vendor,
+          supplier: license.supplier ?? '',
           type: String(typeNameToValue(license.type)),
           target: license.target === 'Device' ? '1' : '0',
           maxUsers: String(license.maxUsers),
@@ -72,11 +75,11 @@ export function LicenseModal({ open, onClose, onSuccess, teammates, license }: P
         })
       } else {
         reset({
-          name: '', vendor: '', type: '0', target: '0', maxUsers: '1',
+          name: '', vendor: '', supplier: '', type: '0', target: '0', maxUsers: '1',
           startsAt: '', expiresAt: '', isActive: true,
         })
       }
-      setSelectedIds([])
+      setSelectedIds(lockedUser ? [lockedUser.id] : [])
       setUserSearch('')
       setApiError(null)
     }
@@ -97,6 +100,7 @@ export function LicenseModal({ open, onClose, onSuccess, teammates, license }: P
       const payload = {
         name: values.name,
         vendor: values.vendor || '',
+        supplier: values.supplier || null,
         type: parseInt(values.type, 10),
         target: parseInt(values.target, 10),
         maxUsers: parseInt(values.maxUsers, 10),
@@ -138,10 +142,16 @@ export function LicenseModal({ open, onClose, onSuccess, teammates, license }: P
           {errors.name && <p className="mt-1 text-xs text-red-600">{errors.name.message}</p>}
         </div>
 
-        {/* Vendor */}
-        <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Leverancier</label>
-          <input {...register('vendor')} className={field} placeholder="Microsoft" />
+        {/* Vendor + Supplier */}
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs font-medium text-slate-600 mb-1">Fabrikant / uitgever</label>
+            <input {...register('vendor')} className={field} placeholder="Microsoft, Adobe…" />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-slate-600 mb-1">Leverancier</label>
+            <input {...register('supplier')} className={field} placeholder="SoftwareOne, Bol…" />
+          </div>
         </div>
 
         {/* Type + Target */}
@@ -191,7 +201,7 @@ export function LicenseModal({ open, onClose, onSuccess, teammates, license }: P
         </label>
 
         {/* User assignment — only on create */}
-        {!isEdit && teammates.length > 0 && (
+        {!isEdit && (
           <div>
             <hr className="border-slate-100" />
             <div className="pt-1">
@@ -202,10 +212,20 @@ export function LicenseModal({ open, onClose, onSuccess, teammates, license }: P
                 )}
               </label>
 
-              {/* Selected tags */}
-              {selectedIds.length > 0 && (
+              {/* Locked user tag (non-removable) */}
+              {lockedUser && (
                 <div className="flex flex-wrap gap-1.5 mb-2">
-                  {selectedIds.map(id => {
+                  <span className="inline-flex items-center gap-1.5 text-xs bg-violet-100 text-violet-700 px-2.5 py-1 rounded-full font-medium">
+                    {lockedUser.name}
+                    <Lock size={10} className="text-violet-500" />
+                  </span>
+                </div>
+              )}
+
+              {/* Other selected tags */}
+              {selectedIds.filter(id => id !== lockedUser?.id).length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mb-2">
+                  {selectedIds.filter(id => id !== lockedUser?.id).map(id => {
                     const u = teammates.find(t => t.id === id)
                     if (!u) return null
                     return (
@@ -220,41 +240,43 @@ export function LicenseModal({ open, onClose, onSuccess, teammates, license }: P
                 </div>
               )}
 
-              {/* Search */}
-              <div className="relative mb-1.5">
-                <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input
-                  type="text"
-                  value={userSearch}
-                  onChange={e => setUserSearch(e.target.value)}
-                  placeholder="Zoek medewerker…"
-                  className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-slate-200 bg-slate-50 focus:outline-none focus:border-violet-400"
-                />
-              </div>
-
-              {/* User list */}
-              <div className="max-h-36 overflow-y-auto rounded-lg border border-slate-200 divide-y divide-slate-100">
-                {filteredTeammates.length === 0 ? (
-                  <p className="p-3 text-xs text-slate-400 text-center">Geen medewerkers gevonden.</p>
-                ) : (
-                  filteredTeammates.map(u => (
-                    <label key={u.id} className="flex items-center gap-2.5 px-3 py-2 hover:bg-slate-100 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={selectedIds.includes(u.id)}
-                        onChange={() => toggleUser(u.id)}
-                        className="w-3.5 h-3.5 accent-violet-600 flex-shrink-0"
-                      />
-                      <div className="min-w-0">
-                        <p className="text-xs font-medium text-slate-800 truncate">
-                          {u.firstName} {u.lastName}
-                        </p>
-                        <p className="text-xs text-slate-400 truncate">{u.department || u.email}</p>
-                      </div>
-                    </label>
-                  ))
-                )}
-              </div>
+              {/* Search + list (only when there are other teammates to add) */}
+              {teammates.filter(t => t.id !== lockedUser?.id).length > 0 && (
+                <>
+                  <div className="relative mb-1.5">
+                    <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input
+                      type="text"
+                      value={userSearch}
+                      onChange={e => setUserSearch(e.target.value)}
+                      placeholder="Zoek medewerker…"
+                      className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-slate-200 bg-slate-50 focus:outline-none focus:border-violet-400"
+                    />
+                  </div>
+                  <div className="max-h-36 overflow-y-auto rounded-lg border border-slate-200 divide-y divide-slate-100">
+                    {filteredTeammates.filter(u => u.id !== lockedUser?.id).length === 0 ? (
+                      <p className="p-3 text-xs text-slate-400 text-center">Geen medewerkers gevonden.</p>
+                    ) : (
+                      filteredTeammates.filter(u => u.id !== lockedUser?.id).map(u => (
+                        <label key={u.id} className="flex items-center gap-2.5 px-3 py-2 hover:bg-slate-100 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={selectedIds.includes(u.id)}
+                            onChange={() => toggleUser(u.id)}
+                            className="w-3.5 h-3.5 accent-violet-600 flex-shrink-0"
+                          />
+                          <div className="min-w-0">
+                            <p className="text-xs font-medium text-slate-800 truncate">
+                              {u.firstName} {u.lastName}
+                            </p>
+                            <p className="text-xs text-slate-400 truncate">{u.department || u.email}</p>
+                          </div>
+                        </label>
+                      ))
+                    )}
+                  </div>
+                </>
+              )}
             </div>
           </div>
         )}

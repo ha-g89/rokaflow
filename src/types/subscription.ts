@@ -2,6 +2,7 @@ export interface SubscriptionListItem {
   id: string
   name: string
   provider: string
+  supplier: string | null
   type: 'Mobile' | 'Internet'
   bundle: string
   monthlyCost: number | null

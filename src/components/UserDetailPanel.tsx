@@ -3,14 +3,18 @@ import {
   Laptop, KeyRound, History, CheckCircle2, AlertTriangle,
   LogOut, ShieldCheck, ClipboardList, Mail,
   Briefcase, Calendar, User, RotateCcw, Smartphone, Phone,
-  Users, FileText, Pencil, Trash2, X, MapPin,
+  Users, FileText, Pencil, Trash2, X, MapPin, Plus, Layers,
 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/Card'
-import type { ClientUserDetailResponse, UserStatus } from '@/types/clientUser'
+import type { ClientUserDetailResponse, ClientUserListItem, UserStatus } from '@/types/clientUser'
 import { STATUS_LABEL } from '@/types/clientUser'
 import { HARDWARE_STATUS_LABEL, HARDWARE_STATUS_TONE, HARDWARE_TYPE_LABEL } from '@/types/hardware'
 import { LICENSE_TYPE_LABEL, LICENSE_TYPE_TONE } from '@/types/license'
 import { PHONE_STATUS_LABEL, PHONE_STATUS_TONE } from '@/types/phone'
+import type { LocationListItem } from '@/types/location'
+import { HardwareModal } from '@/components/HardwareModal'
+import { PhoneSetupWizard } from '@/components/PhoneSetupWizard'
+import { LicenseModal } from '@/components/LicenseModal'
 import api from '@/lib/axios'
 
 interface AuditLogEntry {
@@ -307,14 +311,17 @@ function EditUserModal({ user, departments, managers, locations, onClose, onSave
   )
 }
 
-function Section({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
+function Section({ title, icon, action, children }: { title: string; icon: React.ReactNode; action?: React.ReactNode; children: React.ReactNode }) {
   return (
     <Card className="rounded-2xl shadow-sm">
       <CardContent className="p-5">
-        <h3 className="mb-4 flex items-center gap-2 text-sm font-bold text-slate-800">
-          {icon}
-          {title}
-        </h3>
+        <div className="mb-4 flex items-center justify-between gap-2">
+          <h3 className="flex items-center gap-2 text-sm font-bold text-slate-800">
+            {icon}
+            {title}
+          </h3>
+          {action}
+        </div>
         {children}
       </CardContent>
     </Card>
@@ -328,7 +335,8 @@ interface Props {
   canEdit: boolean
   departments?: { id: string; name: string; managerId?: string | null }[]
   managers?: { id: string; fullName: string }[]
-  locations?: { id: string; name: string }[]
+  locations?: LocationListItem[]
+  teammates?: ClientUserListItem[]
   /** base path for checklist toggle API calls, e.g. "/clients/{id}/users/{uid}" */
   checklistBasePath: string
   /** path to fetch audit history, e.g. "/portal/history/ClientUser/{uid}" */
@@ -338,13 +346,18 @@ interface Props {
   onDelete?: () => void
 }
 
-export function UserDetailPanel({ user, canEdit, departments = [], managers = [], locations = [], checklistBasePath, historyPath, onChecklistToggle, onUserUpdated, onDelete }: Props) {
+export function UserDetailPanel({ user, canEdit, departments = [], managers = [], locations = [], teammates = [], checklistBasePath, historyPath, onChecklistToggle, onUserUpdated, onDelete }: Props) {
   const status = user.status as UserStatus
   const statusTone = status === 'InService' ? 'good' : status === 'StartPlanned' ? 'info' : status === 'LeavePlanned' ? 'warn' : 'bad'
 
   const [auditHistory, setAuditHistory] = useState<AuditLogEntry[]>([])
   const [historyLoading, setHistoryLoading] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
+  const [showHardwareModal, setShowHardwareModal] = useState(false)
+  const [showPhoneWizard, setShowPhoneWizard] = useState(false)
+  const [showLicenseModal, setShowLicenseModal] = useState(false)
+
+  const lockedUser = { id: user.id, name: `${user.firstName} ${user.lastName}` }
 
   useEffect(() => {
     if (!historyPath) return
@@ -382,6 +395,31 @@ export function UserDetailPanel({ user, canEdit, departments = [], managers = []
           onSaved={() => { onUserUpdated?.() }}
         />
       )}
+
+      <HardwareModal
+        open={showHardwareModal}
+        onClose={() => setShowHardwareModal(false)}
+        onSuccess={() => { setShowHardwareModal(false); onUserUpdated?.() }}
+        teammates={teammates}
+        locations={locations}
+        lockedUser={lockedUser}
+      />
+
+      <PhoneSetupWizard
+        open={showPhoneWizard}
+        onClose={() => setShowPhoneWizard(false)}
+        onSuccess={() => { onUserUpdated?.() }}
+        teammates={teammates}
+        lockedUser={lockedUser}
+      />
+
+      <LicenseModal
+        open={showLicenseModal}
+        onClose={() => setShowLicenseModal(false)}
+        onSuccess={() => { setShowLicenseModal(false); onUserUpdated?.() }}
+        teammates={teammates}
+        lockedUser={lockedUser}
+      />
 
       <div className="space-y-4">
       {/* ── Profile header ── */}
@@ -490,7 +528,11 @@ export function UserDetailPanel({ user, canEdit, departments = [], managers = []
 
       {/* ── Hardware + Telefonie ── */}
       <div className="grid gap-4 xl:grid-cols-2">
-        <Section title="Hardware" icon={<Laptop size={16} />}>
+        <Section title="Hardware" icon={<Laptop size={16} />} action={
+          <button onClick={() => setShowHardwareModal(true)} className="inline-flex items-center gap-1 text-xs font-medium text-violet-600 hover:text-violet-700 hover:bg-violet-50 px-2 py-1 rounded-lg transition-colors">
+            <Plus size={11} /> Toevoegen
+          </button>
+        }>
           {user.hardware.length === 0 ? (
             <p className="text-sm text-slate-400">Geen hardware toegewezen.</p>
           ) : (
@@ -523,7 +565,11 @@ export function UserDetailPanel({ user, canEdit, departments = [], managers = []
           )}
         </Section>
 
-        <Section title="Telefonie" icon={<Smartphone size={16} />}>
+        <Section title="Telefonie" icon={<Smartphone size={16} />} action={
+          <button onClick={() => setShowPhoneWizard(true)} className="inline-flex items-center gap-1 text-xs font-medium text-violet-600 hover:text-violet-700 hover:bg-violet-50 px-2 py-1 rounded-lg transition-colors">
+            <Layers size={11} /> Setup
+          </button>
+        }>
           {user.phones.length === 0 ? (
             <p className="text-sm text-slate-400">Geen telefoons toegewezen.</p>
           ) : (
@@ -574,7 +620,11 @@ export function UserDetailPanel({ user, canEdit, departments = [], managers = []
           )}
         </Section>
 
-        <Section title="Licenties" icon={<KeyRound size={16} />}>
+        <Section title="Licenties" icon={<KeyRound size={16} />} action={
+          <button onClick={() => setShowLicenseModal(true)} className="inline-flex items-center gap-1 text-xs font-medium text-violet-600 hover:text-violet-700 hover:bg-violet-50 px-2 py-1 rounded-lg transition-colors">
+            <Plus size={11} /> Toevoegen
+          </button>
+        }>
           {user.licenses.length === 0 ? (
             <p className="text-sm text-slate-400">Geen licenties gekoppeld.</p>
           ) : (

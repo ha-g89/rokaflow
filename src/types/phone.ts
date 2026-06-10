@@ -4,6 +4,7 @@ export interface PhoneListItem {
   model: string
   serialNumber: string
   imeiNumber: string
+  supplier: string | null
   status: 'InStock' | 'InUse' | 'Decommissioned'
   assignedToUserId: string | null
   assignedToName: string | null

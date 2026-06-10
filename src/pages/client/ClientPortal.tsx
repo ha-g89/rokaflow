@@ -21,6 +21,7 @@ import { HardwareModal } from '@/components/HardwareModal'
 import { LicenseModal } from '@/components/LicenseModal'
 import { AddEmployeeModal } from '@/components/AddEmployeeModal'
 import { PhoneModal } from '@/components/PhoneModal'
+import { PhoneSetupWizard } from '@/components/PhoneSetupWizard'
 import { SimCardModal } from '@/components/SimCardModal'
 import { SubscriptionModal } from '@/components/SubscriptionModal'
 import { DepartmentModal } from '@/components/DepartmentModal'
@@ -1129,6 +1130,7 @@ function PhonesTab({ teammates }: { teammates: ClientUserListItem[] }) {
   const [editTarget, setEditTarget] = useState<PhoneListItem | null>(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [historyKey, setHistoryKey] = useState(0)
+  const [showWizard, setShowWizard] = useState(false)
 
   const fetchPhones = useCallback(async () => {
     try {
@@ -1192,6 +1194,9 @@ function PhonesTab({ teammates }: { teammates: ClientUserListItem[] }) {
             </div>
             <Button size="sm" onClick={() => { setEditTarget(null); setShowModal(true) }}>
               <Plus size={13} /> Toevoegen
+            </Button>
+            <Button size="sm" variant="secondary" onClick={() => setShowWizard(true)}>
+              <Layers size={13} /> Setup
             </Button>
           </div>
 
@@ -1327,6 +1332,13 @@ function PhonesTab({ teammates }: { teammates: ClientUserListItem[] }) {
         onSuccess={handleSaved}
         teammates={teammates}
         phone={editTarget}
+      />
+
+      <PhoneSetupWizard
+        open={showWizard}
+        onClose={() => setShowWizard(false)}
+        onSuccess={handleSaved}
+        teammates={teammates}
       />
     </div>
   )
@@ -2061,7 +2073,7 @@ function EmployeeListView({ teammates, loading, search, currentUserId, departmen
 
 // ── Employee detail view (full-page) ──────────────────────────────────────────
 
-function EmployeeDetailView({ user, loading, onBack, onUserUpdated, onDelete, departments, managers, locations }: {
+function EmployeeDetailView({ user, loading, onBack, onUserUpdated, onDelete, departments, managers, locations, teammates }: {
   user: ClientUserDetailResponse | null
   loading: boolean
   onBack: () => void
@@ -2069,7 +2081,8 @@ function EmployeeDetailView({ user, loading, onBack, onUserUpdated, onDelete, de
   onDelete?: (id: string, name: string) => void
   departments?: { id: string; name: string; managerId: string | null }[]
   managers?: { id: string; fullName: string }[]
-  locations?: { id: string; name: string }[]
+  locations?: LocationListItem[]
+  teammates?: ClientUserListItem[]
 }) {
   return (
     <div className="flex flex-col gap-4 h-full">
@@ -2095,6 +2108,7 @@ function EmployeeDetailView({ user, loading, onBack, onUserUpdated, onDelete, de
             departments={departments}
             managers={managers}
             locations={locations}
+            teammates={teammates}
             checklistBasePath={`/portal/users/${user.id}`}
             historyPath={`/portal/history/ClientUser/${user.id}`}
             onUserUpdated={onUserUpdated}
@@ -2737,7 +2751,7 @@ export default function ClientPortal() {
   const [clientLogoUrl, setClientLogoUrl] = useState<string | null>(null)
   const [departmentOptions, setDepartmentOptions] = useState<{ id: string; name: string; managerName: string; managerId: string | null }[]>([])
   const [managers, setManagers] = useState<{ id: string; fullName: string }[]>([])
-  const [locationOptions, setLocationOptions] = useState<{ id: string; name: string }[]>([])
+  const [locationOptions, setLocationOptions] = useState<LocationListItem[]>([])
 
   // ── User menu + MSP ───────────────────────────────────────────────────────
   const [showUserMenu, setShowUserMenu] = useState(false)
@@ -2795,7 +2809,7 @@ export default function ClientPortal() {
   const fetchLocationOptions = useCallback(async () => {
     try {
       const { data } = await api.get<LocationListItem[]>('/portal/locations')
-      setLocationOptions(data.map(l => ({ id: l.id, name: l.name })))
+      setLocationOptions(data)
     } catch { /* non-critical */ }
   }, [])
 
@@ -3045,6 +3059,7 @@ export default function ClientPortal() {
               departments={departmentOptions}
               managers={managers}
               locations={locationOptions}
+              teammates={teammates}
             />
           )}
 

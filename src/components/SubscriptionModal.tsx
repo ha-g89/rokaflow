@@ -12,6 +12,7 @@ import { SUB_TYPE_OPTIONS, SUB_STATUS_OPTIONS } from '@/types/subscription'
 const schema = z.object({
   name: z.string().min(1, 'Naam is verplicht').max(256),
   provider: z.string().max(200),
+  supplier: z.string().max(200),
   type: z.string(),
   bundle: z.string().max(200),
   monthlyCost: z.string(),
@@ -54,6 +55,7 @@ export function SubscriptionModal({ open, onClose, onSuccess, simCards, subscrip
       reset(subscription ? {
         name: subscription.name,
         provider: subscription.provider,
+        supplier: subscription.supplier ?? '',
         type: subscription.type === 'Mobile' ? '0' : '1',
         bundle: subscription.bundle,
         monthlyCost: subscription.monthlyCost != null ? String(subscription.monthlyCost) : '',
@@ -63,7 +65,7 @@ export function SubscriptionModal({ open, onClose, onSuccess, simCards, subscrip
         location: subscription.location,
         simCardId: subscription.simCardId ?? '',
       } : {
-        name: '', provider: '', type: '0', bundle: '', monthlyCost: '',
+        name: '', provider: '', supplier: '', type: '0', bundle: '', monthlyCost: '',
         startsAt: '', expiresAt: '', status: '0', location: '', simCardId: '',
       })
       setApiError(null)
@@ -78,6 +80,7 @@ export function SubscriptionModal({ open, onClose, onSuccess, simCards, subscrip
       const payload = {
         name: values.name,
         provider: values.provider || '',
+        supplier: values.supplier || null,
         type: parseInt(values.type, 10),
         bundle: values.bundle || '',
         monthlyCost: values.monthlyCost ? parseFloat(values.monthlyCost) : null,
@@ -120,6 +123,11 @@ export function SubscriptionModal({ open, onClose, onSuccess, simCards, subscrip
             <label className="block text-xs font-medium text-slate-600 mb-1">Provider</label>
             <input {...register('provider')} className={field} placeholder="KPN, Ziggo…" />
           </div>
+        </div>
+
+        <div>
+          <label className="block text-xs font-medium text-slate-600 mb-1">Leverancier</label>
+          <input {...register('supplier')} className={field} placeholder="Belsimpel, Tele2…" />
         </div>
 
         <div className="grid grid-cols-2 gap-3">

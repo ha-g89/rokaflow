@@ -2,6 +2,7 @@ export interface LicenseListItem {
   id: string
   name: string
   vendor: string
+  supplier: string | null
   type: string
   target: 'User' | 'Device'
   maxUsers: number

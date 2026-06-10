@@ -14,6 +14,7 @@ const schema = z.object({
   model: z.string().max(200),
   serialNumber: z.string().max(100),
   imeiNumber: z.string().max(20),
+  supplier: z.string().max(200),
   status: z.string(),
   assignedToUserId: z.string(),
   issuedAt: z.string(),
@@ -52,13 +53,14 @@ export function PhoneModal({ open, onClose, onSuccess, teammates, phone }: Props
         model: phone.model,
         serialNumber: phone.serialNumber,
         imeiNumber: phone.imeiNumber,
+        supplier: phone.supplier ?? '',
         status: phone.status === 'InStock' ? '0' : phone.status === 'InUse' ? '1' : '2',
         assignedToUserId: phone.assignedToUserId ?? '',
         issuedAt: phone.issuedAt ? phone.issuedAt.substring(0, 10) : '',
         returnedAt: phone.returnedAt ? phone.returnedAt.substring(0, 10) : '',
       } : {
         brand: '', model: '', serialNumber: '', imeiNumber: '',
-        status: '0', assignedToUserId: '', issuedAt: '', returnedAt: '',
+        supplier: '', status: '0', assignedToUserId: '', issuedAt: '', returnedAt: '',
       })
       setApiError(null)
     }
@@ -74,6 +76,7 @@ export function PhoneModal({ open, onClose, onSuccess, teammates, phone }: Props
         model: values.model || '',
         serialNumber: values.serialNumber || '',
         imeiNumber: values.imeiNumber || '',
+        supplier: values.supplier || null,
         status: parseInt(values.status, 10),
         assignedToUserId: values.assignedToUserId || null,
         issuedAt: values.issuedAt ? new Date(values.issuedAt).toISOString() : null,
@@ -123,6 +126,11 @@ export function PhoneModal({ open, onClose, onSuccess, teammates, phone }: Props
             <label className="block text-xs font-medium text-slate-600 mb-1">IMEI-nummer</label>
             <input {...register('imeiNumber')} className={field} placeholder="35 123456…" />
           </div>
+        </div>
+
+        <div>
+          <label className="block text-xs font-medium text-slate-600 mb-1">Leverancier</label>
+          <input {...register('supplier')} className={field} placeholder="Belsimpel, MediaMarkt…" />
         </div>
 
         <div className="grid grid-cols-2 gap-3">
