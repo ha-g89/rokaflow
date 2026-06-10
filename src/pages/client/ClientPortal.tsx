@@ -518,6 +518,7 @@ function HardwareDetailPanel({ asset, onEdit, onDelete, historyKey }: {
             {asset.serialNumber && <p><span className="text-slate-400">Serienummer</span><br /><span className="font-medium text-slate-800">{asset.serialNumber}</span></p>}
             {asset.location && <p><span className="text-slate-400">Locatie</span><br /><span className="font-medium text-slate-800">{asset.location}</span></p>}
             {asset.purchaseValue != null && <p><span className="text-slate-400">Aanschafwaarde</span><br /><span className="font-medium text-slate-800">€ {asset.purchaseValue.toFixed(2)}</span></p>}
+            {asset.supplier && <p><span className="text-slate-400">Leverancier</span><br /><span className="font-medium text-slate-800">{asset.supplier}</span></p>}
             {asset.assignedToName && <p className="col-span-2"><span className="text-slate-400">Toegewezen aan</span><br /><span className="font-medium text-slate-800">{asset.assignedToName}</span></p>}
             {asset.issuedAt && <p><span className="text-slate-400">Uitgiftedatum</span><br /><span className="font-medium text-slate-800">{fmt(asset.issuedAt)}</span></p>}
             {asset.returnedAt && <p><span className="text-slate-400">Inleverdatum</span><br /><span className="font-medium text-slate-800">{fmt(asset.returnedAt)}</span></p>}
@@ -582,6 +583,13 @@ function HardwareView({ teammates }: { teammates: ClientUserListItem[] }) {
 
   useEffect(() => { fetchAssets() }, [fetchAssets])
 
+  useEffect(() => {
+    if (selected) {
+      const updated = assets.find(a => a.id === selected.id)
+      if (updated) setSelected(updated)
+    }
+  }, [assets])
+
   const filtered = assets.filter(a =>
     `${a.name} ${a.brand} ${a.assetNumber} ${a.serialNumber} ${a.assignedToName ?? ''} ${a.location}`
       .toLowerCase().includes(search.toLowerCase())
@@ -633,8 +641,8 @@ function HardwareView({ teammates }: { teammates: ClientUserListItem[] }) {
           </div>
 
           <Card className="flex-1 overflow-hidden flex flex-col">
-            <div className="grid grid-cols-[1fr_1.2fr_2fr_1.2fr_1.5fr_0.9fr] gap-3 px-4 py-2.5 bg-slate-50 border-b border-slate-100 flex-shrink-0">
-              {['Type', 'Merk', 'Naam', 'Serienummer', 'Toegewezen aan', 'Status'].map(h => (
+            <div className="grid grid-cols-[1fr_1.2fr_2fr_1.2fr_1fr_1.5fr_0.9fr] gap-3 px-4 py-2.5 bg-slate-50 border-b border-slate-100 flex-shrink-0">
+              {['Type', 'Merk', 'Naam', 'Serienummer', 'Leverancier', 'Toegewezen aan', 'Status'].map(h => (
                 <span key={h} className="text-xs font-semibold text-slate-500 uppercase tracking-wider truncate">{h}</span>
               ))}
             </div>
@@ -654,7 +662,7 @@ function HardwareView({ teammates }: { teammates: ClientUserListItem[] }) {
                     <li
                       key={a.id}
                       onClick={() => setSelected(a)}
-                      className={`grid grid-cols-[1fr_1.2fr_2fr_1.2fr_1.5fr_0.9fr] gap-3 px-4 py-3 items-center cursor-pointer transition-colors hover:bg-slate-100 ${
+                      className={`grid grid-cols-[1fr_1.2fr_2fr_1.2fr_1fr_1.5fr_0.9fr] gap-3 px-4 py-3 items-center cursor-pointer transition-colors hover:bg-slate-100 ${
                         selected?.id === a.id ? 'bg-violet-50 border-l-2 border-violet-500' : ''
                       }`}
                     >
@@ -662,6 +670,7 @@ function HardwareView({ teammates }: { teammates: ClientUserListItem[] }) {
                       <p className="text-xs text-slate-600 truncate">{a.brand || '—'}</p>
                       <p className="text-sm font-semibold text-slate-800 truncate">{a.name}</p>
                       <p className="text-xs text-slate-600 truncate tabular-nums">{a.serialNumber || '—'}</p>
+                      <p className="text-xs text-slate-600 truncate">{a.supplier || '—'}</p>
                       <p className="text-xs text-slate-600 truncate">{a.assignedToName || '—'}</p>
                       <span className={`text-xs px-2 py-0.5 rounded-full font-medium truncate ${HARDWARE_STATUS_TONE[a.status] ?? 'bg-slate-100 text-slate-600'}`}>
                         {HARDWARE_STATUS_LABEL[a.status] ?? a.status}
@@ -776,6 +785,12 @@ function LicenseDetailPanel({ license, teammates, onEdit, onDelete, onAssign, on
             <p className="text-xs text-slate-400 mb-0.5">Vervaldatum</p>
             <p className={`text-sm font-medium ${isExpired ? 'text-red-600' : 'text-slate-800'}`}>{fmt(license.expiresAt)}</p>
           </div>
+          {license.supplier && (
+            <div className="rounded-xl bg-slate-50 p-3 col-span-2">
+              <p className="text-xs text-slate-400 mb-0.5">Leverancier</p>
+              <p className="text-sm font-medium text-slate-800">{license.supplier}</p>
+            </div>
+          )}
         </div>
 
         {/* Assign user */}
@@ -947,8 +962,8 @@ function LicenseView({ teammates }: { teammates: ClientUserListItem[] }) {
           </div>
 
           <Card className="flex-1 overflow-hidden flex flex-col">
-            <div className="grid grid-cols-[2fr_1.5fr_0.8fr_1fr_0.7fr] gap-3 px-4 py-2.5 bg-slate-50 border-b border-slate-100 flex-shrink-0">
-              {['Naam', 'Seats', 'Beschikbaar', 'Vervaldatum', 'Status'].map(h => (
+            <div className="grid grid-cols-[2fr_1fr_1.5fr_0.8fr_1fr_0.7fr] gap-3 px-4 py-2.5 bg-slate-50 border-b border-slate-100 flex-shrink-0">
+              {['Naam', 'Leverancier', 'Seats', 'Beschikbaar', 'Vervaldatum', 'Status'].map(h => (
                 <span key={h} className="text-xs font-semibold text-slate-500 uppercase tracking-wider truncate">{h}</span>
               ))}
             </div>
@@ -973,7 +988,7 @@ function LicenseView({ teammates }: { teammates: ClientUserListItem[] }) {
                       <li
                         key={l.id}
                         onClick={() => setSelected(l)}
-                        className={`grid grid-cols-[2fr_1.5fr_0.8fr_1fr_0.7fr] gap-3 px-4 py-3 items-center cursor-pointer transition-colors hover:bg-slate-100 ${
+                        className={`grid grid-cols-[2fr_1fr_1.5fr_0.8fr_1fr_0.7fr] gap-3 px-4 py-3 items-center cursor-pointer transition-colors hover:bg-slate-100 ${
                           selected?.id === l.id ? 'bg-violet-50 border-l-2 border-violet-500' : ''
                         }`}
                       >
@@ -982,6 +997,9 @@ function LicenseView({ teammates }: { teammates: ClientUserListItem[] }) {
                           <p className="text-sm font-semibold text-slate-800 truncate">{l.name}</p>
                           <p className="text-xs text-slate-400 truncate">{l.vendor || '—'}</p>
                         </div>
+
+                        {/* Leverancier */}
+                        <p className="text-xs text-slate-600 truncate">{l.supplier || '—'}</p>
 
                         {/* Seats bar */}
                         <div className="flex items-center gap-1.5 min-w-0">
@@ -1143,6 +1161,13 @@ function PhonesTab({ teammates }: { teammates: ClientUserListItem[] }) {
 
   useEffect(() => { fetchPhones() }, [fetchPhones])
 
+  useEffect(() => {
+    if (selected) {
+      const updated = phones.find(p => p.id === selected.id)
+      if (updated) setSelected(updated)
+    }
+  }, [phones])
+
   const handleSelect = (p: PhoneListItem) => {
     setSelected(p)
     setConfirmDelete(false)
@@ -1201,8 +1226,8 @@ function PhonesTab({ teammates }: { teammates: ClientUserListItem[] }) {
           </div>
 
           <Card className="flex-1 overflow-hidden flex flex-col">
-            <div className="grid grid-cols-[1fr_1.2fr_1.3fr_1.3fr_1.2fr_1.5fr_1fr_0.9fr] gap-3 px-4 py-2.5 bg-slate-50 border-b border-slate-100 flex-shrink-0">
-              {['Merk', 'Model', 'Serienummer', 'IMEI-nummer', 'Telefoonnummer', 'Toegewezen aan', 'Uitgiftedatum', 'Status'].map(h => (
+            <div className="grid grid-cols-[1fr_1.2fr_1.3fr_1fr_1.2fr_1.5fr_1fr_0.9fr] gap-3 px-4 py-2.5 bg-slate-50 border-b border-slate-100 flex-shrink-0">
+              {['Merk', 'Model', 'IMEI-nummer', 'Leverancier', 'Telefoonnummer', 'Toegewezen aan', 'Uitgiftedatum', 'Status'].map(h => (
                 <span key={h} className="text-xs font-semibold text-slate-500 uppercase tracking-wider truncate">{h}</span>
               ))}
             </div>
@@ -1220,12 +1245,12 @@ function PhonesTab({ teammates }: { teammates: ClientUserListItem[] }) {
                     <li
                       key={p.id}
                       onClick={() => handleSelect(p)}
-                      className={`grid grid-cols-[1fr_1.2fr_1.3fr_1.3fr_1.2fr_1.5fr_1fr_0.9fr] gap-3 px-4 py-3 items-center cursor-pointer transition-colors hover:bg-slate-100 ${selected?.id === p.id ? 'bg-violet-50 border-l-2 border-violet-500' : ''}`}
+                      className={`grid grid-cols-[1fr_1.2fr_1.3fr_1fr_1.2fr_1.5fr_1fr_0.9fr] gap-3 px-4 py-3 items-center cursor-pointer transition-colors hover:bg-slate-100 ${selected?.id === p.id ? 'bg-violet-50 border-l-2 border-violet-500' : ''}`}
                     >
                       <p className="text-sm font-semibold text-slate-800 truncate">{p.brand}</p>
                       <p className="text-xs text-slate-600 truncate">{p.model || '—'}</p>
-                      <p className="text-xs text-slate-600 truncate tabular-nums">{p.serialNumber || '—'}</p>
                       <p className="text-xs text-slate-600 truncate tabular-nums">{p.imeiNumber || '—'}</p>
+                      <p className="text-xs text-slate-600 truncate">{p.supplier || '—'}</p>
                       <p className="text-xs text-slate-600 truncate tabular-nums">{p.simPhoneNumber || '—'}</p>
                       <p className="text-xs text-slate-600 truncate">{p.assignedToName || '—'}</p>
                       <p className="text-xs text-slate-600 truncate tabular-nums">{fmt(p.issuedAt)}</p>
@@ -1259,6 +1284,9 @@ function PhonesTab({ teammates }: { teammates: ClientUserListItem[] }) {
                   )}
                   {selected.imeiNumber && (
                     <p><span className="text-slate-400">IMEI</span><br /><span className="font-medium text-slate-800">{selected.imeiNumber}</span></p>
+                  )}
+                  {selected.supplier && (
+                    <p className="col-span-2"><span className="text-slate-400">Leverancier</span><br /><span className="font-medium text-slate-800">{selected.supplier}</span></p>
                   )}
                   {selected.assignedToName && (
                     <p className="col-span-2"><span className="text-slate-400">Toegewezen aan</span><br /><span className="font-medium text-slate-800">{selected.assignedToName}</span></p>
@@ -1371,6 +1399,13 @@ function SimCardsTab({ teammates }: { teammates: ClientUserListItem[] }) {
   }, [])
 
   useEffect(() => { fetchData() }, [fetchData])
+
+  useEffect(() => {
+    if (selected) {
+      const updated = simCards.find(s => s.id === selected.id)
+      if (updated) setSelected(updated)
+    }
+  }, [simCards])
 
   const filtered = simCards.filter(s =>
     `${s.kaartNummer} ${s.phoneNumber} ${s.provider} ${s.assignedToName ?? ''} ${s.phoneName ?? ''}`
@@ -1554,6 +1589,13 @@ function SubscriptionsTab() {
 
   useEffect(() => { fetchData() }, [fetchData])
 
+  useEffect(() => {
+    if (selected) {
+      const updated = subscriptions.find(s => s.id === selected.id)
+      if (updated) setSelected(updated)
+    }
+  }, [subscriptions])
+
   const filtered = subscriptions.filter(s =>
     `${s.name} ${s.provider} ${s.bundle} ${s.simCardNumber ?? ''} ${s.assignedToName ?? ''}`
       .toLowerCase().includes(search.toLowerCase())
@@ -1597,8 +1639,8 @@ function SubscriptionsTab() {
         </div>
 
         <Card className="flex-1 overflow-hidden flex flex-col">
-          <div className="grid grid-cols-[1.2fr_2fr_1fr_1fr_1.5fr_1.3fr_0.9fr] gap-3 px-4 py-2.5 bg-slate-50 border-b border-slate-100 flex-shrink-0">
-            {['Provider', 'Naam', 'Type', 'Kosten/mnd', 'Toegewezen aan', 'Simkaart', 'Status'].map(h => (
+          <div className="grid grid-cols-[1.2fr_2fr_1fr_1fr_1fr_1.5fr_1.3fr_0.9fr] gap-3 px-4 py-2.5 bg-slate-50 border-b border-slate-100 flex-shrink-0">
+            {['Provider', 'Naam', 'Type', 'Kosten/mnd', 'Leverancier', 'Toegewezen aan', 'Simkaart', 'Status'].map(h => (
               <span key={h} className="text-xs font-semibold text-slate-500 uppercase tracking-wider truncate">{h}</span>
             ))}
           </div>
@@ -1616,7 +1658,7 @@ function SubscriptionsTab() {
                   <li
                     key={s.id}
                     onClick={() => { setSelected(s); setConfirmDelete(false) }}
-                    className={`grid grid-cols-[1.2fr_2fr_1fr_1fr_1.5fr_1.3fr_0.9fr] gap-3 px-4 py-3 items-center cursor-pointer transition-colors hover:bg-slate-100 ${selected?.id === s.id ? 'bg-violet-50 border-l-2 border-violet-500' : ''}`}
+                    className={`grid grid-cols-[1.2fr_2fr_1fr_1fr_1fr_1.5fr_1.3fr_0.9fr] gap-3 px-4 py-3 items-center cursor-pointer transition-colors hover:bg-slate-100 ${selected?.id === s.id ? 'bg-violet-50 border-l-2 border-violet-500' : ''}`}
                   >
                     <p className="text-sm font-semibold text-slate-800 truncate">{s.provider || '—'}</p>
                     <div className="min-w-0">
@@ -1624,6 +1666,7 @@ function SubscriptionsTab() {
                     </div>
                     <p className="text-xs text-slate-600 truncate">{SUB_TYPE_LABEL[s.type] ?? s.type}</p>
                     <p className="text-xs text-slate-600 truncate tabular-nums">{s.monthlyCost != null ? `€${s.monthlyCost.toFixed(2)}` : '—'}</p>
+                    <p className="text-xs text-slate-600 truncate">{s.supplier || '—'}</p>
                     <p className="text-xs text-slate-600 truncate">{s.assignedToName || '—'}</p>
                     <p className="text-xs text-slate-600 truncate tabular-nums">{s.simPhoneNumber || s.simCardNumber || '—'}</p>
                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium truncate ${SUB_STATUS_TONE[s.status] ?? 'bg-slate-100 text-slate-500'}`}>
@@ -1655,6 +1698,7 @@ function SubscriptionsTab() {
                   { label: 'Type', value: SUB_TYPE_LABEL[selected.type] ?? selected.type },
                   { label: 'Bundel', value: selected.bundle || '—' },
                   { label: 'Maandelijks', value: fmtCost(selected.monthlyCost) },
+                  { label: 'Leverancier', value: selected.supplier || '—' },
                   { label: 'Toegewezen aan', value: selected.assignedToName || '—' },
                   { label: 'Locatie', value: selected.location || '—' },
                   { label: 'Startdatum', value: fmt(selected.startsAt) },
