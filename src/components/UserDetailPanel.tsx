@@ -606,7 +606,7 @@ export function UserDetailPanel({ user, canEdit, departments = [], managers = []
         />
         {(status === 'LeavePlanned' || status === 'Left') && (
           <ChecklistCard
-            title="Checklist weggaan"
+            title="Checklist uit dienst"
             icon={<LogOut size={16} />}
             entries={user.leaverChecklist}
             canEdit={canEdit}

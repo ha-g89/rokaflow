@@ -61,7 +61,7 @@ const VIEW_TITLES: Record<View, string> = {
   licenses: 'Licenties',
   phones: 'Telefonie',
   'starter-checklist': 'Aantreden checklist',
-  'leaver-checklist': 'Weggaan checklist',
+  'leaver-checklist': 'Checklist uit dienst',
   overviews: 'Overzichten',
   history: 'Historie',
   contracts: 'Contracten',
@@ -2979,7 +2979,7 @@ export default function ClientPortal() {
 
           <SectionLabel label="Processen" />
           <NavItem icon={<PackageCheck size={14} />} label="Aantreden checklist" active={view === 'starter-checklist'} onClick={() => handleNavClick('starter-checklist')} />
-          <NavItem icon={<LogOut size={14} />} label="Weggaan checklist" active={view === 'leaver-checklist'} onClick={() => handleNavClick('leaver-checklist')} />
+          <NavItem icon={<LogOut size={14} />} label="Checklist uit dienst" active={view === 'leaver-checklist'} onClick={() => handleNavClick('leaver-checklist')} />
 
           <SectionLabel label="Rapportages" />
           <NavItem icon={<BarChart3 size={14} />} label="Overzichten" active={view === 'overviews'} onClick={() => handleNavClick('overviews')} />
