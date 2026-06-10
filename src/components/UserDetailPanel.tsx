@@ -493,15 +493,6 @@ export function UserDetailPanel({ user, canEdit, departments = [], managers = []
             )}
           </div>
 
-          {/* Completeness */}
-          <div className="mt-4 pt-4 border-t border-slate-100">
-            <div className="mb-1.5 flex items-center justify-between">
-              <span className="text-xs text-slate-500">Dossier volledigheid</span>
-              <span className="text-xs font-semibold text-slate-700">{user.completeness}%</span>
-            </div>
-            <Progress value={user.completeness} />
-          </div>
-
           {/* Quick stats */}
           <div className="mt-3 grid grid-cols-3 gap-2">
             <div className="rounded-xl bg-slate-50 p-3">
@@ -511,9 +502,9 @@ export function UserDetailPanel({ user, canEdit, departments = [], managers = []
               </p>
             </div>
             <div className="rounded-xl bg-slate-50 p-3">
-              <p className="text-xs text-slate-400">Device</p>
-              <p className="mt-0.5 text-sm font-semibold text-slate-800 truncate">
-                {user.hardware[0]?.name || '—'}
+              <p className="text-xs text-slate-400">Hardware</p>
+              <p className="mt-0.5 text-sm font-semibold text-slate-800">
+                {user.hardware.length || '—'}
               </p>
             </div>
             <div className="rounded-xl bg-slate-50 p-3">
