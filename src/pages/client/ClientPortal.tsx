@@ -1910,8 +1910,21 @@ function EmployeeListView({ teammates, loading, search, currentUserId, departmen
 
   const cols = 'grid-cols-[2.5fr_1fr_1fr_1fr_1fr_1fr_80px_90px_40px]'
 
+  const totaalMedewerkers = teammates.length
+  const inDienst          = teammates.filter(t => t.status === 'InService').length
+  const totaleAssets      = teammates.reduce((s, t) => s + t.hardwareCount, 0)
+  const totaleLicenties   = teammates.reduce((s, t) => s + t.licenseCount, 0)
+
   return (
     <div className="flex flex-col gap-4 h-full">
+      {/* Stat cards */}
+      <div className="grid grid-cols-4 gap-3 flex-shrink-0">
+        <StatCard label="Medewerkers"    value={totaalMedewerkers} icon={<Users size={18} />} />
+        <StatCard label="In dienst"      value={inDienst}          icon={<CheckCircle2 size={18} />} tone="emerald" />
+        <StatCard label="Totale assets"  value={totaleAssets}      icon={<Laptop size={18} />} tone="blue" />
+        <StatCard label="Totale licenties" value={totaleLicenties} icon={<CreditCard size={18} />} tone="violet" />
+      </div>
+
       {/* Toolbar */}
       <div className="flex items-center gap-3">
         <div className="relative flex-1 max-w-sm">
@@ -2335,8 +2348,19 @@ function LocationsView() {
     } finally { setDeletingId(null) }
   }
 
+  const totaalLocaties    = locations.length
+  const totaalMedewerkers = locations.reduce((s, l) => s + l.employeeCount, 0)
+  const totaalHardware    = locations.reduce((s, l) => s + l.hardwareCount, 0)
+
   return (
-    <div className="flex flex-col gap-5 h-full">
+    <div className="flex flex-col gap-4 h-full">
+      {/* Stat cards */}
+      <div className="grid grid-cols-3 gap-3 flex-shrink-0">
+        <StatCard label="Locaties"     value={totaalLocaties}    icon={<MapPin size={18} />} />
+        <StatCard label="Medewerkers"  value={totaalMedewerkers} icon={<Users size={18} />} tone="violet" />
+        <StatCard label="Hardware"     value={totaalHardware}    icon={<Laptop size={18} />} tone="blue" />
+      </div>
+
       <div className="flex items-center justify-between flex-shrink-0">
         <p className="text-xs text-slate-500">{locations.length} locatie{locations.length !== 1 ? 's' : ''}</p>
         <Button size="sm" onClick={() => { setEditTarget(null); setShowModal(true) }}>
@@ -2363,13 +2387,20 @@ function LocationsView() {
               className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-violet-200 transition-all duration-200 flex flex-col overflow-hidden group"
             >
               <div className="p-5 flex flex-col gap-3 flex-1">
-                {/* Name + hardware count */}
-                <div className="flex items-start justify-between gap-2">
-                  <h3 className="font-semibold text-slate-900 text-sm leading-tight">{loc.name}</h3>
-                  <span className="flex-shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-violet-50 text-violet-700 text-xs font-medium border border-violet-100">
-                    <Laptop size={11} />
-                    {loc.hardwareCount}
-                  </span>
+                {/* Name */}
+                <h3 className="font-semibold text-slate-900 text-sm leading-tight">{loc.name}</h3>
+
+                {/* Stats row */}
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { label: 'Medewerkers', value: loc.employeeCount, color: 'text-slate-600' },
+                    { label: 'Hardware',    value: loc.hardwareCount,  color: 'text-blue-600' },
+                  ].map(s => (
+                    <div key={s.label} className="text-center">
+                      <p className={`text-lg font-bold leading-tight ${s.color}`}>{s.value}</p>
+                      <p className="text-xs text-slate-400 leading-tight">{s.label}</p>
+                    </div>
+                  ))}
                 </div>
 
                 {/* Address info */}

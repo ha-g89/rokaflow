@@ -8,6 +8,7 @@ export interface LocationListItem {
   postalCode: string
   phone: string
   hardwareCount: number
+  employeeCount: number
   createdAt: string
 }
 
