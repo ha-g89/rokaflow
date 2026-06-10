@@ -2390,19 +2390,6 @@ function LocationsView() {
                 {/* Name */}
                 <h3 className="font-semibold text-slate-900 text-sm leading-tight">{loc.name}</h3>
 
-                {/* Stats row */}
-                <div className="grid grid-cols-2 gap-2">
-                  {[
-                    { label: 'Medewerkers', value: loc.employeeCount, color: 'text-slate-600' },
-                    { label: 'Hardware',    value: loc.hardwareCount,  color: 'text-blue-600' },
-                  ].map(s => (
-                    <div key={s.label} className="text-center">
-                      <p className={`text-lg font-bold leading-tight ${s.color}`}>{s.value}</p>
-                      <p className="text-xs text-slate-400 leading-tight">{s.label}</p>
-                    </div>
-                  ))}
-                </div>
-
                 {/* Address info */}
                 <div className="flex flex-col gap-1 flex-1">
                   {loc.address && (
@@ -2418,6 +2405,19 @@ function LocationsView() {
                   {loc.phone && (
                     <p className="text-xs text-slate-500 mt-1">{loc.phone}</p>
                   )}
+                </div>
+
+                {/* Stats row */}
+                <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100">
+                  {[
+                    { label: 'Medewerkers', value: loc.employeeCount, color: 'text-slate-600' },
+                    { label: 'Hardware',    value: loc.hardwareCount,  color: 'text-blue-600' },
+                  ].map(s => (
+                    <div key={s.label} className="text-center">
+                      <p className={`text-lg font-bold leading-tight ${s.color}`}>{s.value}</p>
+                      <p className="text-xs text-slate-400 leading-tight">{s.label}</p>
+                    </div>
+                  ))}
                 </div>
 
                 {/* Actions */}
