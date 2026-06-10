@@ -47,6 +47,8 @@ export interface ClientUserDetailResponse {
   contractType: ContractType | null
   startDate: string | null
   leaveDate: string | null
+  locationId: string | null
+  locationName: string | null
   isActive: boolean
   completeness: number
   createdAt: string

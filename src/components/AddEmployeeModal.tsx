@@ -9,12 +9,10 @@ import api from '@/lib/axios'
 const schema = z.object({
   firstName: z.string().min(1, 'Voornaam is verplicht').max(100),
   lastName: z.string().min(1, 'Achternaam is verplicht').max(100),
-  email: z.string().max(256).refine(
-    v => v === '' || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v),
-    'Ongeldig e-mailadres'
-  ),
-  departmentId: z.string().min(1, 'Afdeling is verplicht'),
+  email: z.string().min(1, 'E-mailadres is verplicht').max(256).email('Ongeldig e-mailadres'),
+  departmentId: z.string(),
   managerId: z.string(),
+  locationId: z.string(),
   jobTitle: z.string().min(1, 'Functie is verplicht').max(200),
   phone: z.string().max(100),
   status: z.string(),
@@ -30,6 +28,7 @@ interface Props {
   onSuccess: () => void
   departments?: { id: string; name: string; managerId: string | null }[]
   managers?: { id: string; fullName: string }[]
+  locations?: { id: string; name: string }[]
 }
 
 const field =
@@ -50,7 +49,7 @@ const CONTRACT_OPTIONS = [
   { value: '3', label: 'Inhuur' },
 ]
 
-export function AddEmployeeModal({ open, onClose, onSuccess, departments = [], managers = [] }: Props) {
+export function AddEmployeeModal({ open, onClose, onSuccess, departments = [], managers = [], locations = [] }: Props) {
   const [apiError, setApiError] = useState<string | null>(null)
 
   const {
@@ -64,7 +63,7 @@ export function AddEmployeeModal({ open, onClose, onSuccess, departments = [], m
     resolver: zodResolver(schema),
     defaultValues: {
       firstName: '', lastName: '', email: '', departmentId: '', managerId: '',
-      jobTitle: '', phone: '', status: '0', contractType: '', startDate: '',
+      locationId: '', jobTitle: '', phone: '', status: '0', contractType: '', startDate: '',
     },
   })
 
@@ -88,9 +87,10 @@ export function AddEmployeeModal({ open, onClose, onSuccess, departments = [], m
       await api.post('/portal/employees', {
         firstName: values.firstName,
         lastName: values.lastName,
-        email: values.email || null,
+        email: values.email,
         departmentId: values.departmentId || null,
         managerId: values.managerId || null,
+        locationId: values.locationId || null,
         jobTitle: values.jobTitle || null,
         phone: values.phone || null,
         status: parseInt(values.status, 10),
@@ -123,22 +123,20 @@ export function AddEmployeeModal({ open, onClose, onSuccess, departments = [], m
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">E-mailadres</label>
-          <input {...register('email')} type="email" className={field} placeholder="jan@bedrijf.nl (optioneel)" />
+          <label className="block text-xs font-medium text-slate-600 mb-1">E-mailadres *</label>
+          <input {...register('email')} type="email" className={field} placeholder="jan@bedrijf.nl" />
           {errors.email && <p className="mt-1 text-xs text-red-600">{errors.email.message}</p>}
-          <p className="mt-1 text-xs text-slate-400">Niet vereist — deze medewerker heeft geen inlogaccount.</p>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Afdeling *</label>
+            <label className="block text-xs font-medium text-slate-600 mb-1">Afdeling</label>
             <select {...register('departmentId')} className={field}>
-              <option value="">— Kies afdeling —</option>
+              <option value="">— Geen afdeling —</option>
               {departments.map(d => (
                 <option key={d.id} value={d.id}>{d.name}</option>
               ))}
             </select>
-            {errors.departmentId && <p className="mt-1 text-xs text-red-600">{errors.departmentId.message}</p>}
           </div>
           <div>
             <label className="block text-xs font-medium text-slate-600 mb-1">Manager</label>
@@ -149,6 +147,16 @@ export function AddEmployeeModal({ open, onClose, onSuccess, departments = [], m
               ))}
             </select>
           </div>
+        </div>
+
+        <div>
+          <label className="block text-xs font-medium text-slate-600 mb-1">Locatie</label>
+          <select {...register('locationId')} className={field}>
+            <option value="">— Geen locatie —</option>
+            {locations.map(l => (
+              <option key={l.id} value={l.id}>{l.name}</option>
+            ))}
+          </select>
         </div>
 
         <div>

@@ -2048,7 +2048,7 @@ function EmployeeListView({ teammates, loading, search, currentUserId, departmen
 
 // ── Employee detail view (full-page) ──────────────────────────────────────────
 
-function EmployeeDetailView({ user, loading, onBack, onUserUpdated, onDelete, departments, managers }: {
+function EmployeeDetailView({ user, loading, onBack, onUserUpdated, onDelete, departments, managers, locations }: {
   user: ClientUserDetailResponse | null
   loading: boolean
   onBack: () => void
@@ -2056,6 +2056,7 @@ function EmployeeDetailView({ user, loading, onBack, onUserUpdated, onDelete, de
   onDelete?: (id: string, name: string) => void
   departments?: { id: string; name: string; managerId: string | null }[]
   managers?: { id: string; fullName: string }[]
+  locations?: { id: string; name: string }[]
 }) {
   return (
     <div className="flex flex-col gap-4 h-full">
@@ -2080,6 +2081,7 @@ function EmployeeDetailView({ user, loading, onBack, onUserUpdated, onDelete, de
             canEdit
             departments={departments}
             managers={managers}
+            locations={locations}
             checklistBasePath={`/portal/users/${user.id}`}
             historyPath={`/portal/history/ClientUser/${user.id}`}
             onUserUpdated={onUserUpdated}
@@ -2704,6 +2706,7 @@ export default function ClientPortal() {
   const [clientLogoUrl, setClientLogoUrl] = useState<string | null>(null)
   const [departmentOptions, setDepartmentOptions] = useState<{ id: string; name: string; managerName: string; managerId: string | null }[]>([])
   const [managers, setManagers] = useState<{ id: string; fullName: string }[]>([])
+  const [locationOptions, setLocationOptions] = useState<{ id: string; name: string }[]>([])
 
   // ── User menu + MSP ───────────────────────────────────────────────────────
   const [showUserMenu, setShowUserMenu] = useState(false)
@@ -2758,6 +2761,13 @@ export default function ClientPortal() {
     } catch { /* non-critical */ }
   }, [])
 
+  const fetchLocationOptions = useCallback(async () => {
+    try {
+      const { data } = await api.get<LocationListItem[]>('/portal/locations')
+      setLocationOptions(data.map(l => ({ id: l.id, name: l.name })))
+    } catch { /* non-critical */ }
+  }, [])
+
   const fetchUsers = useCallback(async () => {
     try {
       const { data } = await api.get<ClientUserListItem[]>('/portal/users')
@@ -2781,6 +2791,7 @@ export default function ClientPortal() {
   useEffect(() => { fetchUsers() }, [fetchUsers])
   useEffect(() => { fetchDepartmentOptions() }, [fetchDepartmentOptions])
   useEffect(() => { fetchManagers() }, [fetchManagers])
+  useEffect(() => { fetchLocationOptions() }, [fetchLocationOptions])
 
   const handleSelectEmployee = (id: string) => {
     fetchUserDetail(id)
@@ -3002,6 +3013,7 @@ export default function ClientPortal() {
               onDelete={handleOpenDelete}
               departments={departmentOptions}
               managers={managers}
+              locations={locationOptions}
             />
           )}
 
@@ -3062,6 +3074,7 @@ export default function ClientPortal() {
         onSuccess={() => { fetchUsers(); setShowAddEmployee(false) }}
         departments={departmentOptions}
         managers={managers}
+        locations={locationOptions}
       />
 
       {deleteTarget && (

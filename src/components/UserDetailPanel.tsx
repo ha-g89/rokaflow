@@ -3,7 +3,7 @@ import {
   Laptop, KeyRound, History, CheckCircle2, AlertTriangle,
   LogOut, ShieldCheck, ClipboardList, Mail,
   Briefcase, Calendar, User, RotateCcw, Smartphone, Phone,
-  Users, FileText, Pencil, Trash2, X,
+  Users, FileText, Pencil, Trash2, X, MapPin,
 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/Card'
 import type { ClientUserDetailResponse, UserStatus } from '@/types/clientUser'
@@ -109,10 +109,11 @@ const CONTRACT_OPTIONS = [
 const STATUS_TO_INT: Record<string, string> = { InService: '0', LeavePlanned: '1', Left: '2', StartPlanned: '0' }
 const CONTRACT_TO_INT: Record<string, string> = { Vast: '0', Tijdelijk: '1', Stagiair: '2', Inhuur: '3' }
 
-function EditUserModal({ user, departments, managers, onClose, onSaved }: {
+function EditUserModal({ user, departments, managers, locations, onClose, onSaved }: {
   user: ClientUserDetailResponse
   departments: { id: string; name: string; managerId: string | null }[]
   managers: { id: string; fullName: string }[]
+  locations: { id: string; name: string }[]
   onClose: () => void
   onSaved: () => void
 }) {
@@ -129,6 +130,7 @@ function EditUserModal({ user, departments, managers, onClose, onSaved }: {
   const [contractType, setContractType] = useState(user.contractType ? (CONTRACT_TO_INT[user.contractType] ?? '') : '')
   const [startDate, setStartDate]       = useState(toDateInput(user.startDate))
   const [leaveDate, setLeaveDate]       = useState(toDateInput(user.leaveDate))
+  const [locationId, setLocationId]     = useState(user.locationId ?? '')
   const [saving, setSaving]             = useState(false)
   const [error, setError]               = useState<string | null>(null)
   const overlayRef                      = useRef<HTMLDivElement>(null)
@@ -152,12 +154,13 @@ function EditUserModal({ user, departments, managers, onClose, onSaved }: {
 
   const handleSave = async () => {
     if (!firstName.trim() || !lastName.trim()) { setError('Voor- en achternaam zijn verplicht.'); return }
+    if (!email.trim()) { setError('E-mailadres is verplicht.'); return }
     setSaving(true); setError(null)
     try {
       await api.put(`/portal/users/${user.id}`, {
         firstName: firstName.trim(),
         lastName: lastName.trim(),
-        email: email.trim() || null,
+        email: email.trim(),
         jobTitle: jobTitle.trim() || null,
         status: parseInt(status, 10),
         contractType: contractType !== '' ? parseInt(contractType, 10) : null,
@@ -165,6 +168,7 @@ function EditUserModal({ user, departments, managers, onClose, onSaved }: {
         leaveDate: leaveDate || null,
         departmentId: departmentId || null,
         managerId: managerId || null,
+        locationId: locationId || null,
       })
       onSaved()
       onClose()
@@ -230,6 +234,15 @@ function EditUserModal({ user, departments, managers, onClose, onSaved }: {
                 {managers.map(m => <option key={m.id} value={m.id}>{m.fullName}</option>)}
               </select>
             </div>
+          </div>
+
+          {/* locatie */}
+          <div>
+            <label className="block text-xs font-medium text-slate-600 mb-1">Locatie</label>
+            <select value={locationId} onChange={e => setLocationId(e.target.value)} className={field}>
+              <option value="">— Geen locatie —</option>
+              {locations.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
+            </select>
           </div>
 
           {/* contracttype */}
@@ -315,6 +328,7 @@ interface Props {
   canEdit: boolean
   departments?: { id: string; name: string; managerId?: string | null }[]
   managers?: { id: string; fullName: string }[]
+  locations?: { id: string; name: string }[]
   /** base path for checklist toggle API calls, e.g. "/clients/{id}/users/{uid}" */
   checklistBasePath: string
   /** path to fetch audit history, e.g. "/portal/history/ClientUser/{uid}" */
@@ -324,7 +338,7 @@ interface Props {
   onDelete?: () => void
 }
 
-export function UserDetailPanel({ user, canEdit, departments = [], managers = [], checklistBasePath, historyPath, onChecklistToggle, onUserUpdated, onDelete }: Props) {
+export function UserDetailPanel({ user, canEdit, departments = [], managers = [], locations = [], checklistBasePath, historyPath, onChecklistToggle, onUserUpdated, onDelete }: Props) {
   const status = user.status as UserStatus
   const statusTone = status === 'InService' ? 'good' : status === 'StartPlanned' ? 'info' : status === 'LeavePlanned' ? 'warn' : 'bad'
 
@@ -363,6 +377,7 @@ export function UserDetailPanel({ user, canEdit, departments = [], managers = []
           user={user}
           departments={departments as { id: string; name: string; managerId: string | null }[]}
           managers={managers}
+          locations={locations}
           onClose={() => setEditOpen(false)}
           onSaved={() => { onUserUpdated?.() }}
         />
@@ -428,6 +443,9 @@ export function UserDetailPanel({ user, canEdit, departments = [], managers = []
             )}
             {user.contractType && (
               <InfoRow icon={<FileText size={13} />} label="Contract" value={user.contractType} />
+            )}
+            {user.locationName && (
+              <InfoRow icon={<MapPin size={13} />} label="Locatie" value={user.locationName} />
             )}
             {user.startDate && (
               <InfoRow icon={<Calendar size={13} />} label="In dienst" value={fmt(user.startDate)} />
