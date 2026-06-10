@@ -339,7 +339,7 @@ interface Props {
   teammates?: ClientUserListItem[]
   /** base path for checklist toggle API calls, e.g. "/clients/{id}/users/{uid}" */
   checklistBasePath: string
-  /** path to fetch audit history, e.g. "/portal/history/ClientUser/{uid}" */
+  /** path to fetch audit history, e.g. "/portal/history/User/{uid}" */
   historyPath?: string
   onChecklistToggle?: (entryId: string, checked: boolean) => void
   onUserUpdated?: () => void

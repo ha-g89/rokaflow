@@ -2154,7 +2154,7 @@ function EmployeeDetailView({ user, loading, onBack, onUserUpdated, onDelete, de
             locations={locations}
             teammates={teammates}
             checklistBasePath={`/portal/users/${user.id}`}
-            historyPath={`/portal/history/ClientUser/${user.id}`}
+            historyPath={`/portal/history/User/${user.id}`}
             onUserUpdated={onUserUpdated}
             onDelete={onDelete ? () => onDelete(user.id, `${user.firstName} ${user.lastName}`) : undefined}
           />
