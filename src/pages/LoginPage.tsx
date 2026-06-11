@@ -32,8 +32,8 @@ const CSS = `
     --bg-r:      #050c1a;
     --text:      #eef0f6;
     --muted:     rgba(238,240,246,0.38);
-    --accent:    #7c3aed;
-    --accent-lt: #a78bfa;
+    --accent:    #2563eb;
+    --accent-lt: #60a5fa;
     --line-md:   rgba(238,240,246,0.11);
     --field-bg:  rgba(238,240,246,0.05);
     --field-bd:  rgba(238,240,246,0.10);
@@ -165,9 +165,9 @@ const CSS = `
   }
   .rfl-input::placeholder { color: rgba(238,240,246,0.20); }
   .rfl-input:focus {
-    border-color: rgba(139,92,246,0.6);
-    background: rgba(139,92,246,0.05);
-    box-shadow: 0 0 0 3px rgba(124,58,237,0.12);
+    border-color: rgba(37,99,235,0.6);
+    background: rgba(37,99,235,0.05);
+    box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
   }
   .rfl-input.rfl-err {
     border-color: rgba(239,68,68,0.45);
@@ -225,7 +225,7 @@ const CSS = `
     letter-spacing: 0.02em;
     color: var(--text);
     background: transparent;
-    border: 1px solid rgba(139,92,246,0.45);
+    border: 1px solid rgba(37,99,235,0.45);
     border-radius: 8px;
     cursor: pointer;
     position: relative;
@@ -263,7 +263,7 @@ const CSS = `
 
   .rfl-submit:hover:not(:disabled) {
     border-color: var(--accent);
-    box-shadow: 0 0 20px rgba(124,58,237,0.38), 0 0 48px rgba(124,58,237,0.13);
+    box-shadow: 0 0 20px rgba(37,99,235,0.38), 0 0 48px rgba(37,99,235,0.13);
   }
   .rfl-submit:disabled { opacity: 0.45; cursor: not-allowed; }
 
@@ -456,7 +456,7 @@ const CSS = `
 
 function LoadingScreen({ role }: { role: UserRole }) {
   const isMsp   = role === 'msp_admin' || role === 'msp_member'
-  const accent  = isMsp ? '#7c3aed' : '#2563eb'
+  const accent  = isMsp ? '#1d4ed8' : '#2563eb'
   const badge   = isMsp ? 'MSP Portaal' : 'Portaal'
   const label   = isMsp ? 'MSP-omgeving laden…' : 'Portaal laden…'
 

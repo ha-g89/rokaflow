@@ -53,8 +53,8 @@ const CSS = `
     --bg:        #030812;
     --text:      #eef0f6;
     --muted:     rgba(238,240,246,0.38);
-    --accent:    #7c3aed;
-    --accent-lt: #a78bfa;
+    --accent:    #2563eb;
+    --accent-lt: #60a5fa;
     --line:      rgba(238,240,246,0.07);
     --line-md:   rgba(238,240,246,0.11);
   }
@@ -141,8 +141,8 @@ const CSS = `
     transition: background 0.2s, box-shadow 0.2s;
   }
   .rf-nav-register:hover {
-    background: #6d28d9;
-    box-shadow: 0 0 16px rgba(124,58,237,0.35);
+    background: #1d4ed8;
+    box-shadow: 0 0 16px rgba(37,99,235,0.35);
   }
   .rf-nav-register .rf-arr {
     display: inline-block;
@@ -233,7 +233,7 @@ const CSS = `
     gap: 0;
     padding: 0;
     background: transparent;
-    border: 1px solid rgba(139,92,246,0.45);
+    border: 1px solid rgba(37,99,235,0.45);
     cursor: pointer;
     position: relative;
     overflow: hidden;
@@ -329,7 +329,7 @@ const CSS = `
   .rf-strip-item:last-child { border-right: none; }
   .rf-strip-item:hover {
     color: var(--accent-lt);
-    background: rgba(139,92,246,0.04);
+    background: rgba(37,99,235,0.04);
   }
 
   /* ── Features ───────────────────────────────────────────────── */
@@ -383,7 +383,7 @@ const CSS = `
     opacity: 1;
     transform: translateY(0);
   }
-  .rf-feat-item:hover { background: rgba(139,92,246,0.04); }
+  .rf-feat-item:hover { background: rgba(37,99,235,0.04); }
 
   .rf-feat-n {
     font-size: 10px;
