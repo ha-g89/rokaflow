@@ -230,7 +230,9 @@ export function HardwareModal({ open, onClose, onSuccess, teammates, locations, 
         type:             parseInt(values.type, 10),
         assetNumber:      values.assetNumber || '',
         serialNumber:     values.serialNumber || '',
-        status:           parseInt(values.status, 10),
+        status:           values.assignedToUserId && parseInt(values.status, 10) === 0
+                            ? 1  // toegewezen → automatisch InUse
+                            : parseInt(values.status, 10),
         location:         '',
         locationId:       values.locationId || null,
         purchaseValue:    values.purchaseValue !== '' ? parseFloat(values.purchaseValue) : null,
