@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useAuthStore } from '@/store/authStore'
 import api from '@/lib/axios'
-import type { LoginResponse } from '@/types/auth'
+import type { LoginResponse, UserRole } from '@/types/auth'
 import logo from '@/assets/RokaFlow_icon_dark_transparent.png'
 
 const schema = z.object({
@@ -14,15 +14,13 @@ const schema = z.object({
 })
 type FormValues = z.infer<typeof schema>
 
-type LoginMode = 'portal' | 'msp'
-
-const ROLE_HOME = {
+const ROLE_HOME: Record<UserRole, string> = {
   superuser:    '/superuser',
   msp_admin:    '/org',
   msp_member:   '/org',
   portal_admin: '/client',
   employee:     '/client',
-} as const
+}
 
 const CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&display=swap');
@@ -120,37 +118,6 @@ const CSS = `
     backdrop-filter: blur(20px);
     box-shadow: 0 24px 56px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.05);
     animation: rflSlideUp 0.5s cubic-bezier(0.16,1,0.3,1) 0.05s both;
-  }
-
-  /* ── Login mode tabs ── */
-  .rfl-tabs {
-    display: flex;
-    gap: 4px;
-    background: rgba(255,255,255,0.04);
-    border: 1px solid var(--line-md);
-    border-radius: 10px;
-    padding: 4px;
-    margin-bottom: 24px;
-  }
-  .rfl-tab {
-    flex: 1;
-    padding: 8px 12px;
-    border: none;
-    border-radius: 7px;
-    background: none;
-    color: var(--muted);
-    font-family: 'DM Sans', sans-serif;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 0.2s, color 0.2s;
-    white-space: nowrap;
-  }
-  .rfl-tab:hover:not(.rfl-tab-active) { color: var(--text); background: rgba(255,255,255,0.05); }
-  .rfl-tab.rfl-tab-active {
-    background: rgba(124,58,237,0.18);
-    color: #c4b5fd;
-    border: 1px solid rgba(124,58,237,0.30);
   }
 
   .rfl-heading {
@@ -391,6 +358,79 @@ const CSS = `
     line-height: 1.65;
   }
 
+  /* ── Post-login loading screen ── */
+  .rfl-loading-wrap {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+    background: #030812;
+    animation: rflFadeIn 0.25s ease both;
+    font-family: 'DM Sans', system-ui, sans-serif;
+  }
+
+  .rfl-loading-logo {
+    width: 80px;
+    opacity: 0.7;
+    animation: rflLoadPulse 1.8s ease-in-out infinite;
+    display: block;
+  }
+
+  .rfl-loading-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 5px 13px;
+    border-radius: 20px;
+    border: 1px solid rgba(238,240,246,0.08);
+    background: rgba(238,240,246,0.04);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--load-accent, #7c3aed);
+    animation: rflFadeIn 0.5s ease 0.15s both;
+  }
+
+  .rfl-loading-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--load-accent, #7c3aed);
+    animation: rflDotPulse 1.4s ease-in-out infinite;
+    flex-shrink: 0;
+  }
+
+  .rfl-loading-ring {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 2px solid rgba(238,240,246,0.07);
+    border-top-color: var(--load-accent, #7c3aed);
+    animation: rflSpin 0.75s linear infinite;
+  }
+
+  .rfl-loading-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: rgba(238,240,246,0.30);
+    letter-spacing: 0.04em;
+    margin-top: -4px;
+  }
+
+  @keyframes rflLoadPulse {
+    0%, 100% { opacity: 0.7;  transform: scale(1);    }
+    50%       { opacity: 0.9;  transform: scale(1.04); }
+  }
+
+  @keyframes rflDotPulse {
+    0%, 100% { opacity: 0.35; }
+    50%       { opacity: 1;   }
+  }
+
   /* ── Keyframes ── */
   @keyframes rflSlideUp {
     from { opacity: 0; transform: translateY(16px) scale(0.98); }
@@ -414,40 +454,64 @@ const CSS = `
   }
 `
 
+function LoadingScreen({ role }: { role: UserRole }) {
+  const isMsp   = role === 'msp_admin' || role === 'msp_member'
+  const accent  = isMsp ? '#7c3aed' : '#2563eb'
+  const badge   = isMsp ? 'MSP Portaal' : 'Portaal'
+  const label   = isMsp ? 'MSP-omgeving laden…' : 'Portaal laden…'
+
+  return (
+    <div
+      className="rfl-loading-wrap"
+      style={{ '--load-accent': accent } as React.CSSProperties}
+    >
+      <img src={logo} alt="" className="rfl-loading-logo" />
+      <div className="rfl-loading-badge">
+        {badge}
+      </div>
+      <div className="rfl-loading-ring" />
+      <p className="rfl-loading-label">{label}</p>
+    </div>
+  )
+}
+
 export default function LoginPage() {
-  const [apiError, setApiError] = useState<string | null>(null)
-  const [showPass, setShowPass]  = useState(false)
-  const [loginMode, setLoginMode] = useState<LoginMode>('portal')
-  const { login }    = useAuthStore()
-  const navigate     = useNavigate()
-  const location     = useLocation()
+  const [apiError, setApiError]       = useState<string | null>(null)
+  const [showPass, setShowPass]       = useState(false)
+  const [loadingRole, setLoadingRole] = useState<UserRole | null>(null)
+  const { login }  = useAuthStore()
+  const navigate   = useNavigate()
+  const location   = useLocation()
 
   const { register, handleSubmit, formState: { errors, isSubmitting } } =
     useForm<FormValues>({ resolver: zodResolver(schema) })
 
-  const switchMode = (mode: LoginMode) => {
-    setLoginMode(mode)
-    setApiError(null)
-  }
-
   const onSubmit = async (values: FormValues) => {
     setApiError(null)
     try {
-      const endpoint = loginMode === 'msp' ? '/auth/msp/login' : '/auth/portal/login'
-      const { data } = await api.post<LoginResponse>(endpoint, values)
+      const { data } = await api.post<LoginResponse>('/auth/login', values)
 
       login(data.accessToken, data.refreshToken, data.user)
+
       const home = ROLE_HOME[data.user.role]
       const from = (location.state as { from?: { pathname: string } })?.from?.pathname
-      navigate(from?.startsWith(home) ? from : home, { replace: true })
+      const dest = from?.startsWith(home) ? from : home
+
+      setLoadingRole(data.user.role)
+      setTimeout(() => navigate(dest, { replace: true }), 1400)
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail
-      if (loginMode === 'msp' && !msg) {
-        setApiError('Geen MSP-account gevonden. Log in via het portaal en kies "Wordt MSP" om uw account te upgraden.')
-      } else {
-        setApiError(msg ?? 'Ongeldig e-mailadres of wachtwoord.')
-      }
+      setApiError(msg ?? 'Ongeldig e-mailadres of wachtwoord.')
     }
+  }
+
+  if (loadingRole) {
+    return (
+      <>
+        <style>{CSS}</style>
+        <LoadingScreen role={loadingRole} />
+      </>
+    )
   }
 
   return (
@@ -466,31 +530,8 @@ export default function LoginPage() {
 
           <div className="rfl-form-wrap">
             <div className="rfl-card">
-              <div className="rfl-tabs">
-                <button
-                  type="button"
-                  className={`rfl-tab${loginMode === 'portal' ? ' rfl-tab-active' : ''}`}
-                  onClick={() => switchMode('portal')}
-                >
-                  Portaal
-                </button>
-                <button
-                  type="button"
-                  className={`rfl-tab${loginMode === 'msp' ? ' rfl-tab-active' : ''}`}
-                  onClick={() => switchMode('msp')}
-                >
-                  MSP Portaal
-                </button>
-              </div>
-
-              <h1 className="rfl-heading">
-                {loginMode === 'msp' ? 'MSP Inloggen' : 'Inloggen'}
-              </h1>
-              <p className="rfl-sub">
-                {loginMode === 'msp'
-                  ? 'Log in op uw MSP-beheeromgeving.'
-                  : 'Log in op uw RokaFlow-account.'}
-              </p>
+              <h1 className="rfl-heading">Inloggen</h1>
+              <p className="rfl-sub">Log in op uw RokaFlow-account.</p>
 
               <form onSubmit={handleSubmit(onSubmit)} noValidate>
                 {apiError && <div className="rfl-api-err">{apiError}</div>}
