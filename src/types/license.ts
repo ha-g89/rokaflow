@@ -1,4 +1,4 @@
-export interface LicenseListItem {
+﻿export interface LicenseListItem {
   id: string
   name: string
   vendor: string
@@ -51,7 +51,7 @@ export const LICENSE_TYPE_LABEL: Record<string, string> = {
 export const LICENSE_TYPE_TONE: Record<string, string> = {
   Basic: 'bg-slate-100 text-slate-600',
   Pro: 'bg-blue-100 text-blue-700',
-  Enterprise: 'bg-violet-100 text-violet-700',
+  Enterprise: 'bg-blue-100 text-blue-700',
 }
 
 export const LICENSE_TARGET_LABEL: Record<string, string> = {

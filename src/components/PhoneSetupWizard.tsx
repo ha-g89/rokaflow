@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useRef, useState } from 'react'
+﻿import { Fragment, useEffect, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -61,7 +61,7 @@ interface Props {
 
 // ── Shared field style ────────────────────────────────────────────────────────
 
-const f = 'w-full px-3 py-2 rounded-lg border border-slate-300 text-sm text-slate-900 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-colors bg-white'
+const f = 'w-full px-3 py-2 rounded-lg border border-slate-300 text-sm text-slate-900 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-colors bg-white'
 
 // ── Small components ──────────────────────────────────────────────────────────
 
@@ -76,8 +76,8 @@ function LockedField({ name }: { name: string }) {
 
 function AutoLinkBanner({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex items-start gap-2 rounded-lg bg-violet-50 border border-violet-100 px-3 py-2.5 text-xs text-violet-700">
-      <Layers size={13} className="flex-shrink-0 mt-0.5 text-violet-400" />
+    <div className="flex items-start gap-2 rounded-lg bg-blue-50 border border-blue-100 px-3 py-2.5 text-xs text-blue-700">
+      <Layers size={13} className="flex-shrink-0 mt-0.5 text-blue-400" />
       <span>{children}</span>
     </div>
   )
@@ -108,7 +108,7 @@ function TabBar({ active, onChange }: { active: 'existing' | 'wizard'; onChange:
 
 function PhoneDetailCard({ phone }: { phone: PhoneListItem }) {
   return (
-    <div className="rounded-xl border border-violet-100 bg-violet-50 p-4">
+    <div className="rounded-xl border border-blue-100 bg-blue-50 p-4">
       <div className="flex items-start justify-between gap-3 mb-3">
         <div>
           <p className="text-sm font-bold text-slate-900">
@@ -137,7 +137,7 @@ function PhoneDetailCard({ phone }: { phone: PhoneListItem }) {
         )}
       </div>
       {phone.simCardId && (
-        <p className="mt-2.5 text-xs text-violet-600 font-medium">
+        <p className="mt-2.5 text-xs text-blue-600 font-medium">
           ✓ Al voorzien van een simkaart
         </p>
       )}
@@ -163,8 +163,8 @@ function StepIndicator({ step }: { step: 1 | 2 | 3 }) {
           <Fragment key={n}>
             <div className="flex flex-col items-center gap-1.5" style={{ minWidth: 80 }}>
               <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-200
-                ${isDone   ? 'bg-violet-600 text-white' :
-                  isActive ? 'bg-violet-600 text-white ring-4 ring-violet-100' :
+                ${isDone   ? 'bg-blue-600 text-white' :
+                  isActive ? 'bg-blue-600 text-white ring-4 ring-blue-100' :
                              'bg-slate-100 text-slate-400'}`}
               >
                 {isDone ? <Check size={15} strokeWidth={2.5} /> : n}
@@ -177,7 +177,7 @@ function StepIndicator({ step }: { step: 1 | 2 | 3 }) {
             </div>
             {i < 2 && (
               <div className={`flex-1 h-px mt-[18px] transition-colors duration-300
-                ${isDone ? 'bg-violet-400' : 'bg-slate-200'}`} />
+                ${isDone ? 'bg-blue-400' : 'bg-slate-200'}`} />
             )}
           </Fragment>
         )
@@ -638,7 +638,7 @@ export function PhoneSetupWizard({ open, onClose, onSuccess, teammates, lockedUs
                   <button
                     type="button"
                     onClick={() => setOuterTab('wizard')}
-                    className="text-xs text-violet-600 hover:underline"
+                    className="text-xs text-blue-600 hover:underline"
                   >
                     Nieuwe telefoon aanmaken →
                   </button>
@@ -652,7 +652,7 @@ export function PhoneSetupWizard({ open, onClose, onSuccess, teammates, lockedUs
                       value={phoneSearch}
                       onChange={e => { setPhoneSearch(e.target.value); setSelectedPhone(null) }}
                       placeholder="Zoek op merk, model, serienummer…"
-                      className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-200 bg-white focus:outline-none focus:border-violet-400 transition-colors"
+                      className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-200 bg-white focus:outline-none focus:border-blue-400 transition-colors"
                     />
                   </div>
 
@@ -668,11 +668,11 @@ export function PhoneSetupWizard({ open, onClose, onSuccess, teammates, lockedUs
                           onClick={() => setSelectedPhone(prev => prev?.id === p.id ? null : p)}
                           className={`w-full flex items-center justify-between gap-3 px-4 py-3 text-left transition-colors
                             ${selectedPhone?.id === p.id
-                              ? 'bg-violet-50 border-l-2 border-violet-500'
+                              ? 'bg-blue-50 border-l-2 border-blue-500'
                               : 'hover:bg-slate-50'}`}
                         >
                           <div className="min-w-0">
-                            <p className={`text-sm font-semibold truncate ${selectedPhone?.id === p.id ? 'text-violet-800' : 'text-slate-800'}`}>
+                            <p className={`text-sm font-semibold truncate ${selectedPhone?.id === p.id ? 'text-blue-800' : 'text-slate-800'}`}>
                               {[p.brand, p.model].filter(Boolean).join(' ')}
                             </p>
                             <p className="text-xs text-slate-400 truncate mt-0.5">

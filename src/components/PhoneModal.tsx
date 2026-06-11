@@ -32,7 +32,7 @@ interface Props {
 }
 
 const field =
-  'w-full px-3 py-2 rounded-lg border border-slate-300 text-sm text-slate-900 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-colors'
+  'w-full px-3 py-2 rounded-lg border border-slate-300 text-sm text-slate-900 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-colors'
 
 export function PhoneModal({ open, onClose, onSuccess, teammates, phone }: Props) {
   const [apiError, setApiError] = useState<string | null>(null)

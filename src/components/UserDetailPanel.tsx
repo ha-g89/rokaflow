@@ -50,7 +50,7 @@ function auditLabel(entry: AuditLogEntry): string {
 function AuditIcon({ action }: { action: string }) {
   const cls = 'mt-0.5 flex-shrink-0'
   if (action.startsWith('Hardware')) return <Laptop size={16} className={`${cls} text-blue-500`} />
-  if (action.startsWith('Phone'))    return <Smartphone size={16} className={`${cls} text-violet-500`} />
+  if (action.startsWith('Phone'))    return <Smartphone size={16} className={`${cls} text-blue-500`} />
   if (action.startsWith('License'))  return <KeyRound size={16} className={`${cls} text-amber-500`} />
   if (action.startsWith('Software')) return <ShieldCheck size={16} className={`${cls} text-emerald-500`} />
   if (action === 'Created')          return <User size={16} className={`${cls} text-slate-500`} />
@@ -92,7 +92,7 @@ function Badge({ children, tone = 'default' }: { children: React.ReactNode; tone
 
 function Avatar({ first, last }: { first: string; last: string }) {
   return (
-    <div className="w-16 h-16 rounded-2xl bg-violet-100 text-violet-700 flex items-center justify-center font-bold text-2xl flex-shrink-0 select-none">
+    <div className="w-16 h-16 rounded-2xl bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-2xl flex-shrink-0 select-none">
       {(first[0] ?? '').toUpperCase()}{(last[0] ?? '').toUpperCase()}
     </div>
   )
@@ -183,7 +183,7 @@ function EditUserModal({ user, departments, managers, locations, onClose, onSave
     }
   }
 
-  const field = 'w-full px-3 py-2 rounded-lg border border-slate-300 text-sm text-slate-900 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-colors'
+  const field = 'w-full px-3 py-2 rounded-lg border border-slate-300 text-sm text-slate-900 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-colors'
 
   return (
     <div
@@ -302,7 +302,7 @@ function EditUserModal({ user, departments, managers, locations, onClose, onSave
           <button onClick={onClose} className="flex-1 px-4 py-2 rounded-xl border border-slate-200 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors">
             Annuleren
           </button>
-          <button onClick={handleSave} disabled={saving} className="flex-1 px-4 py-2 rounded-xl bg-violet-600 text-sm font-medium text-white hover:bg-violet-700 transition-colors disabled:opacity-60">
+          <button onClick={handleSave} disabled={saving} className="flex-1 px-4 py-2 rounded-xl bg-blue-600 text-sm font-medium text-white hover:bg-blue-700 transition-colors disabled:opacity-60">
             {saving ? 'Opslaan…' : 'Opslaan'}
           </button>
         </div>
@@ -520,7 +520,7 @@ export function UserDetailPanel({ user, canEdit, departments = [], managers = []
       {/* ── Hardware + Telefonie ── */}
       <div className="grid gap-4 xl:grid-cols-2">
         <Section title="Hardware" icon={<Laptop size={16} />} action={
-          <button onClick={() => setShowHardwareModal(true)} className="inline-flex items-center gap-1 text-xs font-medium text-violet-600 hover:text-violet-700 hover:bg-violet-50 px-2 py-1 rounded-lg transition-colors">
+          <button onClick={() => setShowHardwareModal(true)} className="inline-flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 px-2 py-1 rounded-lg transition-colors">
             <Plus size={11} /> Toevoegen
           </button>
         }>
@@ -557,7 +557,7 @@ export function UserDetailPanel({ user, canEdit, departments = [], managers = []
         </Section>
 
         <Section title="Telefonie" icon={<Smartphone size={16} />} action={
-          <button onClick={() => setShowPhoneWizard(true)} className="inline-flex items-center gap-1 text-xs font-medium text-violet-600 hover:text-violet-700 hover:bg-violet-50 px-2 py-1 rounded-lg transition-colors">
+          <button onClick={() => setShowPhoneWizard(true)} className="inline-flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 px-2 py-1 rounded-lg transition-colors">
             <Layers size={11} /> Setup
           </button>
         }>
@@ -612,7 +612,7 @@ export function UserDetailPanel({ user, canEdit, departments = [], managers = []
         </Section>
 
         <Section title="Licenties" icon={<KeyRound size={16} />} action={
-          <button onClick={() => setShowLicenseModal(true)} className="inline-flex items-center gap-1 text-xs font-medium text-violet-600 hover:text-violet-700 hover:bg-violet-50 px-2 py-1 rounded-lg transition-colors">
+          <button onClick={() => setShowLicenseModal(true)} className="inline-flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 px-2 py-1 rounded-lg transition-colors">
             <Plus size={11} /> Toevoegen
           </button>
         }>

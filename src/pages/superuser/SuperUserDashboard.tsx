@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from 'react'
+﻿import { useEffect, useState, useCallback, useRef } from 'react'
 import {
   Building2, Users, Plus, LogOut, Shield,
   Briefcase, Search, Moon, Sun, Upload, Trash2,
@@ -56,7 +56,7 @@ function LogoUploader({
         onDragOver={e => e.preventDefault()}
         onClick={() => !uploading && inputRef.current?.click()}
         className={`relative w-12 h-12 rounded-xl border-2 border-dashed flex items-center justify-center cursor-pointer transition-colors overflow-hidden group ${
-          currentDataUrl ? 'border-transparent' : 'border-slate-300 dark:border-slate-600 hover:border-violet-400'
+          currentDataUrl ? 'border-transparent' : 'border-slate-300 dark:border-slate-600 hover:border-blue-400'
         }`}
       >
         {currentDataUrl ? (
@@ -68,7 +68,7 @@ function LogoUploader({
           </>
         ) : (
           uploading
-            ? <div className="w-4 h-4 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
+            ? <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
             : <Upload size={15} className="text-slate-400" />
         )}
         <input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/svg+xml"
@@ -78,7 +78,7 @@ function LogoUploader({
       <div className="min-w-0">
         <div className="flex items-center gap-2">
           <button onClick={() => inputRef.current?.click()} disabled={uploading}
-            className="text-xs text-violet-600 dark:text-violet-400 hover:underline disabled:opacity-50">
+            className="text-xs text-blue-600 dark:text-blue-400 hover:underline disabled:opacity-50">
             {currentDataUrl ? 'Vervangen' : 'Logo uploaden'}
           </button>
           {currentDataUrl && (
@@ -105,20 +105,20 @@ function OrgListItem({ org, isSelected, onClick, sub }: {
     <button
       onClick={onClick}
       className={`w-full text-left px-2.5 py-2 rounded-lg transition-colors ${
-        isSelected ? 'bg-violet-50 dark:bg-violet-950/50' : 'hover:bg-slate-50 dark:hover:bg-slate-800'
+        isSelected ? 'bg-blue-50 dark:bg-blue-950/50' : 'hover:bg-slate-50 dark:hover:bg-slate-800'
       }`}
     >
       <div className="flex items-center gap-2">
         <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0 ${
           isSelected
-            ? 'bg-violet-600 text-white'
-            : 'bg-violet-100 dark:bg-violet-950/50 text-violet-700 dark:text-violet-300'
+            ? 'bg-blue-600 text-white'
+            : 'bg-blue-100 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300'
         }`}>
           {org.name[0]?.toUpperCase()}
         </div>
         <div className="min-w-0 flex-1">
           <p className={`text-xs font-medium truncate leading-tight ${
-            isSelected ? 'text-violet-700 dark:text-violet-300' : 'text-slate-800 dark:text-slate-200'
+            isSelected ? 'text-blue-700 dark:text-blue-300' : 'text-slate-800 dark:text-slate-200'
           }`}>{org.name}</p>
           <p className="text-xs text-slate-400 leading-tight mt-0.5">{sub}</p>
         </div>
@@ -142,7 +142,7 @@ function ColHeader({ label, count, search, onSearch, onAdd }: {
           <span className="text-xs font-medium text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded-full">{count}</span>
           {onAdd && (
             <button onClick={onAdd}
-              className="w-5 h-5 flex items-center justify-center rounded bg-violet-600 hover:bg-violet-700 text-white transition-colors">
+              className="w-5 h-5 flex items-center justify-center rounded bg-blue-600 hover:bg-blue-700 text-white transition-colors">
               <Plus size={11} />
             </button>
           )}
@@ -151,7 +151,7 @@ function ColHeader({ label, count, search, onSearch, onAdd }: {
       <div className="relative">
         <Search size={11} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
         <input value={search} onChange={e => onSearch(e.target.value)} placeholder="Zoeken…"
-          className="w-full pl-7 pr-2 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:border-violet-400 transition-colors" />
+          className="w-full pl-7 pr-2 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:border-blue-400 transition-colors" />
       </div>
     </div>
   )
@@ -271,7 +271,7 @@ export default function SuperUserDashboard() {
           <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1" />
           {/* Inline stats */}
           {[
-            { label: "MSP's",   value: mspOrgs.length,    color: 'text-violet-600' },
+            { label: "MSP's",   value: mspOrgs.length,    color: 'text-blue-600' },
             { label: 'Clients', value: allClients.length,  color: '' },
             { label: 'Actief',  value: activeOrgs,         color: 'text-emerald-600' },
           ].map(s => (
@@ -282,7 +282,7 @@ export default function SuperUserDashboard() {
           ))}
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-full bg-violet-600 text-white text-xs font-bold flex items-center justify-center flex-shrink-0">
+          <div className="w-6 h-6 rounded-full bg-blue-600 text-white text-xs font-bold flex items-center justify-center flex-shrink-0">
             {(user?.email?.[0] ?? '').toUpperCase()}
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 truncate max-w-[160px] hidden sm:block">{user?.email}</p>
@@ -344,25 +344,25 @@ export default function SuperUserDashboard() {
                       onClick={() => handleSelectDirectClient(c)}
                       className={`w-full text-left px-2.5 py-2 rounded-lg transition-colors ${
                         selectedDirectClient?.id === c.id
-                          ? 'bg-violet-50 dark:bg-violet-950/50'
+                          ? 'bg-blue-50 dark:bg-blue-950/50'
                           : 'hover:bg-slate-50 dark:hover:bg-slate-800'
                       }`}
                     >
                       <div className="flex items-center gap-2">
                         <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0 ${
                           selectedDirectClient?.id === c.id
-                            ? 'bg-violet-600 text-white'
-                            : 'bg-violet-100 dark:bg-violet-950/50 text-violet-700 dark:text-violet-300'
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-blue-100 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300'
                         }`}>
                           {c.name[0]?.toUpperCase()}
                         </div>
                         <div className="min-w-0 flex-1">
                           <p className={`text-xs font-medium truncate leading-tight ${
-                            selectedDirectClient?.id === c.id ? 'text-violet-700 dark:text-violet-300' : 'text-slate-800 dark:text-slate-200'
+                            selectedDirectClient?.id === c.id ? 'text-blue-700 dark:text-blue-300' : 'text-slate-800 dark:text-slate-200'
                           }`}>{c.name}</p>
                           <p className="text-xs text-slate-400 leading-tight mt-0.5">
                             {c.organisationName
-                              ? <span className="text-violet-500 dark:text-violet-400">{c.organisationName}</span>
+                              ? <span className="text-blue-500 dark:text-blue-400">{c.organisationName}</span>
                               : <span className="text-slate-400">Geen MSP</span>
                             }
                           </p>
@@ -383,7 +383,7 @@ export default function SuperUserDashboard() {
             /* ── Direct client selected from Col 2 ── */
             <div className="flex-1 flex flex-col overflow-hidden">
               <div className="flex-shrink-0 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-5 py-3 flex items-center gap-4">
-                <div className="w-8 h-8 rounded-lg bg-violet-100 dark:bg-violet-950/50 text-violet-700 dark:text-violet-300 text-sm font-bold flex items-center justify-center flex-shrink-0">
+                <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 text-sm font-bold flex items-center justify-center flex-shrink-0">
                   {selectedDirectClient.name[0]?.toUpperCase()}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -392,9 +392,9 @@ export default function SuperUserDashboard() {
                 </div>
                 {/* MSP badge */}
                 {selectedDirectClient.organisationName ? (
-                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-violet-50 dark:bg-violet-950/30 border border-violet-100 dark:border-violet-800/40 flex-shrink-0">
-                    <Building2 size={12} className="text-violet-500 flex-shrink-0" />
-                    <span className="text-xs font-medium text-violet-700 dark:text-violet-300">
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-800/40 flex-shrink-0">
+                    <Building2 size={12} className="text-blue-500 flex-shrink-0" />
+                    <span className="text-xs font-medium text-blue-700 dark:text-blue-300">
                       MSP: {selectedDirectClient.organisationName}
                     </span>
                   </div>
@@ -460,7 +460,7 @@ export default function SuperUserDashboard() {
             </div>
           ) : detailLoading ? (
             <div className="flex-1 flex items-center justify-center">
-              <div className="w-5 h-5 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
+              <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
             </div>
           ) : (
             <>
@@ -475,7 +475,7 @@ export default function SuperUserDashboard() {
                       <h1 className="text-sm font-bold text-slate-900 dark:text-slate-100">{detail.name}</h1>
                       <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide flex-shrink-0 ${
                         isMsp
-                          ? 'bg-violet-100 text-violet-700 dark:bg-violet-950/60 dark:text-violet-300'
+                          ? 'bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300'
                           : 'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400'
                       }`}>
                         {isMsp ? 'MSP' : 'Zelfstandig'}
@@ -524,7 +524,7 @@ export default function SuperUserDashboard() {
                       <div className="p-6 text-center">
                         <Briefcase size={22} className="mx-auto mb-2 text-slate-200 dark:text-slate-700" />
                         <p className="text-xs text-slate-400">Geen clients</p>
-                        <button onClick={() => setShowAddClient(true)} className="mt-1 text-xs text-violet-500 hover:underline">Toevoegen</button>
+                        <button onClick={() => setShowAddClient(true)} className="mt-1 text-xs text-blue-500 hover:underline">Toevoegen</button>
                       </div>
                     ) : (
                       <ul className="divide-y divide-slate-100 dark:divide-slate-700">
@@ -535,17 +535,17 @@ export default function SuperUserDashboard() {
                               <button
                                 onClick={() => handleSelectMspClient(c.id)}
                                 className={`w-full text-left px-4 py-3 flex items-center justify-between gap-2 hover:bg-slate-50 dark:hover:bg-slate-700/40 transition-colors ${
-                                  isSel ? 'bg-violet-50 dark:bg-violet-950/30 border-l-2 border-violet-500' : ''
+                                  isSel ? 'bg-blue-50 dark:bg-blue-950/30 border-l-2 border-blue-500' : ''
                                 }`}
                               >
                                 <div className="flex items-center gap-2.5 min-w-0">
                                   <div className={`w-7 h-7 rounded-lg text-xs font-bold flex items-center justify-center flex-shrink-0 ${
-                                    isSel ? 'bg-violet-600 text-white' : 'bg-violet-100 dark:bg-violet-950/50 text-violet-700 dark:text-violet-300'
+                                    isSel ? 'bg-blue-600 text-white' : 'bg-blue-100 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300'
                                   }`}>
                                     {c.name[0]?.toUpperCase()}
                                   </div>
                                   <div className="min-w-0">
-                                    <p className={`text-xs font-medium truncate ${isSel ? 'text-violet-700 dark:text-violet-300' : 'text-slate-800 dark:text-slate-200'}`}>
+                                    <p className={`text-xs font-medium truncate ${isSel ? 'text-blue-700 dark:text-blue-300' : 'text-slate-800 dark:text-slate-200'}`}>
                                       {c.name}
                                     </p>
                                     <p className="text-xs text-slate-400">{c.userCount} gebruikers</p>
@@ -588,7 +588,7 @@ export default function SuperUserDashboard() {
                       {/* MSP / zelfstandig banner */}
                       <div className={`mx-4 mt-3 mb-2 flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium border ${
                         isMsp
-                          ? 'bg-violet-50 dark:bg-violet-950/30 text-violet-700 dark:text-violet-300 border-violet-100 dark:border-violet-800/40'
+                          ? 'bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 border-blue-100 dark:border-blue-800/40'
                           : 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400 border-emerald-100 dark:border-emerald-800/40'
                       }`}>
                         <Shield size={13} className="flex-shrink-0" />
@@ -657,7 +657,7 @@ export default function SuperUserDashboard() {
                               return (
                                 <li key={u.id} className="px-4 py-3.5 flex items-center justify-between gap-3 hover:bg-slate-50 dark:hover:bg-slate-700/40 transition-colors">
                                   <div className="flex items-center gap-3 min-w-0">
-                                    <div className="w-8 h-8 rounded-full bg-violet-100 dark:bg-violet-950/50 text-violet-700 dark:text-violet-300 text-xs font-bold flex items-center justify-center flex-shrink-0">
+                                    <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 text-xs font-bold flex items-center justify-center flex-shrink-0">
                                       {u.email[0]?.toUpperCase()}
                                     </div>
                                     <div className="min-w-0">
@@ -665,7 +665,7 @@ export default function SuperUserDashboard() {
                                         <p className="text-sm font-medium text-slate-800 dark:text-slate-200 truncate">{u.email}</p>
                                         <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide flex-shrink-0 ${
                                           isAdmin
-                                            ? 'bg-violet-100 text-violet-700 dark:bg-violet-950/60 dark:text-violet-300'
+                                            ? 'bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300'
                                             : 'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400'
                                         }`}>
                                           MSP {isAdmin ? 'Admin' : 'Beheerder'}

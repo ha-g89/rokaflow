@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+﻿import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, Building2, Moon, Sun, User, Shield, Briefcase } from 'lucide-react'
 import { useThemeStore } from '@/store/themeStore'
@@ -7,13 +7,13 @@ import { useAuthStore } from '@/store/authStore'
 const ROLE_META: Record<string, { label: string; badge: string; icon: ReactNode; description: string }> = {
   msp_admin:    {
     label: 'MSP Admin',
-    badge: 'bg-violet-100 text-violet-700 dark:bg-violet-950/60 dark:text-violet-300',
+    badge: 'bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300',
     icon: <Shield size={15} />,
     description: 'Beheert organisaties en clients vanuit het MSP-platform',
   },
   msp_member:   {
     label: 'MSP Beheerder',
-    badge: 'bg-violet-100 text-violet-700 dark:bg-violet-950/60 dark:text-violet-300',
+    badge: 'bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300',
     icon: <Shield size={15} />,
     description: 'Toegang tot het MSP-platform als beheerder',
   },
@@ -55,7 +55,7 @@ export default function OrgSettings() {
         >
           <ArrowLeft size={16} />
         </button>
-        <Building2 size={18} className="text-violet-400 flex-shrink-0" />
+        <Building2 size={18} className="text-blue-400 flex-shrink-0" />
         <span className="font-bold text-sm truncate">{user?.tenantName ?? 'Organisatie'}</span>
         <span className="text-slate-500 text-xs uppercase tracking-wider">/ Instellingen</span>
       </header>
@@ -77,7 +77,7 @@ export default function OrgSettings() {
 
           <div className="px-5 py-5 flex items-center gap-4">
             {/* Avatar */}
-            <div className="w-12 h-12 rounded-xl bg-violet-600 text-white text-lg font-bold flex items-center justify-center flex-shrink-0 select-none">
+            <div className="w-12 h-12 rounded-xl bg-blue-600 text-white text-lg font-bold flex items-center justify-center flex-shrink-0 select-none">
               {(user?.email?.[0] ?? '?').toUpperCase()}
             </div>
 
@@ -133,7 +133,7 @@ export default function OrgSettings() {
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-3">
                 <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors ${
-                  darkMode ? 'bg-slate-700 text-violet-400' : 'bg-amber-50 text-amber-500'
+                  darkMode ? 'bg-slate-700 text-blue-400' : 'bg-amber-50 text-amber-500'
                 }`}>
                   {darkMode ? <Moon size={16} /> : <Sun size={16} />}
                 </div>
@@ -151,8 +151,8 @@ export default function OrgSettings() {
               <button
                 onClick={toggleDarkMode}
                 aria-label="Thema wisselen"
-                className={`relative w-12 h-6 rounded-full flex-shrink-0 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 ${
-                  darkMode ? 'bg-violet-600' : 'bg-slate-300'
+                className={`relative w-12 h-6 rounded-full flex-shrink-0 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 ${
+                  darkMode ? 'bg-blue-600' : 'bg-slate-300'
                 }`}
               >
                 <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform duration-200 ${

@@ -11,7 +11,7 @@ export function Button({ variant = 'primary', size = 'md', className, children, 
     <button
       className={cn(
         'inline-flex items-center justify-center gap-1.5 font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed',
-        variant === 'primary' && 'bg-violet-600 hover:bg-violet-700 text-white',
+        variant === 'primary' && 'bg-blue-600 hover:bg-blue-700 text-white',
         variant === 'secondary' && [
           'bg-slate-100 hover:bg-slate-200 text-slate-700',
           'dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-slate-200',

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+﻿import { useEffect, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -33,7 +33,7 @@ interface Props {
 }
 
 const field =
-  'w-full px-3 py-2 rounded-lg border border-slate-300 text-sm text-slate-900 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-colors'
+  'w-full px-3 py-2 rounded-lg border border-slate-300 text-sm text-slate-900 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-colors'
 
 // ── Custom phone dropdown ─────────────────────────────────────────────────────
 
@@ -66,7 +66,7 @@ function PhoneDropdown({ phones, value, simCardId, onChange }: {
         type="button"
         onClick={() => setOpen(o => !o)}
         className={`w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg border text-sm transition-colors text-left
-          ${open ? 'border-violet-500 ring-2 ring-violet-100' : 'border-slate-300 hover:border-slate-400'}
+          ${open ? 'border-blue-500 ring-2 ring-blue-100' : 'border-slate-300 hover:border-slate-400'}
           bg-white`}
       >
         {selected ? (
@@ -89,10 +89,10 @@ function PhoneDropdown({ phones, value, simCardId, onChange }: {
               type="button"
               onClick={() => select('')}
               className={`w-full flex items-center justify-between gap-2 px-3 py-2.5 text-sm transition-colors text-left
-                ${!value ? 'bg-violet-50 text-violet-700' : 'text-slate-400 hover:bg-slate-50'}`}
+                ${!value ? 'bg-blue-50 text-blue-700' : 'text-slate-400 hover:bg-slate-50'}`}
             >
               <span>— Geen —</span>
-              {!value && <Check size={13} className="text-violet-500 flex-shrink-0" />}
+              {!value && <Check size={13} className="text-blue-500 flex-shrink-0" />}
             </button>
 
             {phones.map(p => {
@@ -104,10 +104,10 @@ function PhoneDropdown({ phones, value, simCardId, onChange }: {
                   type="button"
                   onClick={() => select(p.id)}
                   className={`w-full flex items-start justify-between gap-2 px-3 py-2.5 border-t border-slate-100 text-sm transition-colors text-left
-                    ${isSelected ? 'bg-violet-50' : 'hover:bg-slate-50'}`}
+                    ${isSelected ? 'bg-blue-50' : 'hover:bg-slate-50'}`}
                 >
                   <div className="min-w-0">
-                    <p className={`font-medium leading-tight truncate ${isSelected ? 'text-violet-700' : 'text-slate-800'}`}>
+                    <p className={`font-medium leading-tight truncate ${isSelected ? 'text-blue-700' : 'text-slate-800'}`}>
                       {p.brand} {p.model}
                     </p>
                     <p className="text-xs text-slate-400 mt-0.5">S/N: {p.serialNumber || '—'}</p>
@@ -118,7 +118,7 @@ function PhoneDropdown({ phones, value, simCardId, onChange }: {
                         SIM gekoppeld
                       </span>
                     )}
-                    {isSelected && <Check size={13} className="text-violet-500" />}
+                    {isSelected && <Check size={13} className="text-blue-500" />}
                   </div>
                 </button>
               )

@@ -87,7 +87,7 @@ function NavItem({ icon, label, active, onClick }: {
     <button
       onClick={onClick}
       className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-left text-sm transition-colors ${
-        active ? 'bg-violet-600 text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+        active ? 'bg-blue-600 text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
       }`}
     >
       <span className="flex-shrink-0">{icon}</span>
@@ -101,7 +101,7 @@ function NavItem({ icon, label, active, onClick }: {
 function Avatar({ first, last, size = 32 }: { first: string; last: string; size?: number }) {
   return (
     <div
-      className="rounded-full bg-violet-100 text-violet-700 flex items-center justify-center font-bold flex-shrink-0"
+      className="rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold flex-shrink-0"
       style={{ width: size, height: size, fontSize: Math.round(size * 0.38) }}
     >
       {(first[0] ?? '').toUpperCase()}{(last[0] ?? '').toUpperCase()}
@@ -134,7 +134,7 @@ function StatCard({ label, value, icon, tone = 'default' }: {
     blue: 'bg-blue-100 text-blue-600',
     amber: 'bg-amber-100 text-amber-600',
     slate: 'bg-slate-100 text-slate-400',
-    violet: 'bg-violet-100 text-violet-600',
+    blue: 'bg-blue-100 text-blue-600',
   }
   return (
     <div className="bg-white rounded-2xl px-5 py-4 border border-slate-200 shadow-sm flex items-center gap-4">
@@ -260,7 +260,7 @@ function HistoryBlock({ entityType, entityId, labelFn, descriptionFn }: {
             <History size={12} /> Historie
           </p>
           {entries.length > 5 && (
-            <button onClick={() => setShowAllModal(true)} className="text-xs text-violet-600 hover:text-violet-800 font-medium">
+            <button onClick={() => setShowAllModal(true)} className="text-xs text-blue-600 hover:text-blue-800 font-medium">
               Alles bekijken ({entries.length})
             </button>
           )}
@@ -275,14 +275,14 @@ function HistoryBlock({ entityType, entityId, labelFn, descriptionFn }: {
               <button
                 key={e.id}
                 onClick={() => setSelectedEntry(e)}
-                className="w-full text-left rounded-lg bg-slate-50 hover:bg-violet-50 px-3 py-2 transition-colors cursor-pointer group"
+                className="w-full text-left rounded-lg bg-slate-50 hover:bg-blue-50 px-3 py-2 transition-colors cursor-pointer group"
               >
-                <p className="text-xs font-medium text-slate-700 group-hover:text-violet-700">{labelFn(e)}</p>
+                <p className="text-xs font-medium text-slate-700 group-hover:text-blue-700">{labelFn(e)}</p>
                 <p className="text-xs text-slate-400">{fmtAuditDate(e.createdAt)}{e.userName ? ` · ${e.userName}` : ''}</p>
               </button>
             ))}
             {entries.length > 5 && (
-              <button onClick={() => setShowAllModal(true)} className="w-full text-xs text-violet-600 hover:text-violet-800 font-medium py-1">
+              <button onClick={() => setShowAllModal(true)} className="w-full text-xs text-blue-600 hover:text-blue-800 font-medium py-1">
                 + {entries.length - 5} meer bekijken
               </button>
             )}
@@ -387,7 +387,7 @@ function ItemHistoryBlock({ url, subtitle }: { url: string; subtitle?: string })
             <History size={12} /> Historie
           </p>
           {entries.length > 5 && (
-            <button onClick={() => setShowAllModal(true)} className="text-xs text-violet-600 hover:text-violet-800 font-medium">
+            <button onClick={() => setShowAllModal(true)} className="text-xs text-blue-600 hover:text-blue-800 font-medium">
               Alles bekijken ({entries.length})
             </button>
           )}
@@ -402,14 +402,14 @@ function ItemHistoryBlock({ url, subtitle }: { url: string; subtitle?: string })
               <button
                 key={e.id}
                 onClick={() => setSelectedEntry(e)}
-                className="w-full text-left rounded-lg bg-slate-50 hover:bg-violet-50 px-3 py-2 transition-colors cursor-pointer group"
+                className="w-full text-left rounded-lg bg-slate-50 hover:bg-blue-50 px-3 py-2 transition-colors cursor-pointer group"
               >
-                <p className="text-xs font-medium text-slate-700 group-hover:text-violet-700">{e.summary}</p>
+                <p className="text-xs font-medium text-slate-700 group-hover:text-blue-700">{e.summary}</p>
                 <p className="text-xs text-slate-400 mt-0.5">{fmtDT(e.occurredAt)}{e.performedBy ? ` · ${e.performedBy}` : ''}</p>
               </button>
             ))}
             {entries.length > 5 && (
-              <button onClick={() => setShowAllModal(true)} className="w-full text-xs text-violet-600 hover:text-violet-800 font-medium py-1">
+              <button onClick={() => setShowAllModal(true)} className="w-full text-xs text-blue-600 hover:text-blue-800 font-medium py-1">
                 + {entries.length - 5} meer bekijken
               </button>
             )}
@@ -621,26 +621,25 @@ function HardwareView({ teammates }: { teammates: ClientUserListItem[] }) {
         <StatCard label="Afgeschreven" value={afgeschreven} icon={<XCircle size={18} />} tone="slate" />
       </div>
 
-      {/* List + Detail split */}
-      <div className="flex gap-4 flex-1 min-h-0">
-        {/* Left: list */}
-        <div className="flex flex-col flex-1 min-h-0 min-w-0">
-          <div className="flex items-center gap-2 mb-3 flex-shrink-0">
-            <div className="relative flex-1">
-              <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                placeholder="Zoek hardware…"
-                className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-200 bg-white focus:outline-none focus:border-violet-400"
-              />
-            </div>
-            <Button size="sm" onClick={handleOpenAdd}>
-              <Plus size={13} /> Toevoegen
-            </Button>
+      {/* Grid: [zoekbalk | —] [tabel | detail] */}
+      <div className="grid grid-cols-[1fr_20%] grid-rows-[auto_1fr] gap-x-4 gap-y-3 flex-1 min-h-0">
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1">
+            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Zoek hardware…"
+              className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-200 bg-white focus:outline-none focus:border-blue-400"
+            />
           </div>
+          <Button size="sm" onClick={handleOpenAdd}>
+            <Plus size={13} /> Toevoegen
+          </Button>
+        </div>
+        <div />
 
-          <Card className="flex-1 overflow-hidden flex flex-col">
+        <Card className="overflow-hidden flex flex-col min-h-0">
             <div className="grid grid-cols-[1fr_1.2fr_2fr_1.2fr_1fr_1.5fr_0.9fr] gap-3 px-4 py-2.5 bg-slate-50 border-b border-slate-100 flex-shrink-0">
               {['Type', 'Merk', 'Naam', 'Serienummer', 'Leverancier', 'Toegewezen aan', 'Status'].map(h => (
                 <span key={h} className="text-xs font-semibold text-slate-500 uppercase tracking-wider truncate">{h}</span>
@@ -663,7 +662,7 @@ function HardwareView({ teammates }: { teammates: ClientUserListItem[] }) {
                       key={a.id}
                       onClick={() => setSelected(a)}
                       className={`grid grid-cols-[1fr_1.2fr_2fr_1.2fr_1fr_1.5fr_0.9fr] gap-3 px-4 py-3 items-center cursor-pointer transition-colors hover:bg-slate-100 ${
-                        selected?.id === a.id ? 'bg-violet-50 border-l-2 border-violet-500' : ''
+                        selected?.id === a.id ? 'bg-blue-50 border-l-2 border-blue-500' : ''
                       }`}
                     >
                       <p className="text-xs text-slate-600 truncate">{HARDWARE_TYPE_LABEL[a.type] ?? a.type}</p>
@@ -680,11 +679,9 @@ function HardwareView({ teammates }: { teammates: ClientUserListItem[] }) {
                 </ul>
               )}
             </div>
-          </Card>
-        </div>
+        </Card>
 
-        {/* Right: detail */}
-        <div className="w-[20%] flex-shrink-0 min-h-0 overflow-y-auto">
+        <div className="min-h-0 overflow-y-auto">
           {selected ? (
             <HardwareDetailPanel
               asset={selected}
@@ -769,7 +766,7 @@ function LicenseDetailPanel({ license, teammates, onEdit, onDelete, onAssign, on
           </div>
           <div className="h-2 rounded-full bg-slate-200">
             <div
-              className={`h-2 rounded-full transition-all ${license.assignedUsers >= license.maxUsers ? 'bg-red-500' : 'bg-violet-500'}`}
+              className={`h-2 rounded-full transition-all ${license.assignedUsers >= license.maxUsers ? 'bg-red-500' : 'bg-blue-500'}`}
               style={{ width: `${Math.min(100, (license.assignedUsers / license.maxUsers) * 100)}%` }}
             />
           </div>
@@ -801,7 +798,7 @@ function LicenseDetailPanel({ license, teammates, onEdit, onDelete, onAssign, on
               <select
                 value={assignUserId}
                 onChange={e => setAssignUserId(e.target.value)}
-                className="flex-1 px-3 py-2 rounded-lg border border-slate-300 text-sm text-slate-900 focus:outline-none focus:border-violet-500"
+                className="flex-1 px-3 py-2 rounded-lg border border-slate-300 text-sm text-slate-900 focus:outline-none focus:border-blue-500"
               >
                 <option value="">— Selecteer medewerker —</option>
                 {assignableUsers.map(u => (
@@ -942,26 +939,25 @@ function LicenseView({ teammates }: { teammates: ClientUserListItem[] }) {
         <StatCard label="Seats beschikbaar" value={beschikbaar} icon={<Users size={18} />} tone="blue" />
       </div>
 
-      {/* List + Detail split */}
-      <div className="flex gap-4 flex-1 min-h-0">
-        {/* Left: list */}
-        <div className="flex flex-col flex-1 min-h-0 min-w-0">
-          <div className="flex items-center gap-2 mb-3 flex-shrink-0">
-            <div className="relative flex-1">
-              <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                placeholder="Zoek licenties…"
-                className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-200 bg-white focus:outline-none focus:border-violet-400"
-              />
-            </div>
-            <Button size="sm" onClick={handleOpenAdd}>
-              <Plus size={13} /> Toevoegen
-            </Button>
+      {/* Grid: [zoekbalk | —] [tabel | detail] */}
+      <div className="grid grid-cols-[1fr_20%] grid-rows-[auto_1fr] gap-x-4 gap-y-3 flex-1 min-h-0">
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1">
+            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Zoek licenties…"
+              className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-200 bg-white focus:outline-none focus:border-blue-400"
+            />
           </div>
+          <Button size="sm" onClick={handleOpenAdd}>
+            <Plus size={13} /> Toevoegen
+          </Button>
+        </div>
+        <div />
 
-          <Card className="flex-1 overflow-hidden flex flex-col">
+        <Card className="overflow-hidden flex flex-col min-h-0">
             <div className="grid grid-cols-[2fr_1fr_1.5fr_0.8fr_1fr_0.7fr] gap-3 px-4 py-2.5 bg-slate-50 border-b border-slate-100 flex-shrink-0">
               {['Naam', 'Leverancier', 'Seats', 'Beschikbaar', 'Vervaldatum', 'Status'].map(h => (
                 <span key={h} className="text-xs font-semibold text-slate-500 uppercase tracking-wider truncate">{h}</span>
@@ -983,13 +979,13 @@ function LicenseView({ teammates }: { teammates: ClientUserListItem[] }) {
                     const isExpired = l.expiresAt ? new Date(l.expiresAt) < new Date() : false
                     const seatsLeft = l.maxUsers - l.assignedUsers
                     const pct = l.maxUsers > 0 ? Math.min(100, (l.assignedUsers / l.maxUsers) * 100) : 0
-                    const barColor = pct >= 100 ? 'bg-red-500' : pct >= 80 ? 'bg-amber-400' : 'bg-violet-500'
+                    const barColor = pct >= 100 ? 'bg-red-500' : pct >= 80 ? 'bg-amber-400' : 'bg-blue-500'
                     return (
                       <li
                         key={l.id}
                         onClick={() => setSelected(l)}
                         className={`grid grid-cols-[2fr_1fr_1.5fr_0.8fr_1fr_0.7fr] gap-3 px-4 py-3 items-center cursor-pointer transition-colors hover:bg-slate-100 ${
-                          selected?.id === l.id ? 'bg-violet-50 border-l-2 border-violet-500' : ''
+                          selected?.id === l.id ? 'bg-blue-50 border-l-2 border-blue-500' : ''
                         }`}
                       >
                         {/* Naam + vendor */}
@@ -1033,11 +1029,9 @@ function LicenseView({ teammates }: { teammates: ClientUserListItem[] }) {
                 </ul>
               )}
             </div>
-          </Card>
-        </div>
+        </Card>
 
-        {/* Right: detail */}
-        <div className="w-[20%] flex-shrink-0 min-h-0 overflow-y-auto">
+        <div className="min-h-0 overflow-y-auto">
           {selected ? (
             <LicenseDetailPanel
               license={selected}
@@ -1105,7 +1099,7 @@ function TelefonieView({ teammates }: { teammates: ClientUserListItem[] }) {
       {/* Totalen */}
       <div className="grid grid-cols-3 gap-3 flex-shrink-0">
         <StatCard label="Telefoons in gebruik" value={totals.phonesInUse} icon={<PhoneIcon size={18} />} tone="emerald" />
-        <StatCard label="Abonnementen" value={totals.subscriptions} icon={<Layers size={18} />} tone="violet" />
+        <StatCard label="Abonnementen" value={totals.subscriptions} icon={<Layers size={18} />} tone="blue" />
         <StatCard label="Simkaarten in gebruik" value={totals.simCardsInUse} icon={<Wifi size={18} />} tone="blue" />
       </div>
 
@@ -1205,27 +1199,28 @@ function PhonesTab({ teammates }: { teammates: ClientUserListItem[] }) {
 
   return (
     <div className="flex flex-col gap-4 flex-1 min-h-0">
-      <div className="flex gap-4 flex-1 min-h-0">
-        <div className="flex flex-col flex-1 min-h-0 min-w-0">
-          <div className="flex items-center gap-2 mb-3 flex-shrink-0">
-            <div className="relative flex-1">
-              <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                placeholder="Zoek telefoons…"
-                className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-200 bg-white focus:outline-none focus:border-violet-400"
-              />
-            </div>
-            <Button size="sm" onClick={() => { setEditTarget(null); setShowModal(true) }}>
-              <Plus size={13} /> Toevoegen
-            </Button>
-            <Button size="sm" variant="secondary" onClick={() => setShowWizard(true)}>
-              <Layers size={13} /> Setup
-            </Button>
+      {/* Grid: [zoekbalk | —] [tabel | detail] */}
+      <div className="grid grid-cols-[1fr_22%] grid-rows-[auto_1fr] gap-x-4 gap-y-3 flex-1 min-h-0">
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1">
+            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Zoek telefoons…"
+              className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-200 bg-white focus:outline-none focus:border-blue-400"
+            />
           </div>
+          <Button size="sm" onClick={() => { setEditTarget(null); setShowModal(true) }}>
+            <Plus size={13} /> Toevoegen
+          </Button>
+          <Button size="sm" variant="secondary" onClick={() => setShowWizard(true)}>
+            <Layers size={13} /> Setup
+          </Button>
+        </div>
+        <div />
 
-          <Card className="flex-1 overflow-hidden flex flex-col">
+        <Card className="overflow-hidden flex flex-col min-h-0">
             <div className="grid grid-cols-[1fr_1.2fr_1.3fr_1fr_1.2fr_1.5fr_1fr_0.9fr] gap-3 px-4 py-2.5 bg-slate-50 border-b border-slate-100 flex-shrink-0">
               {['Merk', 'Model', 'IMEI-nummer', 'Leverancier', 'Telefoonnummer', 'Toegewezen aan', 'Uitgiftedatum', 'Status'].map(h => (
                 <span key={h} className="text-xs font-semibold text-slate-500 uppercase tracking-wider truncate">{h}</span>
@@ -1245,7 +1240,7 @@ function PhonesTab({ teammates }: { teammates: ClientUserListItem[] }) {
                     <li
                       key={p.id}
                       onClick={() => handleSelect(p)}
-                      className={`grid grid-cols-[1fr_1.2fr_1.3fr_1fr_1.2fr_1.5fr_1fr_0.9fr] gap-3 px-4 py-3 items-center cursor-pointer transition-colors hover:bg-slate-100 ${selected?.id === p.id ? 'bg-violet-50 border-l-2 border-violet-500' : ''}`}
+                      className={`grid grid-cols-[1fr_1.2fr_1.3fr_1fr_1.2fr_1.5fr_1fr_0.9fr] gap-3 px-4 py-3 items-center cursor-pointer transition-colors hover:bg-slate-100 ${selected?.id === p.id ? 'bg-blue-50 border-l-2 border-blue-500' : ''}`}
                     >
                       <p className="text-sm font-semibold text-slate-800 truncate">{p.brand}</p>
                       <p className="text-xs text-slate-600 truncate">{p.model || '—'}</p>
@@ -1262,10 +1257,9 @@ function PhonesTab({ teammates }: { teammates: ClientUserListItem[] }) {
                 </ul>
               )}
             </div>
-          </Card>
-        </div>
+        </Card>
 
-        <div className="w-[22%] flex-shrink-0 min-h-0">
+        <div className="min-h-0">
           {selected ? (
             <Card className="h-full overflow-y-auto">
               <CardContent className="p-5">
@@ -1299,11 +1293,11 @@ function PhonesTab({ teammates }: { teammates: ClientUserListItem[] }) {
                   )}
                 </div>
                 {selected.simCardNumber && (
-                  <div className="mt-3 rounded-xl bg-violet-50 border border-violet-100 px-3 py-2.5">
+                  <div className="mt-3 rounded-xl bg-blue-50 border border-blue-100 px-3 py-2.5">
                     <div className="flex items-center justify-between gap-2">
                       <div className="min-w-0">
-                        <p className="text-xs text-violet-400 mb-0.5">Gekoppelde simkaart</p>
-                        <p className="text-sm font-medium text-violet-700 truncate">
+                        <p className="text-xs text-blue-400 mb-0.5">Gekoppelde simkaart</p>
+                        <p className="text-sm font-medium text-blue-700 truncate">
                           {selected.simCardNumber}
                           {selected.simPhoneNumber ? ` · ${selected.simPhoneNumber}` : ''}
                         </p>
@@ -1311,7 +1305,7 @@ function PhonesTab({ teammates }: { teammates: ClientUserListItem[] }) {
                       <button
                         onClick={() => handleUnlinkSim(selected.id)}
                         title="Simkaart ontkoppelen"
-                        className="flex-shrink-0 text-violet-400 hover:text-red-500 transition-colors"
+                        className="flex-shrink-0 text-blue-400 hover:text-red-500 transition-colors"
                       >
                         <XCircle size={15} />
                       </button>
@@ -1422,24 +1416,24 @@ function SimCardsTab({ teammates }: { teammates: ClientUserListItem[] }) {
   const handleSaved = async () => { await fetchData(); setShowModal(false); setHistoryKey(k => k + 1) }
 
   return (
-    <div className="flex gap-4 flex-1 min-h-0">
-      <div className="flex flex-col flex-1 min-h-0 min-w-0">
-        <div className="flex items-center gap-2 mb-3 flex-shrink-0">
-          <div className="relative flex-1">
-            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              placeholder="Zoek simkaarten…"
-              className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-200 bg-white focus:outline-none focus:border-violet-400"
-            />
-          </div>
-          <Button size="sm" onClick={() => { setEditTarget(null); setShowModal(true) }}>
-            <Plus size={13} /> Toevoegen
-          </Button>
+    <div className="grid grid-cols-[1fr_22%] grid-rows-[auto_1fr] gap-x-4 gap-y-3 flex-1 min-h-0">
+      <div className="flex items-center gap-2">
+        <div className="relative flex-1">
+          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Zoek simkaarten…"
+            className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-200 bg-white focus:outline-none focus:border-blue-400"
+          />
         </div>
+        <Button size="sm" onClick={() => { setEditTarget(null); setShowModal(true) }}>
+          <Plus size={13} /> Toevoegen
+        </Button>
+      </div>
+      <div />
 
-        <Card className="flex-1 overflow-hidden flex flex-col">
+      <Card className="overflow-hidden flex flex-col min-h-0">
           <div className="grid grid-cols-[1.5fr_1.2fr_1fr_1.5fr_1.3fr_0.9fr] gap-3 px-4 py-2.5 bg-slate-50 border-b border-slate-100 flex-shrink-0">
             {['Kaartnummer', 'Telefoonnummer', 'Type', 'Toegewezen aan', 'Gekoppelde telefoon', 'Status'].map(h => (
               <span key={h} className="text-xs font-semibold text-slate-500 uppercase tracking-wider truncate">{h}</span>
@@ -1459,7 +1453,7 @@ function SimCardsTab({ teammates }: { teammates: ClientUserListItem[] }) {
                   <li
                     key={s.id}
                     onClick={() => { setSelected(s); setConfirmDelete(false) }}
-                    className={`grid grid-cols-[1.5fr_1.2fr_1fr_1.5fr_1.3fr_0.9fr] gap-3 px-4 py-3 items-center cursor-pointer transition-colors hover:bg-slate-100 ${selected?.id === s.id ? 'bg-violet-50 border-l-2 border-violet-500' : ''}`}
+                    className={`grid grid-cols-[1.5fr_1.2fr_1fr_1.5fr_1.3fr_0.9fr] gap-3 px-4 py-3 items-center cursor-pointer transition-colors hover:bg-slate-100 ${selected?.id === s.id ? 'bg-blue-50 border-l-2 border-blue-500' : ''}`}
                   >
                     <p className="text-sm font-semibold text-slate-800 truncate tabular-nums">{s.kaartNummer}</p>
                     <p className="text-xs text-slate-600 truncate tabular-nums">{s.phoneNumber || '—'}</p>
@@ -1475,9 +1469,8 @@ function SimCardsTab({ teammates }: { teammates: ClientUserListItem[] }) {
             )}
           </div>
         </Card>
-      </div>
 
-      <div className="w-[22%] flex-shrink-0 min-h-0">
+      <div className="min-h-0">
         {selected ? (
           <Card className="h-full overflow-y-auto">
             <CardContent className="p-5">
@@ -1503,15 +1496,15 @@ function SimCardsTab({ teammates }: { teammates: ClientUserListItem[] }) {
                 ))}
               </div>
               {selected.phoneName && (
-                <div className="mt-3 rounded-xl bg-violet-50 border border-violet-100 px-3 py-2.5">
-                  <p className="text-xs text-violet-400 mb-0.5">Gekoppelde telefoon</p>
-                  <p className="text-sm font-medium text-violet-700 truncate">{selected.phoneName}</p>
+                <div className="mt-3 rounded-xl bg-blue-50 border border-blue-100 px-3 py-2.5">
+                  <p className="text-xs text-blue-400 mb-0.5">Gekoppelde telefoon</p>
+                  <p className="text-sm font-medium text-blue-700 truncate">{selected.phoneName}</p>
                 </div>
               )}
               {selected.subscriptionName && (
-                <div className="mt-2 rounded-xl bg-violet-50 border border-violet-100 px-3 py-2.5">
-                  <p className="text-xs text-violet-400 mb-0.5">Gekoppeld abonnement</p>
-                  <p className="text-sm font-medium text-violet-700 truncate">{selected.subscriptionName}</p>
+                <div className="mt-2 rounded-xl bg-blue-50 border border-blue-100 px-3 py-2.5">
+                  <p className="text-xs text-blue-400 mb-0.5">Gekoppeld abonnement</p>
+                  <p className="text-sm font-medium text-blue-700 truncate">{selected.subscriptionName}</p>
                 </div>
               )}
               <div className="mt-4 flex flex-wrap gap-2">
@@ -1621,24 +1614,24 @@ function SubscriptionsTab() {
   }
 
   return (
-    <div className="flex gap-4 flex-1 min-h-0">
-      <div className="flex flex-col flex-1 min-h-0 min-w-0">
-        <div className="flex items-center gap-2 mb-3 flex-shrink-0">
-          <div className="relative flex-1">
-            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              placeholder="Zoek abonnementen…"
-              className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-200 bg-white focus:outline-none focus:border-violet-400"
-            />
-          </div>
-          <Button size="sm" onClick={() => { setEditTarget(null); setShowModal(true) }}>
-            <Plus size={13} /> Toevoegen
-          </Button>
+    <div className="grid grid-cols-[1fr_22%] grid-rows-[auto_1fr] gap-x-4 gap-y-3 flex-1 min-h-0">
+      <div className="flex items-center gap-2">
+        <div className="relative flex-1">
+          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Zoek abonnementen…"
+            className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-200 bg-white focus:outline-none focus:border-blue-400"
+          />
         </div>
+        <Button size="sm" onClick={() => { setEditTarget(null); setShowModal(true) }}>
+          <Plus size={13} /> Toevoegen
+        </Button>
+      </div>
+      <div />
 
-        <Card className="flex-1 overflow-hidden flex flex-col">
+      <Card className="overflow-hidden flex flex-col min-h-0">
           <div className="grid grid-cols-[1.2fr_2fr_1fr_1fr_1fr_1.5fr_1.3fr_0.9fr] gap-3 px-4 py-2.5 bg-slate-50 border-b border-slate-100 flex-shrink-0">
             {['Provider', 'Naam', 'Type', 'Kosten/mnd', 'Leverancier', 'Toegewezen aan', 'Simkaart', 'Status'].map(h => (
               <span key={h} className="text-xs font-semibold text-slate-500 uppercase tracking-wider truncate">{h}</span>
@@ -1658,7 +1651,7 @@ function SubscriptionsTab() {
                   <li
                     key={s.id}
                     onClick={() => { setSelected(s); setConfirmDelete(false) }}
-                    className={`grid grid-cols-[1.2fr_2fr_1fr_1fr_1fr_1.5fr_1.3fr_0.9fr] gap-3 px-4 py-3 items-center cursor-pointer transition-colors hover:bg-slate-100 ${selected?.id === s.id ? 'bg-violet-50 border-l-2 border-violet-500' : ''}`}
+                    className={`grid grid-cols-[1.2fr_2fr_1fr_1fr_1fr_1.5fr_1.3fr_0.9fr] gap-3 px-4 py-3 items-center cursor-pointer transition-colors hover:bg-slate-100 ${selected?.id === s.id ? 'bg-blue-50 border-l-2 border-blue-500' : ''}`}
                   >
                     <p className="text-sm font-semibold text-slate-800 truncate">{s.provider || '—'}</p>
                     <div className="min-w-0">
@@ -1677,10 +1670,9 @@ function SubscriptionsTab() {
               </ul>
             )}
           </div>
-        </Card>
-      </div>
+      </Card>
 
-      <div className="w-[22%] flex-shrink-0 min-h-0">
+      <div className="min-h-0">
         {selected ? (
           <Card className="h-full overflow-y-auto">
             <CardContent className="p-5">
@@ -1711,9 +1703,9 @@ function SubscriptionsTab() {
                 ))}
               </div>
               {selected.simCardNumber && (
-                <div className="mt-3 rounded-xl bg-violet-50 border border-violet-100 px-3 py-2.5">
-                  <p className="text-xs text-violet-400 mb-0.5">Gekoppelde simkaart</p>
-                  <p className="text-sm font-medium text-violet-700 truncate">
+                <div className="mt-3 rounded-xl bg-blue-50 border border-blue-100 px-3 py-2.5">
+                  <p className="text-xs text-blue-400 mb-0.5">Gekoppelde simkaart</p>
+                  <p className="text-sm font-medium text-blue-700 truncate">
                     {selected.simCardNumber}
                     {selected.simPhoneNumber ? ` · ${selected.simPhoneNumber}` : ''}
                   </p>
@@ -1855,7 +1847,7 @@ function DeleteEmployeeModal({ userId, userName, onClose, onDeleted }: {
         <div className="px-6 pb-6">
           {loading ? (
             <div className="flex items-center justify-center py-8">
-              <div className="w-6 h-6 border-2 border-violet-400 border-t-transparent rounded-full animate-spin" />
+              <div className="w-6 h-6 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
             </div>
           ) : apiError && !detail ? (
             <div className="flex items-center gap-2 p-3 rounded-lg bg-red-50 border border-red-100 text-sm text-red-700">
@@ -1978,7 +1970,7 @@ function EmployeeListView({ teammates, loading, search, currentUserId, departmen
         <StatCard label="Medewerkers"    value={totaalMedewerkers} icon={<Users size={18} />} />
         <StatCard label="In dienst"      value={inDienst}          icon={<CheckCircle2 size={18} />} tone="emerald" />
         <StatCard label="Totale assets"  value={totaleAssets}      icon={<Laptop size={18} />} tone="blue" />
-        <StatCard label="Totale licenties" value={totaleLicenties} icon={<CreditCard size={18} />} tone="violet" />
+        <StatCard label="Totale licenties" value={totaleLicenties} icon={<CreditCard size={18} />} tone="blue" />
       </div>
 
       {/* Toolbar */}
@@ -1989,7 +1981,7 @@ function EmployeeListView({ teammates, loading, search, currentUserId, departmen
             value={search}
             onChange={e => onSearch(e.target.value)}
             placeholder="Zoek op naam, e-mail of afdeling…"
-            className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-200 bg-white focus:outline-none focus:border-violet-400"
+            className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-200 bg-white focus:outline-none focus:border-blue-400"
           />
         </div>
         <span className="text-xs text-slate-400 flex-1">{filtered.length} medewerker{filtered.length !== 1 ? 's' : ''}</span>
@@ -2027,7 +2019,7 @@ function EmployeeListView({ teammates, loading, search, currentUserId, departmen
                           {u.firstName} {u.lastName}
                         </p>
                         {u.id === currentUserId && (
-                          <span className="text-xs px-1.5 py-0.5 bg-violet-100 text-violet-600 rounded-full font-medium">Jij</span>
+                          <span className="text-xs px-1.5 py-0.5 bg-blue-100 text-blue-600 rounded-full font-medium">Jij</span>
                         )}
                       </div>
                       <p className="text-xs text-slate-400 truncate">{u.email || '—'}</p>
@@ -2206,7 +2198,7 @@ function SettingsView({ teammates, tenantName, onAddUser, mspStatus, onMspStatus
           <div className="flex items-center justify-between py-3">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center flex-shrink-0">
-                {darkMode ? <Moon size={15} className="text-violet-400" /> : <Sun size={15} className="text-amber-500" />}
+                {darkMode ? <Moon size={15} className="text-blue-400" /> : <Sun size={15} className="text-amber-500" />}
               </div>
               <div>
                 <p className="text-sm font-medium text-slate-800 dark:text-slate-100">Donkere modus</p>
@@ -2216,7 +2208,7 @@ function SettingsView({ teammates, tenantName, onAddUser, mspStatus, onMspStatus
             <button
               onClick={toggleDarkMode}
               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors flex-shrink-0 ${
-                darkMode ? 'bg-violet-600' : 'bg-slate-200 dark:bg-slate-600'
+                darkMode ? 'bg-blue-600' : 'bg-slate-200 dark:bg-slate-600'
               }`}
             >
               <span className={`inline-block h-4 w-4 rounded-full bg-white shadow-sm transform transition-transform ${
@@ -2281,13 +2273,13 @@ function SettingsView({ teammates, tenantName, onAddUser, mspStatus, onMspStatus
               /* ── Already an MSP ── */
               <div className="flex items-start justify-between gap-4">
                 <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-violet-100 dark:bg-violet-900/40 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <CheckCircle2 size={15} className="text-violet-600 dark:text-violet-400" />
+                  <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <CheckCircle2 size={15} className="text-blue-600 dark:text-blue-400" />
                   </div>
                   <div>
                     <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">MSP Partner</p>
                     <p className="text-xs text-slate-500 mt-0.5">
-                      Uw account is gekoppeld aan <span className="font-medium text-violet-600 dark:text-violet-400">{mspStatus.orgName}</span>
+                      Uw account is gekoppeld aan <span className="font-medium text-blue-600 dark:text-blue-400">{mspStatus.orgName}</span>
                     </p>
                     <p className="text-xs text-slate-400 mt-1">
                       U kunt vanuit het MSP-portaal klanten beheren en toevoegen.
@@ -2297,7 +2289,7 @@ function SettingsView({ teammates, tenantName, onAddUser, mspStatus, onMspStatus
                 <button
                   onClick={onSwitchToMsp}
                   disabled={mspSwitching}
-                  className="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-white bg-violet-600 hover:bg-violet-700 rounded-lg transition-colors disabled:opacity-50"
+                  className="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors disabled:opacity-50"
                 >
                   <ArrowLeftCircle size={13} className="rotate-180" />
                   {mspSwitching ? 'Even wachten…' : 'Naar MSP Portaal'}
@@ -2344,7 +2336,7 @@ function SettingsView({ teammates, tenantName, onAddUser, mspStatus, onMspStatus
                     <button
                       onClick={onSwitchToMsp}
                       disabled={mspSwitching}
-                      className="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-white bg-violet-600 hover:bg-violet-700 rounded-lg transition-colors disabled:opacity-50"
+                      className="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors disabled:opacity-50"
                     >
                       <ArrowLeftCircle size={13} className="rotate-180" />
                       {mspSwitching ? 'Even wachten…' : 'Naar MSP Portaal'}
@@ -2361,7 +2353,7 @@ function SettingsView({ teammates, tenantName, onAddUser, mspStatus, onMspStatus
                     <button
                       onClick={handleUpgrade}
                       disabled={upgradeLoading}
-                      className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-700 bg-violet-50 dark:bg-violet-900/20 hover:bg-violet-100 dark:hover:bg-violet-900/40 rounded-xl transition-colors disabled:opacity-50"
+                      className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 rounded-xl transition-colors disabled:opacity-50"
                     >
                       <ArrowLeftCircle size={14} className="rotate-180" />
                       {upgradeLoading ? 'Bezig…' : 'MSP account aanmaken'}
@@ -2499,7 +2491,7 @@ function LocationsView() {
                 onClick={() => setActiveTab(tab)}
                 className={`px-5 py-3 text-xs font-semibold capitalize transition-colors border-b-2 -mb-px ${
                   activeTab === tab
-                    ? 'border-violet-500 text-violet-600 dark:text-violet-400'
+                    ? 'border-blue-500 text-blue-600 dark:text-blue-400'
                     : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
                 }`}
               >
@@ -2517,7 +2509,7 @@ function LocationsView() {
                     value={memberSearch}
                     onChange={e => setMemberSearch(e.target.value)}
                     placeholder="Zoeken op naam, e-mail, functie…"
-                    className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-300 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-violet-400"
+                    className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-300 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-400"
                   />
                 </div>
                 {filteredMembers.length === 0 ? (
@@ -2562,7 +2554,7 @@ function LocationsView() {
                     value={hwSearch}
                     onChange={e => setHwSearch(e.target.value)}
                     placeholder="Zoeken op naam, merk, type, serienummer…"
-                    className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-300 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-violet-400"
+                    className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-300 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-400"
                   />
                 </div>
                 {filteredHardware.length === 0 ? (
@@ -2621,7 +2613,7 @@ function LocationsView() {
       {/* Stat cards */}
       <div className="grid grid-cols-3 gap-3 flex-shrink-0">
         <StatCard label="Locaties"     value={totaalLocaties}    icon={<MapPin size={18} />} />
-        <StatCard label="Medewerkers"  value={totaalMedewerkers} icon={<Users size={18} />} tone="violet" />
+        <StatCard label="Medewerkers"  value={totaalMedewerkers} icon={<Users size={18} />} tone="blue" />
         <StatCard label="Hardware"     value={totaalHardware}    icon={<Laptop size={18} />} tone="blue" />
       </div>
 
@@ -2663,7 +2655,7 @@ function LocationsView() {
                 <div className="flex gap-1 flex-shrink-0">
                   <button
                     onClick={() => { setEditTarget(loc); setShowModal(true) }}
-                    className="p-1.5 rounded-lg text-slate-400 hover:text-violet-600 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors"
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
                     title="Bewerken"
                   >
                     <Pencil size={13} />
@@ -2710,7 +2702,7 @@ function LocationsView() {
               <button
                 onClick={() => openDetail(loc.id)}
                 disabled={loadingDetail}
-                className="mt-auto w-full py-2 rounded-xl bg-violet-50 dark:bg-violet-900/20 text-violet-600 dark:text-violet-400 text-xs font-semibold hover:bg-violet-100 dark:hover:bg-violet-900/40 transition-colors flex items-center justify-center gap-1.5"
+                className="mt-auto w-full py-2 rounded-xl bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-xs font-semibold hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors flex items-center justify-center gap-1.5"
               >
                 {loadingDetail ? 'Laden…' : 'Bekijken →'}
               </button>
@@ -2819,7 +2811,7 @@ function DepartmentsView() {
           <div className="grid grid-cols-3 gap-3 mb-6">
             {[
               { label: 'Hardware items', value: detailDept.hardwareCount, color: 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' },
-              { label: 'Licenties',      value: detailDept.licenseCount,  color: 'bg-violet-100 text-violet-600 dark:bg-violet-900/30 dark:text-violet-400' },
+              { label: 'Licenties',      value: detailDept.licenseCount,  color: 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' },
               { label: 'Software',       value: detailDept.softwareCount, color: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400' },
             ].map(s => (
               <div key={s.label} className={`rounded-xl px-4 py-3 flex items-center gap-3 ${s.color}`}>
@@ -2926,7 +2918,7 @@ function DepartmentsView() {
                 <div className="flex gap-1 flex-shrink-0">
                   <button
                     onClick={() => { setEditTarget(d); setShowModal(true) }}
-                    className="p-1.5 rounded-lg text-slate-400 hover:text-violet-600 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors"
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
                     title="Bewerken"
                   >
                     <Pencil size={13} />
@@ -2954,7 +2946,7 @@ function DepartmentsView() {
                 {[
                   { label: 'Medewerkers', value: d.memberCount,   color: 'text-slate-600 dark:text-slate-300' },
                   { label: 'Hardware',    value: d.hardwareCount, color: 'text-blue-600 dark:text-blue-400' },
-                  { label: 'Licenties',  value: d.licenseCount,  color: 'text-violet-600 dark:text-violet-400' },
+                  { label: 'Licenties',  value: d.licenseCount,  color: 'text-blue-600 dark:text-blue-400' },
                   { label: 'Software',   value: d.softwareCount, color: 'text-emerald-600 dark:text-emerald-400' },
                 ].map(s => (
                   <div key={s.label} className="text-center">
@@ -2968,7 +2960,7 @@ function DepartmentsView() {
               <button
                 onClick={() => openDetail(d.id)}
                 disabled={loadingDetail}
-                className="mt-auto w-full py-2 rounded-xl bg-violet-50 dark:bg-violet-900/20 text-violet-600 dark:text-violet-400 text-xs font-semibold hover:bg-violet-100 dark:hover:bg-violet-900/40 transition-colors flex items-center justify-center gap-1.5"
+                className="mt-auto w-full py-2 rounded-xl bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-xs font-semibold hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors flex items-center justify-center gap-1.5"
               >
                 {loadingDetail ? 'Laden…' : 'Bekijken →'}
               </button>
@@ -3161,7 +3153,7 @@ export default function ClientPortal() {
               onClick={() => setShowUserMenu(v => !v)}
               className="flex items-center gap-2 pl-1 pr-2 py-1 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors group"
             >
-              <div className="w-8 h-8 rounded-full bg-violet-600 group-hover:bg-violet-500 text-white text-sm font-bold flex items-center justify-center flex-shrink-0 transition-colors select-none">
+              <div className="w-8 h-8 rounded-full bg-blue-600 group-hover:bg-blue-500 text-white text-sm font-bold flex items-center justify-center flex-shrink-0 transition-colors select-none">
                 {(user?.email?.[0] ?? '?').toUpperCase()}
               </div>
               <ChevronDown size={13} className={`text-slate-400 dark:text-slate-500 transition-transform duration-150 ${showUserMenu ? 'rotate-180' : ''}`} />
@@ -3173,7 +3165,7 @@ export default function ClientPortal() {
                 {/* User info */}
                 <div className="px-4 py-4 bg-slate-50 dark:bg-slate-700/50 border-b border-slate-100 dark:border-slate-700">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-violet-600 text-white text-base font-bold flex items-center justify-center flex-shrink-0 select-none">
+                    <div className="w-10 h-10 rounded-xl bg-blue-600 text-white text-base font-bold flex items-center justify-center flex-shrink-0 select-none">
                       {(user?.email?.[0] ?? '?').toUpperCase()}
                     </div>
                     <div className="min-w-0">
@@ -3189,7 +3181,7 @@ export default function ClientPortal() {
                     <button
                       onClick={handleSwitchToMsp}
                       disabled={mspSwitching}
-                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors disabled:opacity-50"
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors disabled:opacity-50"
                     >
                       <ArrowLeftCircle size={15} className="flex-shrink-0 rotate-180" />
                       <span className="flex-1 text-left">{mspSwitching ? 'Even wachten…' : `MSP Portaal — ${mspStatus.orgName}`}</span>
@@ -3215,7 +3207,7 @@ export default function ClientPortal() {
                       : <Moon size={15} className="text-slate-400 flex-shrink-0" />
                     }
                     <span className="flex-1 text-left">{darkMode ? 'Lichte modus' : 'Donkere modus'}</span>
-                    <span className={`w-9 h-5 rounded-full flex items-center px-0.5 flex-shrink-0 transition-colors ${darkMode ? 'bg-violet-600' : 'bg-slate-300'}`}>
+                    <span className={`w-9 h-5 rounded-full flex items-center px-0.5 flex-shrink-0 transition-colors ${darkMode ? 'bg-blue-600' : 'bg-slate-300'}`}>
                       <span className={`w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${darkMode ? 'translate-x-4' : 'translate-x-0'}`} />
                     </span>
                   </button>
@@ -3297,7 +3289,7 @@ export default function ClientPortal() {
           </div>
         )}
 
-        <div className="flex-1 overflow-hidden p-6">
+        <div className="flex-1 overflow-hidden p-6 bg-slate-200 dark:bg-slate-900">
           {view === 'employees' && (
             <EmployeeListView
               teammates={teammates}

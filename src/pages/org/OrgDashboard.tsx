@@ -45,7 +45,7 @@ function StatCard({ icon, label, value, color }: {
 function Avatar({ first, last, size = 8 }: { first: string; last: string; size?: number }) {
   const s = `w-${size} h-${size}`
   return (
-    <div className={`${s} rounded-full bg-violet-100 text-violet-700 flex items-center justify-center text-xs font-bold flex-shrink-0`}>
+    <div className={`${s} rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-xs font-bold flex-shrink-0`}>
       {(first[0] ?? '').toUpperCase()}{(last[0] ?? '').toUpperCase()}
     </div>
   )
@@ -77,7 +77,7 @@ function OrgEditUserModal({ user, clientId, onClose, onSaved }: {
   const [error, setError]         = useState<string | null>(null)
   const overlayRef                = useRef<HTMLDivElement>(null)
 
-  const field = 'w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-sm text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-700 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 dark:focus:ring-violet-900 transition-colors'
+  const field = 'w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-sm text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-700 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900 transition-colors'
 
   const handleSave = async () => {
     if (!firstName.trim() || !lastName.trim()) { setError('Voor- en achternaam zijn verplicht.'); return }
@@ -137,7 +137,7 @@ function OrgEditUserModal({ user, clientId, onClose, onSaved }: {
           <button
             onClick={handleSave}
             disabled={saving}
-            className="flex-1 px-4 py-2 rounded-xl bg-violet-600 text-sm font-medium text-white hover:bg-violet-700 transition-colors disabled:opacity-60"
+            className="flex-1 px-4 py-2 rounded-xl bg-blue-600 text-sm font-medium text-white hover:bg-blue-700 transition-colors disabled:opacity-60"
           >
             {saving ? 'Opslaan…' : 'Opslaan'}
           </button>
@@ -183,7 +183,7 @@ function OrgPortalUserPanel({ user, clientId, onUserUpdated }: {
 
           {/* Avatar + naam + email + badge */}
           <div className="flex items-start gap-4">
-            <div className="w-16 h-16 rounded-2xl bg-violet-100 dark:bg-violet-950/50 text-violet-700 dark:text-violet-300 flex items-center justify-center font-bold text-2xl flex-shrink-0 select-none">
+            <div className="w-16 h-16 rounded-2xl bg-blue-100 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 flex items-center justify-center font-bold text-2xl flex-shrink-0 select-none">
               {(user.firstName[0] ?? '').toUpperCase()}{(user.lastName[0] ?? '').toUpperCase()}
             </div>
             <div className="flex-1 min-w-0">
@@ -416,7 +416,7 @@ export default function OrgDashboard() {
       {/* Header */}
       <header className="bg-slate-900 dark:bg-slate-950 border-b border-slate-800 text-white px-6 py-3.5 flex items-center justify-between shadow-md flex-shrink-0">
         <div className="flex items-center gap-2.5">
-          <Building2 size={20} className="text-violet-400" />
+          <Building2 size={20} className="text-blue-400" />
           <span className="font-bold text-base">{user?.tenantName ?? 'Organisatie'}</span>
           <span className="text-slate-500 text-xs ml-1.5 uppercase tracking-wider">MSP Portal</span>
         </div>
@@ -426,7 +426,7 @@ export default function OrgDashboard() {
             onClick={() => setShowUserMenu(v => !v)}
             className="flex items-center gap-2 pl-1 pr-2 py-1 rounded-xl hover:bg-slate-800 transition-colors group"
           >
-            <div className="w-8 h-8 rounded-full bg-violet-600 group-hover:bg-violet-500 text-white text-sm font-bold flex items-center justify-center flex-shrink-0 transition-colors select-none">
+            <div className="w-8 h-8 rounded-full bg-blue-600 group-hover:bg-blue-500 text-white text-sm font-bold flex items-center justify-center flex-shrink-0 transition-colors select-none">
               {(user?.email?.[0] ?? '?').toUpperCase()}
             </div>
             <ChevronDown size={13} className={`text-slate-400 transition-transform duration-150 ${showUserMenu ? 'rotate-180' : ''}`} />
@@ -438,7 +438,7 @@ export default function OrgDashboard() {
               {/* User info header */}
               <div className="px-4 py-4 bg-slate-50 dark:bg-slate-700/50 border-b border-slate-100 dark:border-slate-700">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-violet-600 text-white text-base font-bold flex items-center justify-center flex-shrink-0 select-none">
+                  <div className="w-10 h-10 rounded-xl bg-blue-600 text-white text-base font-bold flex items-center justify-center flex-shrink-0 select-none">
                     {(user?.email?.[0] ?? '?').toUpperCase()}
                   </div>
                   <div className="min-w-0">
@@ -468,7 +468,7 @@ export default function OrgDashboard() {
                     : <Moon size={15} className="text-slate-400 flex-shrink-0" />
                   }
                   <span className="flex-1 text-left">{darkMode ? 'Lichte modus' : 'Donkere modus'}</span>
-                  <span className={`w-9 h-5 rounded-full flex items-center px-0.5 flex-shrink-0 transition-colors ${darkMode ? 'bg-violet-600' : 'bg-slate-300'}`}>
+                  <span className={`w-9 h-5 rounded-full flex items-center px-0.5 flex-shrink-0 transition-colors ${darkMode ? 'bg-blue-600' : 'bg-slate-300'}`}>
                     <span className={`w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${darkMode ? 'translate-x-4' : 'translate-x-0'}`} />
                   </span>
                 </button>
@@ -489,12 +489,12 @@ export default function OrgDashboard() {
         </div>
       </header>
 
-      <div className="flex-1 max-w-7xl w-full mx-auto px-6 py-5 flex flex-col gap-5">
+      <div className="flex-1 max-w-7xl w-full mx-auto px-6 py-5 flex flex-col gap-5 bg-slate-200 dark:bg-slate-900">
         {/* Stats */}
         <div className="grid grid-cols-3 gap-4">
-          <StatCard icon={<Briefcase size={18} className="text-violet-600" />} label="Totaal clients" value={clients.length} color="bg-violet-50" />
+          <StatCard icon={<Briefcase size={18} className="text-blue-600" />} label="Totaal clients" value={clients.length} color="bg-blue-50" />
           <StatCard icon={<Briefcase size={18} className="text-emerald-600" />} label="Actieve clients" value={activeClients} color="bg-emerald-50" />
-          <StatCard icon={<Users size={18} className="text-violet-600" />} label="Totaal gebruikers" value={totalUsers} color="bg-violet-50" />
+          <StatCard icon={<Users size={18} className="text-blue-600" />} label="Totaal gebruikers" value={totalUsers} color="bg-blue-50" />
         </div>
 
         {/* Three-column layout */}
@@ -507,7 +507,7 @@ export default function OrgDashboard() {
                 <Search size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input value={clientSearch} onChange={e => setClientSearch(e.target.value)}
                   placeholder="Zoek client…"
-                  className="w-full pl-7 pr-2 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:border-violet-400 dark:focus:border-violet-500" />
+                  className="w-full pl-7 pr-2 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:border-blue-400 dark:focus:border-blue-500" />
               </div>
               <Button size="sm" onClick={() => setShowAddClient(true)} title="Client toevoegen">
                 <Plus size={13} />
@@ -529,12 +529,12 @@ export default function OrgDashboard() {
                             <button
                               onClick={() => handleSelectClient(c)}
                               className={`w-full text-left px-3 py-2.5 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors flex items-center justify-between gap-2 ${
-                                selectedClient?.id === c.id ? 'bg-violet-50 dark:bg-violet-950/40 border-l-2 border-violet-500' : ''}`}
+                                selectedClient?.id === c.id ? 'bg-blue-50 dark:bg-blue-950/40 border-l-2 border-blue-500' : ''}`}
                             >
                               {c.logoDataUrl
                                 ? <img src={c.logoDataUrl} alt="" className="w-7 h-7 rounded-lg object-contain bg-slate-100 flex-shrink-0" />
-                                : <div className="w-7 h-7 rounded-lg bg-violet-100 flex items-center justify-center flex-shrink-0">
-                                    <span className="text-xs font-bold text-violet-600">{c.name[0]?.toUpperCase()}</span>
+                                : <div className="w-7 h-7 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
+                                    <span className="text-xs font-bold text-blue-600">{c.name[0]?.toUpperCase()}</span>
                                   </div>
                               }
                               <div className="min-w-0 flex-1">
@@ -546,7 +546,7 @@ export default function OrgDashboard() {
                                   onClick={(e) => { e.stopPropagation(); handleSwitchToClient(c.id) }}
                                   disabled={switchingClientId === c.id}
                                   title="Beheer portaal"
-                                  className="p-1 rounded hover:bg-violet-100 dark:hover:bg-violet-900/40 text-violet-400 hover:text-violet-600 transition-colors disabled:opacity-50"
+                                  className="p-1 rounded hover:bg-blue-100 dark:hover:bg-blue-900/40 text-blue-400 hover:text-blue-600 transition-colors disabled:opacity-50"
                                 >
                                   {switchingClientId === c.id
                                     ? <Loader2 size={13} className="animate-spin" />
@@ -593,7 +593,7 @@ export default function OrgDashboard() {
                       <Search size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400" />
                       <input value={userSearch} onChange={e => setUserSearch(e.target.value)}
                         placeholder="Zoek gebruiker…"
-                        className="w-full pl-7 pr-2 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:border-violet-400 dark:focus:border-violet-500" />
+                        className="w-full pl-7 pr-2 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:border-blue-400 dark:focus:border-blue-500" />
                     </div>
                     <Button size="sm" onClick={() => setShowAddUser(true)} title="Gebruiker toevoegen">
                       <UserPlus size={13} />
@@ -611,7 +611,7 @@ export default function OrgDashboard() {
                           ? <div className="p-4 text-center">
                               <User size={24} className="mx-auto mb-1 text-slate-200" />
                               <p className="text-xs text-slate-400">Geen portalgebruikers.</p>
-                              <button onClick={() => setShowAddUser(true)} className="mt-1 text-xs text-violet-500 hover:underline">Toevoegen</button>
+                              <button onClick={() => setShowAddUser(true)} className="mt-1 text-xs text-blue-500 hover:underline">Toevoegen</button>
                             </div>
                           : <ul className="divide-y divide-slate-100">
                               {filteredUsers.map(u => (
@@ -619,7 +619,7 @@ export default function OrgDashboard() {
                                   <button
                                     onClick={() => handleSelectUser(u.id)}
                                     className={`w-full text-left px-3 py-2.5 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors ${
-                                      selectedUser?.id === u.id ? 'bg-violet-50 dark:bg-violet-950/40 border-l-2 border-violet-500' : ''}`}
+                                      selectedUser?.id === u.id ? 'bg-blue-50 dark:bg-blue-950/40 border-l-2 border-blue-500' : ''}`}
                                   >
                                     <div className="flex items-center gap-2">
                                       <Avatar first={u.firstName} last={u.lastName} size={7} />
@@ -717,7 +717,7 @@ export default function OrgDashboard() {
                       <button
                         type="button"
                         onClick={() => editLogoInputRef.current?.click()}
-                        className="w-16 h-16 rounded-xl border-2 border-dashed border-slate-300 hover:border-violet-400 flex flex-col items-center justify-center gap-1 text-slate-400 hover:text-violet-500 transition-colors flex-shrink-0"
+                        className="w-16 h-16 rounded-xl border-2 border-dashed border-slate-300 hover:border-blue-400 flex flex-col items-center justify-center gap-1 text-slate-400 hover:text-blue-500 transition-colors flex-shrink-0"
                       >
                         <ImagePlus size={18} />
                         <span className="text-[10px] leading-none">Upload</span>
@@ -744,7 +744,7 @@ export default function OrgDashboard() {
                   value={editName}
                   onChange={e => setEditName(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter') handleRenameClient() }}
-                  className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-sm text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-700 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 dark:focus:ring-violet-900"
+                  className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-sm text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-700 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900"
                   autoFocus
                 />
               </div>
@@ -759,7 +759,7 @@ export default function OrgDashboard() {
               <button
                 onClick={handleRenameClient}
                 disabled={editSaving || !editName.trim()}
-                className="flex-1 px-4 py-2 rounded-xl bg-violet-600 text-sm font-medium text-white hover:bg-violet-700 transition-colors disabled:opacity-60"
+                className="flex-1 px-4 py-2 rounded-xl bg-blue-600 text-sm font-medium text-white hover:bg-blue-700 transition-colors disabled:opacity-60"
               >
                 {editSaving ? 'Opslaan…' : 'Opslaan'}
               </button>

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+﻿import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -48,7 +48,7 @@ interface Props {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 const field =
-  'w-full px-3 py-2 rounded-lg border border-slate-300 text-sm text-slate-900 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-colors'
+  'w-full px-3 py-2 rounded-lg border border-slate-300 text-sm text-slate-900 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-colors'
 
 function toDateInput(v: string | null | undefined) {
   return v ? v.substring(0, 10) : ''
@@ -93,7 +93,7 @@ function TabBar({ active, onChange }: { active: 'existing' | 'new'; onChange: (t
 
 function HwDetailCard({ hw }: { hw: HardwareAssetListItem }) {
   return (
-    <div className="rounded-xl border border-violet-100 bg-violet-50 p-4">
+    <div className="rounded-xl border border-blue-100 bg-blue-50 p-4">
       <div className="flex items-start justify-between gap-3 mb-3">
         <div>
           <p className="text-sm font-bold text-slate-900">{hw.name}</p>
@@ -283,7 +283,7 @@ export function HardwareModal({ open, onClose, onSuccess, teammates, locations, 
               <button
                 type="button"
                 onClick={() => setTab('new')}
-                className="text-xs text-violet-600 hover:underline"
+                className="text-xs text-blue-600 hover:underline"
               >
                 Nieuwe hardware aanmaken →
               </button>
@@ -297,7 +297,7 @@ export function HardwareModal({ open, onClose, onSuccess, teammates, locations, 
                   value={hwSearch}
                   onChange={e => { setHwSearch(e.target.value); setSelectedHw(null) }}
                   placeholder="Zoek op naam, merk, serienummer…"
-                  className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-200 bg-white focus:outline-none focus:border-violet-400 transition-colors"
+                  className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-200 bg-white focus:outline-none focus:border-blue-400 transition-colors"
                 />
               </div>
 
@@ -313,11 +313,11 @@ export function HardwareModal({ open, onClose, onSuccess, teammates, locations, 
                       onClick={() => setSelectedHw(prev => prev?.id === h.id ? null : h)}
                       className={`w-full flex items-center justify-between gap-3 px-4 py-3 text-left transition-colors
                         ${selectedHw?.id === h.id
-                          ? 'bg-violet-50 border-l-2 border-violet-500'
+                          ? 'bg-blue-50 border-l-2 border-blue-500'
                           : 'hover:bg-slate-50'}`}
                     >
                       <div className="min-w-0">
-                        <p className={`text-sm font-semibold truncate ${selectedHw?.id === h.id ? 'text-violet-800' : 'text-slate-800'}`}>
+                        <p className={`text-sm font-semibold truncate ${selectedHw?.id === h.id ? 'text-blue-800' : 'text-slate-800'}`}>
                           {h.name}
                         </p>
                         <p className="text-xs text-slate-400 truncate mt-0.5">

@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+﻿import { useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -20,7 +20,7 @@ interface Props {
 }
 
 const field =
-  'w-full px-3 py-2 rounded-lg border border-slate-300 text-sm text-slate-900 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-colors'
+  'w-full px-3 py-2 rounded-lg border border-slate-300 text-sm text-slate-900 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-colors'
 
 export function AddClientModal({ open, onClose, onSuccess, endpoint }: Props) {
   const [apiError, setApiError] = useState<string | null>(null)
@@ -101,7 +101,7 @@ export function AddClientModal({ open, onClose, onSuccess, endpoint }: Props) {
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="w-16 h-16 rounded-xl border-2 border-dashed border-slate-300 hover:border-violet-400 flex flex-col items-center justify-center gap-1 text-slate-400 hover:text-violet-500 transition-colors flex-shrink-0"
+                className="w-16 h-16 rounded-xl border-2 border-dashed border-slate-300 hover:border-blue-400 flex flex-col items-center justify-center gap-1 text-slate-400 hover:text-blue-500 transition-colors flex-shrink-0"
               >
                 <ImagePlus size={18} />
                 <span className="text-[10px] leading-none">Upload</span>
