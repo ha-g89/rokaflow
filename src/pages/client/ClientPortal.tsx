@@ -10,7 +10,7 @@ import {
   Plus, Pencil, Trash2, X,
   Package, Activity, Archive, XCircle, CheckCircle2, Clock,
   MoreVertical, Wifi, Moon, Sun, ArrowLeftCircle,
-  AlertTriangle, Smartphone, ChevronDown,
+  AlertTriangle, Smartphone, ChevronDown, Download,
 } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { useThemeStore } from '@/store/themeStore'
@@ -1673,8 +1673,9 @@ function OverviewCard({
 }
 
 function OverviewView() {
-  const [data, setData]       = useState<PortalOverview | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [data, setData]           = useState<PortalOverview | null>(null)
+  const [loading, setLoading]     = useState(true)
+  const [exporting, setExporting] = useState(false)
 
   useEffect(() => {
     api.get<PortalOverview>('/portal/overview')
@@ -1682,6 +1683,28 @@ function OverviewView() {
       .catch(() => {})
       .finally(() => setLoading(false))
   }, [])
+
+  const handleExport = async () => {
+    setExporting(true)
+    try {
+      const response = await api.get('/portal/export', { responseType: 'blob' })
+      const contentDisposition = response.headers['content-disposition'] as string | undefined
+      const fileNameMatch = contentDisposition?.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/)
+      const fileName = fileNameMatch?.[1]?.replace(/['"]/g, '') ?? 'RokaFlow_export.xlsx'
+      const url = URL.createObjectURL(new Blob([response.data]))
+      const a   = document.createElement('a')
+      a.href    = url
+      a.download = fileName
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
+    } catch {
+      // silently ignore — user can retry
+    } finally {
+      setExporting(false)
+    }
+  }
 
   if (loading) {
     return (
@@ -1700,6 +1723,26 @@ function OverviewView() {
 
   return (
     <div className="h-full overflow-y-auto pb-2">
+
+      {/* Export toolbar */}
+      <div className="flex items-center justify-between mb-4">
+        <p className="text-xs text-slate-400 dark:text-slate-500">
+          Live overzicht van alle activa binnen deze organisatie
+        </p>
+        <button
+          onClick={handleExport}
+          disabled={exporting}
+          className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium
+                     bg-slate-800 text-white hover:bg-slate-700
+                     dark:bg-slate-700 dark:hover:bg-slate-600
+                     disabled:opacity-50 disabled:cursor-not-allowed
+                     transition-colors"
+        >
+          <Download size={13} className={exporting ? 'animate-bounce' : ''} />
+          {exporting ? 'Exporteren…' : 'Exporteren naar Excel'}
+        </button>
+      </div>
+
       <div className="grid grid-cols-3 gap-4">
 
         {/* Medewerkers */}
