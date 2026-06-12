@@ -4441,6 +4441,7 @@ export default function ClientPortal() {
             </div>
           )}
           <NavItem icon={<Settings size={14} />} label="Instellingen" active={view === 'settings'} onClick={() => handleNavClick('settings')} />
+          <NavItem icon={<LogOut size={14} />} label="Uitloggen" active={false} onClick={handleLogout} />
         </div>
       </aside>
 
