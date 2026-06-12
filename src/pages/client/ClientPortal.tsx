@@ -33,7 +33,7 @@ import type { ClientUserListItem, ClientUserDetailResponse } from '@/types/clien
 import { STATUS_LABEL, STATUS_TONE } from '@/types/clientUser'
 import type { HardwareAssetListItem } from '@/types/hardware'
 import { HARDWARE_STATUS_LABEL, HARDWARE_STATUS_TONE, HARDWARE_TYPE_LABEL } from '@/types/hardware'
-import type { LicenseListItem } from '@/types/license'
+import type { LicenseListItem, LicenseUserDto } from '@/types/license'
 import { LICENSE_TYPE_LABEL, LICENSE_TYPE_TONE } from '@/types/license'
 import type { PhoneListItem, PhoneHistoryItem } from '@/types/phone'
 import { PHONE_STATUS_LABEL, PHONE_STATUS_TONE } from '@/types/phone'
@@ -776,7 +776,8 @@ function LicenseDetailPanel({ license, teammates, onEdit, onDelete, onAssign, on
   const [assignUserId, setAssignUserId] = useState('')
 
   const assignableUsers = teammates.filter(t => !license.users.some(u => u.userId === t.id))
-  const seatsLeft = license.maxUsers - license.assignedUsers
+  const isUnlimited = license.maxUsers === 0
+  const seatsLeft = isUnlimited ? null : license.maxUsers - license.assignedUsers
   const isExpired = license.expiresAt ? new Date(license.expiresAt) < new Date() : false
 
   function fmt(d: string | null | undefined) {
@@ -815,15 +816,20 @@ function LicenseDetailPanel({ license, teammates, onEdit, onDelete, onAssign, on
         {/* Seats bar */}
         <div>
           <div className="flex justify-between text-xs text-slate-500 mb-1">
-            <span>Seats gebruikt</span>
-            <span className="font-semibold">{license.assignedUsers} / {license.maxUsers}</span>
+            <span>Gebruikers</span>
+            {isUnlimited
+              ? <span className="font-semibold">{license.assignedUsers} <span className="font-normal text-slate-400">/ onbeperkt</span></span>
+              : <span className="font-semibold">{license.assignedUsers} / {license.maxUsers}</span>
+            }
           </div>
-          <div className="h-2 rounded-full bg-slate-200">
-            <div
-              className={`h-2 rounded-full transition-all ${license.assignedUsers >= license.maxUsers ? 'bg-red-500' : 'bg-blue-500'}`}
-              style={{ width: `${Math.min(100, (license.assignedUsers / license.maxUsers) * 100)}%` }}
-            />
-          </div>
+          {!isUnlimited && (
+            <div className="h-2 rounded-full bg-slate-200">
+              <div
+                className={`h-2 rounded-full transition-all ${license.assignedUsers >= license.maxUsers ? 'bg-red-500' : 'bg-blue-500'}`}
+                style={{ width: `${Math.min(100, (license.assignedUsers / license.maxUsers) * 100)}%` }}
+              />
+            </div>
+          )}
         </div>
 
         {/* Info grid */}
@@ -945,10 +951,11 @@ type SoftwareTab = 'catalog' | 'licenties' | 'toewijzing'
 // ── Software wizard schemas ────────────────────────────────────────────────────
 
 const swStep1Schema = z.object({
-  name:      z.string().min(1, 'Naam is verplicht'),
-  publisher: z.string().min(1, 'Uitgever is verplicht'),
-  vendor:    z.string(),
-  isPaid:    z.boolean(),
+  name:        z.string().min(1, 'Naam is verplicht'),
+  publisher:   z.string().min(1, 'Uitgever is verplicht'),
+  vendor:      z.string(),
+  isPaid:      z.boolean(),
+  trackUsers:  z.boolean(),
 })
 const swStep2Schema = z.object({
   maxUsers:  z.string().min(1, 'Aantal seats is verplicht'),
@@ -985,10 +992,11 @@ function SoftwareWizard({
   const form1 = useForm<SwStep1Values>({
     resolver: zodResolver(swStep1Schema),
     defaultValues: {
-      name:      editTarget?.name ?? '',
-      publisher: editTarget?.publisher ?? '',
-      vendor:    editTarget?.vendor ?? '',
-      isPaid:    editTarget?.isPaid ?? false,
+      name:        editTarget?.name ?? '',
+      publisher:   editTarget?.publisher ?? '',
+      vendor:      editTarget?.vendor ?? '',
+      isPaid:      editTarget?.isPaid ?? false,
+      trackUsers:  false,
     },
   })
   const form2 = useForm<SwStep2Values>({
@@ -1002,7 +1010,8 @@ function SoftwareWizard({
     },
   })
 
-  const isPaid = form1.watch('isPaid')
+  const isPaid      = form1.watch('isPaid')
+  const trackUsers  = form1.watch('trackUsers')
 
   const handleStep1 = form1.handleSubmit(async (values) => {
     setApiError(null)
@@ -1024,8 +1033,11 @@ function SoftwareWizard({
       setSaving(true)
       try {
         await api.post('/portal/software', {
-          name: values.name.trim(), publisher: values.publisher.trim(),
-          vendor: values.vendor.trim() || null, isPaid: false,
+          name:        values.name.trim(),
+          publisher:   values.publisher.trim(),
+          vendor:      values.vendor.trim() || null,
+          isPaid:      false,
+          trackUsers:  values.trackUsers,
         })
         onSaved()
       } catch (err: unknown) {
@@ -1141,26 +1153,53 @@ function SoftwareWizard({
             </div>
 
             {!isEdit && (
-              <div>
-                <label className={labelCls}>Type</label>
-                <div className="grid grid-cols-2 gap-3 mt-1">
-                  <button type="button" onClick={() => form1.setValue('isPaid', false)}
-                    className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
-                      !isPaid ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20' : 'border-slate-200 dark:border-slate-600 hover:border-slate-300'
-                    }`}>
-                    <CheckCircle2 size={22} className={!isPaid ? 'text-emerald-600' : 'text-slate-300'} />
-                    <span className={`text-sm font-medium ${!isPaid ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-500'}`}>Gratis</span>
-                    <span className="text-xs text-slate-400 text-center">Geen licentie nodig</span>
-                  </button>
-                  <button type="button" onClick={() => form1.setValue('isPaid', true)}
-                    className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
-                      isPaid ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-slate-200 dark:border-slate-600 hover:border-slate-300'
-                    }`}>
-                    <CreditCard size={22} className={isPaid ? 'text-blue-600' : 'text-slate-300'} />
-                    <span className={`text-sm font-medium ${isPaid ? 'text-blue-700 dark:text-blue-400' : 'text-slate-500'}`}>Betaald</span>
-                    <span className="text-xs text-slate-400 text-center">Licentie koppelen</span>
-                  </button>
+              <div className="space-y-3">
+                <div>
+                  <label className={labelCls}>Type</label>
+                  <div className="grid grid-cols-2 gap-3 mt-1">
+                    <button type="button" onClick={() => { form1.setValue('isPaid', false); form1.setValue('trackUsers', false) }}
+                      className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
+                        !isPaid ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20' : 'border-slate-200 dark:border-slate-600 hover:border-slate-300'
+                      }`}>
+                      <CheckCircle2 size={22} className={!isPaid ? 'text-emerald-600' : 'text-slate-300'} />
+                      <span className={`text-sm font-medium ${!isPaid ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-500'}`}>Gratis</span>
+                      <span className="text-xs text-slate-400 text-center">Freeware / gratis tier</span>
+                    </button>
+                    <button type="button" onClick={() => { form1.setValue('isPaid', true); form1.setValue('trackUsers', false) }}
+                      className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
+                        isPaid ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-slate-200 dark:border-slate-600 hover:border-slate-300'
+                      }`}>
+                      <CreditCard size={22} className={isPaid ? 'text-blue-600' : 'text-slate-300'} />
+                      <span className={`text-sm font-medium ${isPaid ? 'text-blue-700 dark:text-blue-400' : 'text-slate-500'}`}>Betaald</span>
+                      <span className="text-xs text-slate-400 text-center">Licentie koppelen</span>
+                    </button>
+                  </div>
                 </div>
+
+                {/* Gebruikers bijhouden — alleen zichtbaar bij gratis software */}
+                {!isPaid && (
+                  <button
+                    type="button"
+                    onClick={() => form1.setValue('trackUsers', !trackUsers)}
+                    className={`w-full flex items-center justify-between rounded-xl border-2 px-4 py-3 transition-all text-left ${
+                      trackUsers
+                        ? 'border-emerald-400 bg-emerald-50 dark:bg-emerald-900/20'
+                        : 'border-slate-200 dark:border-slate-600 hover:border-slate-300'
+                    }`}
+                  >
+                    <div>
+                      <p className={`text-sm font-medium ${trackUsers ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-700 dark:text-slate-300'}`}>
+                        Gebruikers bijhouden
+                      </p>
+                      <p className="text-xs text-slate-400 mt-0.5">
+                        {trackUsers ? 'Registreer wie deze software gebruikt' : 'Alleen registreren, geen licentiekosten'}
+                      </p>
+                    </div>
+                    <div className={`w-9 h-5 rounded-full flex-shrink-0 transition-colors relative ${trackUsers ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-600'}`}>
+                      <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${trackUsers ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                    </div>
+                  </button>
+                )}
               </div>
             )}
 
@@ -1310,12 +1349,52 @@ function SoftwareWizard({
 
 // ── Software detail panel ─────────────────────────────────────────────────────
 
-function SoftwareDetailPanel({ software, onEdit, onDelete }: {
+function SoftwareDetailPanel({ software, teammates, onEdit, onDelete, onUsersChanged }: {
   software: SoftwareListItem
+  teammates: ClientUserListItem[]
   onEdit: () => void
   onDelete: () => void
+  onUsersChanged: () => void
 }) {
-  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [confirmDelete, setConfirmDelete]   = useState(false)
+  const [licenseUsers, setLicenseUsers]     = useState<LicenseUserDto[]>([])
+  const [loadingUsers, setLoadingUsers]     = useState(false)
+  const [assignUserId, setAssignUserId]     = useState('')
+  const [assigning, setAssigning]           = useState(false)
+
+  const fetchLicenseUsers = useCallback(async () => {
+    if (!software.licenseId) { setLicenseUsers([]); return }
+    setLoadingUsers(true)
+    try {
+      const { data } = await api.get<LicenseListItem[]>('/portal/licenses')
+      const match = data.find(l => l.id === software.licenseId)
+      setLicenseUsers(match?.users ?? [])
+    } finally { setLoadingUsers(false) }
+  }, [software.licenseId])
+
+  useEffect(() => { fetchLicenseUsers() }, [fetchLicenseUsers])
+
+  const handleAssign = async (userId: string) => {
+    if (!software.licenseId) return
+    setAssigning(true)
+    try {
+      await api.post(`/portal/licenses/${software.licenseId}/assign`, { userId })
+      setAssignUserId('')
+      await fetchLicenseUsers()
+      onUsersChanged()
+    } finally { setAssigning(false) }
+  }
+
+  const handleRevoke = async (userId: string) => {
+    if (!software.licenseId) return
+    await api.delete(`/portal/licenses/${software.licenseId}/users/${userId}`)
+    await fetchLicenseUsers()
+    onUsersChanged()
+  }
+
+  const assignableUsers = teammates.filter(t => !licenseUsers.some(u => u.userId === t.id))
+  const isUnlimited = software.maxUsers === 0
+  const canAssign = isUnlimited || (software.maxUsers ?? 0) > (software.assignedUsers ?? 0)
 
   function fmt(d: string | null | undefined) {
     if (!d) return '—'
@@ -1364,27 +1443,35 @@ function SoftwareDetailPanel({ software, onEdit, onDelete }: {
           </div>
         </div>
 
-        {/* Linked license */}
-        {software.isPaid && (
+        {/* Linked license — toon voor betaald én voor gratis-met-tracking */}
+        {(software.isPaid || software.licenseId) && (
           <div>
             <p className="flex items-center gap-1.5 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wide mb-2">
-              <CreditCard size={12} /> Gekoppelde licentie
+              <CreditCard size={12} /> {software.isPaid ? 'Gekoppelde licentie' : 'Gebruikers bijhouden'}
             </p>
             {software.licenseId ? (
               <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-3 space-y-2">
                 <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">{software.licenseName || '—'}</p>
-                <div>
-                  <div className="flex justify-between text-xs text-slate-500 mb-1">
-                    <span>Seats gebruikt</span>
-                    <span className="font-semibold">{software.assignedUsers ?? 0} / {software.maxUsers ?? 0}</span>
+                {software.maxUsers === 0 ? (
+                  // Onbeperkte (gratis) licentie — geen progress bar
+                  <div className="flex items-center justify-between text-xs text-slate-500">
+                    <span>Gebruikers</span>
+                    <span className="font-semibold">{software.assignedUsers ?? 0} <span className="font-normal text-slate-400">/ onbeperkt</span></span>
                   </div>
-                  <div className="h-1.5 rounded-full bg-slate-200 dark:bg-slate-600">
-                    <div
-                      className={`h-1.5 rounded-full transition-all ${usedPct >= 100 ? 'bg-red-500' : usedPct >= 80 ? 'bg-amber-400' : 'bg-blue-500'}`}
-                      style={{ width: `${usedPct}%` }}
-                    />
+                ) : (
+                  <div>
+                    <div className="flex justify-between text-xs text-slate-500 mb-1">
+                      <span>Seats gebruikt</span>
+                      <span className="font-semibold">{software.assignedUsers ?? 0} / {software.maxUsers ?? 0}</span>
+                    </div>
+                    <div className="h-1.5 rounded-full bg-slate-200 dark:bg-slate-600">
+                      <div
+                        className={`h-1.5 rounded-full transition-all ${usedPct >= 100 ? 'bg-red-500' : usedPct >= 80 ? 'bg-amber-400' : 'bg-blue-500'}`}
+                        style={{ width: `${usedPct}%` }}
+                      />
+                    </div>
                   </div>
-                </div>
+                )}
                 {software.licenseExpiresAt && (() => {
                   const days = daysUntil(software.licenseExpiresAt)
                   const expired = days !== null && days < 0
@@ -1410,6 +1497,58 @@ function SoftwareDetailPanel({ software, onEdit, onDelete }: {
               </div>
             ) : (
               <p className="text-sm text-slate-400">Geen licentie gekoppeld.</p>
+            )}
+          </div>
+        )}
+
+        {/* Gebruikers toewijzen — zichtbaar zodra er een licentie gekoppeld is */}
+        {software.licenseId && (
+          <div>
+            <p className="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wide mb-2">
+              Toegewezen gebruikers
+            </p>
+
+            {/* Assign row */}
+            {canAssign && assignableUsers.length > 0 && (
+              <div className="flex gap-2 mb-3">
+                <select
+                  value={assignUserId}
+                  onChange={e => setAssignUserId(e.target.value)}
+                  className="flex-1 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 text-sm bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-blue-400"
+                >
+                  <option value="">— Selecteer medewerker —</option>
+                  {assignableUsers.map(u => (
+                    <option key={u.id} value={u.id}>{u.firstName} {u.lastName}</option>
+                  ))}
+                </select>
+                <Button size="sm" disabled={!assignUserId || assigning} onClick={() => handleAssign(assignUserId)}>
+                  <Plus size={13} /> {assigning ? '…' : 'Toewijzen'}
+                </Button>
+              </div>
+            )}
+
+            {/* Users list */}
+            {loadingUsers ? (
+              <p className="text-xs text-slate-400">Laden…</p>
+            ) : licenseUsers.length === 0 ? (
+              <p className="text-sm text-slate-400">Nog geen gebruikers toegewezen.</p>
+            ) : (
+              <ul className="space-y-1.5">
+                {licenseUsers.map(u => (
+                  <li key={u.userLicenseId} className="flex items-center justify-between rounded-xl bg-slate-50 dark:bg-slate-700/50 px-3 py-2">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-slate-800 dark:text-slate-200 truncate">{u.fullName}</p>
+                      <p className="text-xs text-slate-400 truncate">{u.email}</p>
+                    </div>
+                    <button
+                      onClick={() => handleRevoke(u.userId)}
+                      className="ml-2 flex-shrink-0 text-xs text-red-600 hover:text-red-800 dark:text-red-400 font-medium"
+                    >
+                      Intrekken
+                    </button>
+                  </li>
+                ))}
+              </ul>
             )}
           </div>
         )}
@@ -1449,7 +1588,7 @@ function SoftwareDetailPanel({ software, onEdit, onDelete }: {
 
 // ── Software catalog tab ───────────────────────────────────────────────────────
 
-function SoftwareCatalogTab() {
+function SoftwareCatalogTab({ teammates, tabBar }: { teammates: ClientUserListItem[], tabBar: React.ReactNode }) {
   const [software, setSoftware]     = useState<SoftwareListItem[]>([])
   const [loading, setLoading]       = useState(true)
   const [search, setSearch]         = useState('')
@@ -1493,6 +1632,8 @@ function SoftwareCatalogTab() {
         <StatCard label="Betaald" value={software.filter(s => s.isPaid).length}  icon={<CreditCard size={18} />} tone="blue" />
         <StatCard label="Gratis"  value={software.filter(s => !s.isPaid).length} icon={<CheckCircle2 size={18} />} tone="emerald" />
       </div>
+
+      {tabBar}
 
       {/* Grid: [toolbar | —] [table | detail] */}
       <div className="grid grid-cols-[1fr_20%] grid-rows-[auto_1fr] gap-x-4 gap-y-3 flex-1 min-h-0">
@@ -1550,7 +1691,11 @@ function SoftwareCatalogTab() {
                       {s.isPaid ? 'Betaald' : 'Gratis'}
                     </span>
                     <span className="text-xs text-slate-500 dark:text-slate-400 tabular-nums">
-                      {s.licenseId ? `${s.assignedUsers ?? 0} / ${s.maxUsers ?? 0}` : '—'}
+                      {s.licenseId
+                        ? s.maxUsers === 0
+                          ? `${s.assignedUsers ?? 0} / ∞`
+                          : `${s.assignedUsers ?? 0} / ${s.maxUsers ?? 0}`
+                        : '—'}
                     </span>
                   </li>
                 ))}
@@ -1564,8 +1709,10 @@ function SoftwareCatalogTab() {
           {selected ? (
             <SoftwareDetailPanel
               software={selected}
+              teammates={teammates}
               onEdit={() => { setEditTarget(selected); setShowModal(true) }}
               onDelete={() => handleDelete(selected.id)}
+              onUsersChanged={fetchSoftware}
             />
           ) : (
             <div className="h-full flex items-center justify-center">
@@ -1591,17 +1738,20 @@ function SoftwareCatalogTab() {
   )
 }
 
-function SoftwareToewijzingTab() {
+function SoftwareToewijzingTab({ tabBar }: { tabBar: React.ReactNode }) {
   return (
-    <div className="h-full flex items-center justify-center">
-      <div className="text-center">
-        <div className="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto mb-4">
-          <Users size={28} className="text-slate-300" />
+    <div className="flex flex-col h-full gap-3">
+      {tabBar}
+      <div className="flex-1 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto mb-4">
+            <Users size={28} className="text-slate-300" />
+          </div>
+          <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Toewijzingen</p>
+          <p className="text-xs text-slate-400 mt-1 max-w-xs">
+            Hier ziet u alle softwaretoewijzingen per medewerker, inclusief compliance-status.
+          </p>
         </div>
-        <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Toewijzingen</p>
-        <p className="text-xs text-slate-400 mt-1 max-w-xs">
-          Hier ziet u alle softwaretoewijzingen per medewerker, inclusief compliance-status.
-        </p>
       </div>
     </div>
   )
@@ -1610,33 +1760,33 @@ function SoftwareToewijzingTab() {
 function SoftwareView({ teammates }: { teammates: ClientUserListItem[] }) {
   const [tab, setTab] = useState<SoftwareTab>('catalog')
 
-  return (
-    <div className="flex flex-col h-full gap-3">
-      <div className="flex gap-1 flex-shrink-0 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl w-fit">
-        {([
-          { key: 'catalog',   label: 'Software' },
-          { key: 'licenties', label: 'Licenties' },
-          { key: 'toewijzing', label: 'Toewijzing' },
-        ] as { key: SoftwareTab; label: string }[]).map(t => (
-          <button
-            key={t.key}
-            onClick={() => setTab(t.key)}
-            className={`px-4 py-1.5 text-sm font-medium rounded-lg transition-colors ${
-              tab === t.key
-                ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-sm'
-                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
+  const tabBar = (
+    <div className="flex gap-1 flex-shrink-0 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl w-fit">
+      {([
+        { key: 'catalog',    label: 'Software' },
+        { key: 'licenties',  label: 'Licenties' },
+        { key: 'toewijzing', label: 'Toewijzing' },
+      ] as { key: SoftwareTab; label: string }[]).map(t => (
+        <button
+          key={t.key}
+          onClick={() => setTab(t.key)}
+          className={`px-4 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+            tab === t.key
+              ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-sm'
+              : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+          }`}
+        >
+          {t.label}
+        </button>
+      ))}
+    </div>
+  )
 
-      <div className="flex-1 min-h-0">
-        {tab === 'catalog'    && <SoftwareCatalogTab />}
-        {tab === 'licenties'  && <LicenseView teammates={teammates} />}
-        {tab === 'toewijzing' && <SoftwareToewijzingTab />}
-      </div>
+  return (
+    <div className="h-full">
+      {tab === 'catalog'    && <SoftwareCatalogTab teammates={teammates} tabBar={tabBar} />}
+      {tab === 'licenties'  && <LicenseView teammates={teammates} tabBar={tabBar} />}
+      {tab === 'toewijzing' && <SoftwareToewijzingTab tabBar={tabBar} />}
     </div>
   )
 }
@@ -2099,7 +2249,7 @@ function HistoryView() {
 
 // ── License view ──────────────────────────────────────────────────────────────
 
-function LicenseView({ teammates }: { teammates: ClientUserListItem[] }) {
+function LicenseView({ teammates, tabBar }: { teammates: ClientUserListItem[], tabBar: React.ReactNode }) {
   const [licenses, setLicenses] = useState<LicenseListItem[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -2133,7 +2283,7 @@ function LicenseView({ teammates }: { teammates: ClientUserListItem[] }) {
   const totaal = licenses.length
   const actief = licenses.filter(l => l.isActive).length
   const verlopen = licenses.filter(l => l.expiresAt && new Date(l.expiresAt) < new Date()).length
-  const beschikbaar = licenses.reduce((sum, l) => sum + Math.max(0, l.maxUsers - l.assignedUsers), 0)
+  const beschikbaar = licenses.reduce((sum, l) => l.maxUsers === 0 ? sum : sum + Math.max(0, l.maxUsers - l.assignedUsers), 0)
 
   const handleDelete = async (id: string) => {
     await api.delete(`/portal/licenses/${id}`)
@@ -2164,6 +2314,8 @@ function LicenseView({ teammates }: { teammates: ClientUserListItem[] }) {
         <StatCard label="Verlopen" value={verlopen} icon={<Clock size={18} />} tone="amber" />
         <StatCard label="Seats beschikbaar" value={beschikbaar} icon={<Users size={18} />} tone="blue" />
       </div>
+
+      {tabBar}
 
       {/* Grid: [zoekbalk | —] [tabel | detail] */}
       <div className="grid grid-cols-[1fr_20%] grid-rows-[auto_1fr] gap-x-4 gap-y-3 flex-1 min-h-0">
@@ -2202,10 +2354,11 @@ function LicenseView({ teammates }: { teammates: ClientUserListItem[] }) {
               ) : (
                 <ul className="divide-y divide-slate-100">
                   {filtered.map(l => {
-                    const isExpired = l.expiresAt ? new Date(l.expiresAt) < new Date() : false
-                    const seatsLeft = l.maxUsers - l.assignedUsers
-                    const pct = l.maxUsers > 0 ? Math.min(100, (l.assignedUsers / l.maxUsers) * 100) : 0
-                    const barColor = pct >= 100 ? 'bg-red-500' : pct >= 80 ? 'bg-amber-400' : 'bg-blue-500'
+                    const isExpired   = l.expiresAt ? new Date(l.expiresAt) < new Date() : false
+                    const isUnlimited = l.maxUsers === 0
+                    const seatsLeft   = isUnlimited ? null : l.maxUsers - l.assignedUsers
+                    const pct         = isUnlimited ? 0 : Math.min(100, (l.assignedUsers / l.maxUsers) * 100)
+                    const barColor    = pct >= 100 ? 'bg-red-500' : pct >= 80 ? 'bg-amber-400' : 'bg-emerald-500'
                     return (
                       <li
                         key={l.id}
@@ -2225,14 +2378,18 @@ function LicenseView({ teammates }: { teammates: ClientUserListItem[] }) {
 
                         {/* Seats bar */}
                         <div className="flex items-center gap-1.5 min-w-0">
-                          <div className="flex-1 h-1.5 rounded-full bg-slate-200 overflow-hidden">
-                            <div className={`h-1.5 rounded-full ${barColor}`} style={{ width: `${pct}%` }} />
-                          </div>
+                          {isUnlimited ? (
+                            <span className="text-xs text-emerald-600 font-medium">Onbeperkt</span>
+                          ) : (
+                            <div className="flex-1 h-1.5 rounded-full bg-slate-200 overflow-hidden">
+                              <div className={`h-1.5 rounded-full ${barColor}`} style={{ width: `${pct}%` }} />
+                            </div>
+                          )}
                         </div>
 
                         {/* Beschikbaar */}
                         <p className={`text-xs tabular-nums font-medium ${seatsLeft === 0 ? 'text-red-600' : 'text-slate-700'}`}>
-                          {seatsLeft} / {l.maxUsers}
+                          {isUnlimited ? `${l.assignedUsers} / ∞` : `${seatsLeft} / ${l.maxUsers}`}
                         </p>
 
                         {/* Vervaldatum */}
