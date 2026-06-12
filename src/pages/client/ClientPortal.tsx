@@ -1594,6 +1594,419 @@ function SoftwareView({ teammates }: { teammates: ClientUserListItem[] }) {
   )
 }
 
+// ── Overview view ─────────────────────────────────────────────────────────────
+
+interface PortalOverview {
+  employeeTotal: number; employeeInService: number; employeeLeavePlanned: number; employeeStartPlanned: number
+  hardwareTotal: number; hardwareInUse: number; hardwareInStock: number; hardwareUnderRepair: number; hardwareTotalValue: number
+  licenseTotal: number; licenseActive: number; licenseExpired: number; licenseTotalSeats: number; licenseUsedSeats: number
+  softwareTotal: number; softwarePaid: number; softwareFree: number
+  phoneTotal: number; phoneInUse: number; simCardTotal: number; simCardInUse: number
+  subscriptionTotal: number; subscriptionActive: number; subscriptionMonthlyCost: number
+}
+
+function OverviewCard({
+  title, icon, accentBar, iconCls,
+  primary, primarySub,
+  progress,
+  stats,
+}: {
+  title: string
+  icon: React.ReactNode
+  accentBar: string
+  iconCls: string
+  primary: React.ReactNode
+  primarySub: string
+  progress?: { used: number; total: number; label: string; bar: string }
+  stats: { label: string; value: React.ReactNode; tone?: string }[]
+}) {
+  const pct = progress && progress.total > 0
+    ? Math.min(100, Math.round((progress.used / progress.total) * 100))
+    : 0
+
+  return (
+    <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden flex flex-col">
+      <div className={`h-1 ${accentBar}`} />
+      <div className="p-5 flex flex-col flex-1 gap-4">
+
+        {/* Header row */}
+        <div className="flex items-center justify-between">
+          <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.12em]">{title}</p>
+          <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${iconCls}`}>{icon}</div>
+        </div>
+
+        {/* Primary metric */}
+        <div>
+          <p className="text-3xl font-black text-slate-900 dark:text-slate-100 tabular-nums leading-none">{primary}</p>
+          <p className="text-xs text-slate-400 mt-1 leading-snug">{primarySub}</p>
+        </div>
+
+        {/* Optional progress bar */}
+        {progress && (
+          <div>
+            <div className="flex justify-between text-xs text-slate-400 mb-1.5">
+              <span>{progress.label}</span>
+              <span className="tabular-nums font-semibold">{progress.used} / {progress.total} <span className="font-normal">({pct}%)</span></span>
+            </div>
+            <div className="h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+              <div
+                className={`h-1.5 rounded-full transition-all duration-700 ${progress.bar}`}
+                style={{ width: `${pct}%` }}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Sub-stats */}
+        <div className={`mt-auto pt-3 border-t border-slate-100 dark:border-slate-700 grid gap-3`}
+          style={{ gridTemplateColumns: `repeat(${stats.length}, 1fr)` }}>
+          {stats.map(s => (
+            <div key={s.label}>
+              <p className={`text-base font-bold tabular-nums leading-none ${s.tone ?? 'text-slate-800 dark:text-slate-200'}`}>{s.value}</p>
+              <p className="text-[11px] text-slate-400 mt-1 leading-tight">{s.label}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function OverviewView() {
+  const [data, setData]       = useState<PortalOverview | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    api.get<PortalOverview>('/portal/overview')
+      .then(r => setData(r.data))
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [])
+
+  if (loading) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <p className="text-sm text-slate-400">Laden…</p>
+      </div>
+    )
+  }
+  if (!data) return null
+
+  const fmt = (n: number) =>
+    n.toLocaleString('nl-NL', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })
+
+  const hwPct  = data.hardwareTotal > 0 ? Math.round((data.hardwareInUse  / data.hardwareTotal)   * 100) : 0
+  const licPct = data.licenseTotalSeats > 0 ? Math.round((data.licenseUsedSeats / data.licenseTotalSeats) * 100) : 0
+
+  return (
+    <div className="h-full overflow-y-auto pb-2">
+      <div className="grid grid-cols-3 gap-4">
+
+        {/* Medewerkers */}
+        <OverviewCard
+          title="Medewerkers"
+          icon={<Users size={15} />}
+          accentBar="bg-emerald-500"
+          iconCls="bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400"
+          primary={data.employeeTotal}
+          primarySub="actieve medewerkers"
+          stats={[
+            { label: 'In dienst',       value: data.employeeInService },
+            { label: 'Vertrek gepland', value: data.employeeLeavePlanned,
+              tone: data.employeeLeavePlanned > 0 ? 'text-amber-600 dark:text-amber-400' : undefined },
+            { label: 'Startend',        value: data.employeeStartPlanned,
+              tone: data.employeeStartPlanned > 0 ? 'text-emerald-600 dark:text-emerald-400' : undefined },
+          ]}
+        />
+
+        {/* Hardware */}
+        <OverviewCard
+          title="Hardware"
+          icon={<Laptop size={15} />}
+          accentBar="bg-amber-500"
+          iconCls="bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-400"
+          primary={data.hardwareTotal}
+          primarySub={`assets · ${fmt(data.hardwareTotalValue)} totale waarde`}
+          progress={{
+            used: data.hardwareInUse, total: data.hardwareTotal,
+            label: 'In gebruik',
+            bar: hwPct >= 90 ? 'bg-red-500' : hwPct >= 70 ? 'bg-amber-400' : 'bg-amber-500',
+          }}
+          stats={[
+            { label: 'In gebruik',   value: data.hardwareInUse },
+            { label: 'Op voorraad',  value: data.hardwareInStock },
+            { label: 'In reparatie', value: data.hardwareUnderRepair,
+              tone: data.hardwareUnderRepair > 0 ? 'text-orange-600 dark:text-orange-400' : undefined },
+          ]}
+        />
+
+        {/* Licenties */}
+        <OverviewCard
+          title="Licenties"
+          icon={<CreditCard size={15} />}
+          accentBar="bg-blue-500"
+          iconCls="bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400"
+          primary={data.licenseTotal}
+          primarySub={`licenties · ${data.licenseTotalSeats} seats totaal`}
+          progress={{
+            used: data.licenseUsedSeats, total: data.licenseTotalSeats,
+            label: 'Seats in gebruik',
+            bar: licPct >= 90 ? 'bg-red-500' : licPct >= 75 ? 'bg-amber-400' : 'bg-blue-500',
+          }}
+          stats={[
+            { label: 'Actief',    value: data.licenseActive,
+              tone: 'text-emerald-600 dark:text-emerald-400' },
+            { label: 'Verlopen', value: data.licenseExpired,
+              tone: data.licenseExpired > 0 ? 'text-red-600 dark:text-red-400' : undefined },
+            { label: 'Seats vrij', value: Math.max(0, data.licenseTotalSeats - data.licenseUsedSeats) },
+          ]}
+        />
+
+        {/* Software */}
+        <OverviewCard
+          title="Software"
+          icon={<Shield size={15} />}
+          accentBar="bg-indigo-500"
+          iconCls="bg-indigo-100 text-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-400"
+          primary={data.softwareTotal}
+          primarySub="softwaretitels in de catalogus"
+          stats={[
+            { label: 'Betaald', value: data.softwarePaid,
+              tone: 'text-blue-600 dark:text-blue-400' },
+            { label: 'Gratis',  value: data.softwareFree,
+              tone: 'text-emerald-600 dark:text-emerald-400' },
+          ]}
+        />
+
+        {/* Telefonie */}
+        <OverviewCard
+          title="Telefonie"
+          icon={<PhoneIcon size={15} />}
+          accentBar="bg-violet-500"
+          iconCls="bg-violet-100 text-violet-600 dark:bg-violet-900/40 dark:text-violet-400"
+          primary={data.phoneTotal + data.simCardTotal}
+          primarySub={`${data.phoneTotal} telefoons · ${data.simCardTotal} SIM-kaarten`}
+          stats={[
+            { label: 'Telefoons in gebruik', value: data.phoneInUse },
+            { label: "SIM's in gebruik",     value: data.simCardInUse },
+            { label: 'Op voorraad',          value: (data.phoneTotal - data.phoneInUse) + (data.simCardTotal - data.simCardInUse) },
+          ]}
+        />
+
+        {/* Abonnementen */}
+        <OverviewCard
+          title="Abonnementen"
+          icon={<Activity size={15} />}
+          accentBar="bg-orange-500"
+          iconCls="bg-orange-100 text-orange-600 dark:bg-orange-900/40 dark:text-orange-400"
+          primary={fmt(data.subscriptionMonthlyCost)}
+          primarySub="maandelijkse kosten (actieve abonnementen)"
+          stats={[
+            { label: 'Totaal',   value: data.subscriptionTotal },
+            { label: 'Actief',   value: data.subscriptionActive,
+              tone: 'text-emerald-600 dark:text-emerald-400' },
+            { label: 'Inactief', value: data.subscriptionTotal - data.subscriptionActive,
+              tone: (data.subscriptionTotal - data.subscriptionActive) > 0 ? 'text-slate-500' : undefined },
+          ]}
+        />
+
+      </div>
+    </div>
+  )
+}
+
+// ── Tenant history view ───────────────────────────────────────────────────────
+
+interface TenantHistoryItem {
+  id: string
+  occurredAt: string
+  entityType: string
+  action: string
+  summary: string
+  performedBy: string | null
+}
+
+type HistoryCategory = null | 'employees' | 'hardware' | 'software' | 'licenses' | 'phones'
+
+const ENTITY_ICON: Record<string, React.ReactNode> = {
+  User:          <Users size={14} />,
+  HardwareAsset: <Laptop size={14} />,
+  Software:      <Shield size={14} />,
+  License:       <CreditCard size={14} />,
+  Phone:         <PhoneIcon size={14} />,
+  SimCard:       <Wifi size={14} />,
+  Subscription:  <Activity size={14} />,
+}
+
+function getActionStyle(action: string): string {
+  if (action === 'Created' || action.endsWith('Assigned'))
+    return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+  if (action === 'Deleted' || action.endsWith('Revoked') || action.endsWith('Returned'))
+    return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+  return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+}
+
+function groupByDate(items: TenantHistoryItem[]): { label: string; items: TenantHistoryItem[] }[] {
+  const today = new Date(); today.setHours(0, 0, 0, 0)
+  const yesterday = new Date(today.getTime() - 86400000)
+  const map = new Map<string, TenantHistoryItem[]>()
+  for (const item of items) {
+    const d = new Date(item.occurredAt); d.setHours(0, 0, 0, 0)
+    let label: string
+    if (d.getTime() === today.getTime())     label = 'Vandaag'
+    else if (d.getTime() === yesterday.getTime()) label = 'Gisteren'
+    else label = new Date(item.occurredAt).toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+    if (!map.has(label)) map.set(label, [])
+    map.get(label)!.push(item)
+  }
+  return Array.from(map.entries()).map(([label, items]) => ({ label, items }))
+}
+
+const HISTORY_PAGE_SIZE = 50
+
+function HistoryView() {
+  const [items, setItems]             = useState<TenantHistoryItem[]>([])
+  const [loading, setLoading]         = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [page, setPage]               = useState(1)
+  const [hasMore, setHasMore]         = useState(true)
+  const [category, setCategory]       = useState<HistoryCategory>(null)
+  const [search, setSearch]           = useState('')
+
+  const load = useCallback(async (p: number, cat: HistoryCategory, replace: boolean) => {
+    if (replace) setLoading(true)
+    else setLoadingMore(true)
+    try {
+      const params = new URLSearchParams({ page: String(p), pageSize: String(HISTORY_PAGE_SIZE) })
+      if (cat) params.set('category', cat)
+      const { data } = await api.get<TenantHistoryItem[]>(`/portal/history/tenant?${params}`)
+      setItems(prev => replace ? data : [...prev, ...data])
+      setHasMore(data.length === HISTORY_PAGE_SIZE)
+      setPage(p)
+    } catch { /* silent */ }
+    finally {
+      setLoading(false)
+      setLoadingMore(false)
+    }
+  }, [])
+
+  useEffect(() => { load(1, category, true) }, [category, load])
+
+  const filtered = search
+    ? items.filter(i => `${i.summary} ${i.performedBy ?? ''}`.toLowerCase().includes(search.toLowerCase()))
+    : items
+
+  const grouped      = groupByDate(filtered)
+  const uniqueActors = new Set(items.map(i => i.performedBy).filter(Boolean)).size
+  const todayCount   = items.filter(i => {
+    const d = new Date(i.occurredAt); d.setHours(0, 0, 0, 0)
+    const t = new Date(); t.setHours(0, 0, 0, 0)
+    return d.getTime() === t.getTime()
+  }).length
+
+  const CHIPS: { key: HistoryCategory; label: string }[] = [
+    { key: null,        label: 'Alles' },
+    { key: 'employees', label: 'Medewerkers' },
+    { key: 'hardware',  label: 'Hardware' },
+    { key: 'software',  label: 'Software' },
+    { key: 'licenses',  label: 'Licenties' },
+    { key: 'phones',    label: 'Telefonie' },
+  ]
+
+  return (
+    <div className="flex flex-col gap-4 h-full overflow-hidden">
+      {/* Stats */}
+      <div className="grid grid-cols-3 gap-3 flex-shrink-0">
+        <StatCard label="Geladen"     value={items.length}  icon={<History size={18} />} />
+        <StatCard label="Uitvoerders" value={uniqueActors}  icon={<Users size={18} />}    tone="blue" />
+        <StatCard label="Vandaag"     value={todayCount}    icon={<Activity size={18} />} tone="emerald" />
+      </div>
+
+      {/* Filter chips + search */}
+      <div className="flex items-center gap-3 flex-shrink-0 flex-wrap">
+        <div className="flex gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+          {CHIPS.map(chip => (
+            <button
+              key={String(chip.key)}
+              onClick={() => setCategory(chip.key)}
+              className={`px-3 py-1 text-xs font-medium rounded-lg transition-colors ${
+                category === chip.key
+                  ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-sm'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+              }`}
+            >
+              {chip.label}
+            </button>
+          ))}
+        </div>
+        <div className="relative flex-1 min-w-[180px] max-w-xs">
+          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Zoek activiteit…"
+            className="w-full pl-9 pr-3 py-1.5 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:border-blue-400"
+          />
+        </div>
+      </div>
+
+      {/* Timeline */}
+      <div className="flex-1 overflow-y-auto min-h-0">
+        {loading ? (
+          <div className="p-10 text-center text-sm text-slate-400">Laden…</div>
+        ) : grouped.length === 0 ? (
+          <div className="p-10 text-center">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+              <History size={28} className="text-slate-300" />
+            </div>
+            <p className="text-sm text-slate-400">Geen activiteiten gevonden.</p>
+          </div>
+        ) : (
+          <div className="space-y-6 pb-4">
+            {grouped.map(group => (
+              <div key={group.label}>
+                <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2 px-1">
+                  {group.label}
+                </p>
+                <Card className="overflow-hidden">
+                  <ul className="divide-y divide-slate-100 dark:divide-slate-700">
+                    {group.items.map(item => (
+                      <li key={item.id} className="flex items-start gap-3 px-4 py-3">
+                        <div className={`mt-0.5 w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${getActionStyle(item.action)}`}>
+                          {ENTITY_ICON[item.entityType] ?? <Activity size={14} />}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-slate-800 dark:text-slate-200 leading-snug">
+                            {item.summary}
+                          </p>
+                          {item.performedBy && (
+                            <p className="text-xs text-slate-400 mt-0.5">door {item.performedBy}</p>
+                          )}
+                        </div>
+                        <p className="text-xs text-slate-400 flex-shrink-0 mt-0.5 tabular-nums">
+                          {new Date(item.occurredAt).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                      </li>
+                    ))}
+                  </ul>
+                </Card>
+              </div>
+            ))}
+
+            {hasMore && !search && (
+              <div className="flex justify-center pt-2">
+                <Button variant="secondary" size="sm" onClick={() => load(page + 1, category, false)} disabled={loadingMore}>
+                  {loadingMore ? 'Laden…' : 'Meer laden'}
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ── License view ──────────────────────────────────────────────────────────────
 
 function LicenseView({ teammates }: { teammates: ClientUserListItem[] }) {
@@ -4072,8 +4485,11 @@ export default function ClientPortal() {
             <LocationsView />
           )}
 
+          {view === 'overviews' && <OverviewView />}
+
+          {view === 'history' && <HistoryView />}
+
           {(view === 'starter-checklist' || view === 'leaver-checklist' ||
-            view === 'overviews' || view === 'history' ||
             view === 'contracts' || view === 'help') && (
             <PlaceholderView title={VIEW_TITLES[view]} />
           )}
