@@ -2534,8 +2534,8 @@ function LocationsView() {
                           <td className="py-2.5 pr-4 text-xs text-slate-500 dark:text-slate-400">{m.jobTitle || '—'}</td>
                           <td className="py-2.5 pr-4 text-xs text-slate-500 dark:text-slate-400">{m.email || '—'}</td>
                           <td className="py-2.5">
-                            <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
-                              {USER_STATUS_LABEL[m.status] ?? m.status}
+                            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_TONE[m.status as keyof typeof STATUS_TONE] ?? 'bg-slate-100 text-slate-600'}`}>
+                              {STATUS_LABEL[m.status as keyof typeof STATUS_LABEL] ?? m.status}
                             </span>
                           </td>
                         </tr>
@@ -2649,7 +2649,7 @@ function LocationsView() {
                 <div className="min-w-0">
                   <h3 className="font-semibold text-slate-900 dark:text-slate-100 truncate">{loc.name}</h3>
                   {loc.address && (
-                    <p className="text-xs text-slate-400 mt-0.5 truncate">{loc.address}</p>
+                    <p className="text-xs text-slate-600 dark:text-slate-200 mt-0.5 truncate">{loc.address}</p>
                   )}
                 </div>
                 <div className="flex gap-1 flex-shrink-0">
@@ -2673,7 +2673,7 @@ function LocationsView() {
 
               {/* Address details */}
               <div className="flex flex-col gap-0.5">
-                <p className="text-xs text-slate-600 dark:text-slate-300 font-medium">
+                <p className="text-xs text-slate-600 dark:text-slate-300">
                   {[loc.postalCode, loc.city].filter(Boolean).join('  ')}
                   {loc.province ? <span className="text-slate-400 font-normal"> · {loc.province}</span> : null}
                 </p>
