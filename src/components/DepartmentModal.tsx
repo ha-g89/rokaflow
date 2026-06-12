@@ -31,6 +31,9 @@ interface Props {
 export function DepartmentModal({ open, onClose, onSuccess, editTarget }: Props) {
   const isEdit = !!editTarget
 
+  const [mounted, setMounted]   = useState(false)
+  const [visible, setVisible]   = useState(false)
+
   const [allUsers, setAllUsers]           = useState<ClientUserListItem[]>([])
   const [selectedMembers, setSelectedMembers] = useState<ClientUserListItem[]>([])
   const [memberSearch, setMemberSearch]   = useState('')
@@ -40,6 +43,17 @@ export function DepartmentModal({ open, onClose, onSuccess, editTarget }: Props)
   const { register, handleSubmit, reset, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(schema),
   })
+
+  useEffect(() => {
+    if (open) {
+      setMounted(true)
+      requestAnimationFrame(() => requestAnimationFrame(() => setVisible(true)))
+    } else {
+      setVisible(false)
+      const t = setTimeout(() => setMounted(false), 220)
+      return () => clearTimeout(t)
+    }
+  }, [open])
 
   // Fetch all portal users once
   useEffect(() => {
@@ -110,11 +124,14 @@ export function DepartmentModal({ open, onClose, onSuccess, editTarget }: Props)
     return `${u.firstName} ${u.lastName} ${u.email} ${u.department}`.toLowerCase().includes(q)
   })
 
-  if (!open) return null
+  if (!mounted) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+    <div
+      className={`fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 transition-opacity duration-200 ${visible ? 'opacity-100' : 'opacity-0'}`}
+      onClick={e => { if (e.target === e.currentTarget) onClose() }}
+    >
+      <div className={`bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col transition-all duration-200 ease-out ${visible ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-2'}`}>
 
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-700 flex-shrink-0">

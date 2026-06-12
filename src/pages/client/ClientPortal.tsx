@@ -339,8 +339,8 @@ function HistoryBlock({ entityType, entityId, labelFn, descriptionFn }: {
       </div>
 
       {showAllModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg flex flex-col max-h-[80vh]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 modal-backdrop-animated">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg flex flex-col max-h-[80vh] modal-panel-animated">
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 flex-shrink-0">
               <h2 className="text-base font-bold text-slate-900">Volledige geschiedenis</h2>
               <button onClick={() => setShowAllModal(false)} className="text-slate-400 hover:text-slate-600">
@@ -374,8 +374,8 @@ function HistoryBlock({ entityType, entityId, labelFn, descriptionFn }: {
       )}
 
       {selectedEntry && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 modal-backdrop-animated">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md modal-panel-animated">
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
               <h2 className="text-base font-bold text-slate-900">{labelFn(selectedEntry)}</h2>
               <button onClick={() => setSelectedEntry(null)} className="text-slate-400 hover:text-slate-600">
@@ -466,8 +466,8 @@ function ItemHistoryBlock({ url, subtitle }: { url: string; subtitle?: string })
       </div>
 
       {showAllModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg flex flex-col max-h-[80vh]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 modal-backdrop-animated">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg flex flex-col max-h-[80vh] modal-panel-animated">
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 flex-shrink-0">
               <div>
                 <h2 className="text-base font-bold text-slate-900">Volledige geschiedenis</h2>
@@ -501,8 +501,8 @@ function ItemHistoryBlock({ url, subtitle }: { url: string; subtitle?: string })
       )}
 
       {selectedEntry && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 modal-backdrop-animated">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md modal-panel-animated">
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
               <h2 className="text-base font-bold text-slate-900">{selectedEntry.summary}</h2>
               <button onClick={() => setSelectedEntry(null)} className="text-slate-400 hover:text-slate-600">
@@ -1094,8 +1094,8 @@ function SoftwareWizard({
   const labelCls = 'block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1'
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 modal-backdrop-animated">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md flex flex-col modal-panel-animated">
 
         {/* Header */}
         <div className="flex items-start justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-700 flex-shrink-0">
@@ -3050,8 +3050,8 @@ function DeleteEmployeeModal({ userId, userName, onClose, onDeleted }: {
   }, {})
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 modal-backdrop-animated">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden modal-panel-animated">
 
         {/* Header */}
         <div className="px-6 pt-6 pb-4">
