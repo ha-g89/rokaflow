@@ -8,5 +8,6 @@ export interface SoftwareListItem {
   licenseName: string | null
   maxUsers: number | null
   assignedUsers: number | null
+  licenseExpiresAt: string | null
   createdAt: string
 }

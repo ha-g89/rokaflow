@@ -784,6 +784,12 @@ function LicenseDetailPanel({ license, teammates, onEdit, onDelete, onAssign, on
     return new Date(d).toLocaleDateString('nl-NL', { day: '2-digit', month: '2-digit', year: 'numeric' })
   }
 
+  function daysUntil(d: string | null | undefined): number | null {
+    if (!d) return null
+    const diff = new Date(d).setHours(0,0,0,0) - new Date().setHours(0,0,0,0)
+    return Math.ceil(diff / 86_400_000)
+  }
+
   return (
     <Card>
       <CardContent className="p-5 space-y-5">
@@ -828,7 +834,20 @@ function LicenseDetailPanel({ license, teammates, onEdit, onDelete, onAssign, on
           </div>
           <div className="rounded-xl bg-slate-50 p-3">
             <p className="text-xs text-slate-400 mb-0.5">Vervaldatum</p>
-            <p className={`text-sm font-medium ${isExpired ? 'text-red-600' : 'text-slate-800'}`}>{fmt(license.expiresAt)}</p>
+            <p className={`text-sm font-medium ${isExpired ? 'text-red-600 dark:text-red-400' : 'text-slate-800'}`}>{fmt(license.expiresAt)}</p>
+            {license.expiresAt && (() => {
+              const days = daysUntil(license.expiresAt)
+              if (days === null) return null
+              const soon = days >= 0 && days <= 30
+              return (
+                <p className={`text-xs mt-0.5 ${days < 0 ? 'text-red-500' : soon ? 'text-amber-500' : 'text-slate-400'}`}>
+                  {days < 0
+                    ? `Verlopen (${Math.abs(days)} dagen geleden)`
+                    : days === 0 ? 'Verloopt vandaag'
+                    : `Nog ${days} dag${days === 1 ? '' : 'en'}`}
+                </p>
+              )
+            })()}
           </div>
           {license.supplier && (
             <div className="rounded-xl bg-slate-50 p-3 col-span-2">
@@ -935,8 +954,8 @@ const swStep2Schema = z.object({
   maxUsers:  z.string().min(1, 'Aantal seats is verplicht'),
   vendor:    z.string(),
   supplier:  z.string(),
-  startsAt:  z.string().min(1, 'Startdatum is verplicht'),
-  expiresAt: z.string(),
+  startsAt:  z.string(),
+  expiresAt: z.string().min(1, 'Vervaldatum is verplicht'),
 })
 type SwStep1Values = z.infer<typeof swStep1Schema>
 type SwStep2Values = z.infer<typeof swStep2Schema>
@@ -1250,21 +1269,21 @@ function SoftwareWizard({
                     {form2.formState.errors.maxUsers && <p className="mt-1 text-xs text-red-500">{form2.formState.errors.maxUsers.message}</p>}
                   </div>
                   <div>
-                    <label className={labelCls}>Startdatum <span className="text-red-500">*</span></label>
+                    <label className={labelCls}>Startdatum <span className="text-slate-400">(optioneel)</span></label>
                     <input {...form2.register('startsAt')} type="date" className={inputCls} />
-                    {form2.formState.errors.startsAt && <p className="mt-1 text-xs text-red-500">{form2.formState.errors.startsAt.message}</p>}
                   </div>
                 </div>
                 <div>
-                  <label className={labelCls}>Vervaldatum <span className="text-slate-400">(optioneel)</span></label>
+                  <label className={labelCls}>Vervaldatum <span className="text-red-500">*</span></label>
                   <input {...form2.register('expiresAt')} type="date" className={inputCls} />
+                  {form2.formState.errors.expiresAt && <p className="mt-1 text-xs text-red-500">{form2.formState.errors.expiresAt.message}</p>}
                 </div>
                 <div>
-                  <label className={labelCls}>Leverancier licentie <span className="text-slate-400">(optioneel)</span></label>
+                  <label className={labelCls}>Uitgever <span className="text-slate-400">(optioneel)</span></label>
                   <input {...form2.register('vendor')} placeholder="bijv. Microsoft" className={inputCls} />
                 </div>
                 <div>
-                  <label className={labelCls}>Reseller <span className="text-slate-400">(optioneel)</span></label>
+                  <label className={labelCls}>Leverancier <span className="text-slate-400">(optioneel)</span></label>
                   <input {...form2.register('supplier')} placeholder="bijv. SoftwareOne" className={inputCls} />
                 </div>
                 {apiError && (
@@ -1301,6 +1320,12 @@ function SoftwareDetailPanel({ software, onEdit, onDelete }: {
   function fmt(d: string | null | undefined) {
     if (!d) return '—'
     return new Date(d).toLocaleDateString('nl-NL', { day: '2-digit', month: '2-digit', year: 'numeric' })
+  }
+
+  function daysUntil(d: string | null | undefined): number | null {
+    if (!d) return null
+    const diff = new Date(d).setHours(0,0,0,0) - new Date().setHours(0,0,0,0)
+    return Math.ceil(diff / 86_400_000)
   }
 
   const usedPct = software.maxUsers
@@ -1346,9 +1371,9 @@ function SoftwareDetailPanel({ software, onEdit, onDelete }: {
               <CreditCard size={12} /> Gekoppelde licentie
             </p>
             {software.licenseId ? (
-              <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-3">
+              <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-3 space-y-2">
                 <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">{software.licenseName || '—'}</p>
-                <div className="mt-2">
+                <div>
                   <div className="flex justify-between text-xs text-slate-500 mb-1">
                     <span>Seats gebruikt</span>
                     <span className="font-semibold">{software.assignedUsers ?? 0} / {software.maxUsers ?? 0}</span>
@@ -1360,6 +1385,28 @@ function SoftwareDetailPanel({ software, onEdit, onDelete }: {
                     />
                   </div>
                 </div>
+                {software.licenseExpiresAt && (() => {
+                  const days = daysUntil(software.licenseExpiresAt)
+                  const expired = days !== null && days < 0
+                  const soon    = days !== null && days >= 0 && days <= 30
+                  return (
+                    <div className="pt-1 border-t border-slate-100 dark:border-slate-700/60">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-slate-400">Vervaldatum</span>
+                        <span className="text-xs text-slate-500">{fmt(software.licenseExpiresAt)}</span>
+                      </div>
+                      {days !== null && (
+                        <p className={`text-xs mt-0.5 ${expired ? 'text-red-500' : soon ? 'text-amber-500' : 'text-slate-400'}`}>
+                          {expired
+                            ? `Verlopen (${Math.abs(days)} dagen geleden)`
+                            : days === 0
+                            ? 'Verloopt vandaag'
+                            : `Nog ${days} dag${days === 1 ? '' : 'en'}`}
+                        </p>
+                      )}
+                    </div>
+                  )
+                })()}
               </div>
             ) : (
               <p className="text-sm text-slate-400">Geen licentie gekoppeld.</p>
