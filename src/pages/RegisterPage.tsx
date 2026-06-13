@@ -32,8 +32,8 @@ const CSS = `
     --bg-r:      #050c1a;
     --text:      #eef0f6;
     --muted:     rgba(238,240,246,0.38);
-    --accent:    #7c3aed;
-    --accent-lt: #a78bfa;
+    --accent:    #2563eb;
+    --accent-lt: #60a5fa;
     --line-md:   rgba(238,240,246,0.11);
     --field-bg:  rgba(238,240,246,0.05);
     --field-bd:  rgba(238,240,246,0.10);
@@ -168,9 +168,9 @@ const CSS = `
   }
   .rfr-input::placeholder { color: rgba(238,240,246,0.20); }
   .rfr-input:focus {
-    border-color: rgba(139,92,246,0.6);
-    background: rgba(139,92,246,0.05);
-    box-shadow: 0 0 0 3px rgba(124,58,237,0.12);
+    border-color: rgba(37,99,235,0.6);
+    background: rgba(37,99,235,0.05);
+    box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
   }
   .rfr-input.rfr-err {
     border-color: rgba(239,68,68,0.45);
@@ -226,7 +226,7 @@ const CSS = `
     letter-spacing: 0.02em;
     color: var(--text);
     background: transparent;
-    border: 1px solid rgba(139,92,246,0.45);
+    border: 1px solid rgba(37,99,235,0.45);
     border-radius: 8px;
     cursor: pointer;
     position: relative;
@@ -259,7 +259,7 @@ const CSS = `
   }
   .rfr-submit:hover:not(:disabled) {
     border-color: var(--accent);
-    box-shadow: 0 0 20px rgba(124,58,237,0.38), 0 0 48px rgba(124,58,237,0.13);
+    box-shadow: 0 0 20px rgba(37,99,235,0.38), 0 0 48px rgba(37,99,235,0.13);
   }
   .rfr-submit:disabled { opacity: 0.45; cursor: not-allowed; }
 
@@ -306,7 +306,7 @@ const CSS = `
     font-weight: 600;
     transition: color 0.2s;
   }
-  .rfr-footer a:hover { color: #c4b5fd; }
+  .rfr-footer a:hover { color: #93c5fd; }
 
   /* ── Logo upload ── */
   .rfr-logo-upload {
@@ -321,8 +321,8 @@ const CSS = `
     transition: border-color 0.2s, background 0.2s;
   }
   .rfr-logo-upload:hover {
-    border-color: rgba(139,92,246,0.4);
-    background: rgba(139,92,246,0.04);
+    border-color: rgba(37,99,235,0.4);
+    background: rgba(37,99,235,0.04);
   }
   .rfr-logo-preview {
     width: 36px;
@@ -380,7 +380,7 @@ const CSS = `
   .rfr-emblem img {
     width: 280px;
     opacity: 0.20;
-    filter: drop-shadow(0 0 48px rgba(139,92,246,0.30));
+    filter: drop-shadow(0 0 48px rgba(37,99,235,0.30));
     animation: rfrFloat 8s ease-in-out 1.4s infinite;
     display: block;
   }
