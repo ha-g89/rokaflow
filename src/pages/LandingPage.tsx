@@ -168,7 +168,8 @@ const CSS = `
 
   /* ── Hero left (text) ───────────────────────────────────────── */
   .rf-hero-left {
-    display: flex; flex-direction: column; justify-content: center;
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+    text-align: center;
     padding: 72px 56px 72px 56px;
     position: relative; z-index: 1;
   }
@@ -310,55 +311,68 @@ const CSS = `
 
   /* ── 3D Screens ──────────────────────────────────────────────── */
   .rf-screens-wrap {
-    perspective: 1400px;
-    perspective-origin: 50% 5%;
-    position: relative;
-    width: 580px; height: 300px;
+    perspective: 1100px;
+    perspective-origin: 50% -15%;
+    display: flex;
+    flex-direction: row;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 14px;
     flex-shrink: 0;
+    padding-bottom: 80px;
   }
 
-  .rf-so { position: absolute; }
+  .rf-so {
+    position: relative;
+    transform: rotateX(10deg);
+    transition: transform 0.5s cubic-bezier(0.16,1,0.3,1);
+    will-change: transform;
+  }
+  .rf-so:hover {
+    transform: rotateX(2deg) translateY(-28px);
+  }
+
+  .rf-so-caption {
+    position: absolute;
+    bottom: -58px;
+    left: 50%;
+    transform: translateX(-50%) translateY(8px);
+    width: max-content;
+    max-width: 215px;
+    text-align: center;
+    font-size: 11px;
+    line-height: 1.65;
+    color: rgba(238,242,255,0.82);
+    background: rgba(4,9,20,0.82);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 8px;
+    padding: 7px 12px;
+    opacity: 0;
+    transition: opacity 0.32s ease 0.18s,
+                transform 0.42s cubic-bezier(0.16,1,0.3,1) 0.18s;
+    pointer-events: none;
+  }
+  .rf-so:hover .rf-so-caption {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
 
   .rf-so-c {
-    left: 50%; top: 0;
-    z-index: 3;
-    animation: rfSoFade 0.9s cubic-bezier(0.16,1,0.3,1) 0.45s both,
-               rfFloat-c 8s ease-in-out 1.5s infinite;
+    animation: rfSoFade 0.9s cubic-bezier(0.16,1,0.3,1) 0.45s both;
   }
   .rf-so-l {
-    left: 6%; top: 32px;
-    z-index: 1; opacity: 0.9;
-    animation: rfSoFade 0.9s cubic-bezier(0.16,1,0.3,1) 0.65s both,
-               rfFloat-l 9s ease-in-out 1.9s infinite;
+    opacity: 0.9;
+    animation: rfSoFade 0.9s cubic-bezier(0.16,1,0.3,1) 0.65s both;
   }
   .rf-so-r {
-    right: 6%; top: 32px;
-    z-index: 2; opacity: 0.9;
-    animation: rfSoFade 0.9s cubic-bezier(0.16,1,0.3,1) 0.57s both,
-               rfFloat-r 10s ease-in-out 1.7s infinite;
+    opacity: 0.9;
+    animation: rfSoFade 0.9s cubic-bezier(0.16,1,0.3,1) 0.57s both;
   }
 
   @keyframes rfSoFade {
     from { opacity: 0; }
   }
-
-  @keyframes rfFloat-c {
-    0%,100% { transform: translateX(-50%) rotateX(11deg) translateY(0); }
-    50%      { transform: translateX(-50%) rotateX(11deg) translateY(-10px); }
-  }
-  @keyframes rfFloat-l {
-    0%,100% { transform: rotateX(8deg) rotateY(30deg) translateY(0); }
-    50%      { transform: rotateX(8deg) rotateY(30deg) translateY(-7px); }
-  }
-  @keyframes rfFloat-r {
-    0%,100% { transform: rotateX(8deg) rotateY(-30deg) translateY(0); }
-    50%      { transform: rotateX(8deg) rotateY(-30deg) translateY(-8px); }
-  }
-
-  /* Starting transforms (before float animation kicks in) */
-  .rf-so-c { transform: translateX(-50%) rotateX(11deg); }
-  .rf-so-l { transform: rotateX(8deg) rotateY(30deg); }
-  .rf-so-r { transform: rotateX(8deg) rotateY(-30deg); }
 
   /* ── Screen shell ────────────────────────────────────────────── */
   .rf-screen {
@@ -481,39 +495,41 @@ const CSS = `
 
   /* ── Features ───────────────────────────────────────────────── */
   .rf-features {
-    background: var(--bg-alt);
-    padding: 88px 56px 80px;
+    background: #060d1a;
+    padding: 88px 56px 88px;
   }
 
   .rf-feat-head {
     text-align: center; margin-bottom: 56px;
+    max-width: 1160px; margin-left: auto; margin-right: auto;
   }
   .rf-feat-tag {
     display: inline-block;
     font-size: 11px; font-weight: 700; letter-spacing: 0.1em;
-    text-transform: uppercase; color: var(--accent);
-    background: var(--accent-dim); padding: 5px 12px;
+    text-transform: uppercase; color: #60a5fa;
+    background: rgba(37,99,235,0.15); padding: 5px 12px;
     border-radius: 20px; margin-bottom: 14px;
   }
   .rf-feat-title {
     font-family: 'Bricolage Grotesque', sans-serif;
     font-size: clamp(28px, 3vw, 42px); font-weight: 800;
-    color: var(--text); letter-spacing: -0.02em; line-height: 1.12;
+    color: #eef2ff; letter-spacing: -0.02em; line-height: 1.12;
   }
   .rf-feat-sub {
-    font-size: 15px; color: var(--muted);
+    font-size: 15px; color: rgba(238,242,255,0.52);
     margin-top: 10px; max-width: 500px; margin-left: auto; margin-right: auto;
     line-height: 1.65;
   }
 
   .rf-feat-grid {
     display: grid; grid-template-columns: repeat(3, 1fr);
-    gap: 16px;
+    gap: 14px;
+    max-width: 1160px; margin: 0 auto;
   }
 
   .rf-feat-item {
-    background: var(--bg);
-    border: 1px solid var(--line);
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.07);
     border-radius: 14px; padding: 28px 24px;
     transition: box-shadow 0.22s, border-color 0.22s, transform 0.2s,
                 opacity 0.5s ease, translateY 0.5s ease;
@@ -522,14 +538,14 @@ const CSS = `
   }
   .rf-feat-item.rf-visible { opacity: 1; transform: translateY(0); }
   .rf-feat-item:hover {
-    box-shadow: 0 8px 30px rgba(37,99,235,0.1);
-    border-color: rgba(37,99,235,0.2);
-    transform: translateY(-2px);
+    box-shadow: 0 8px 32px rgba(37,99,235,0.18);
+    border-color: rgba(37,99,235,0.3);
+    transform: translateY(-3px);
   }
   .rf-feat-item::before {
     content: '';
     position: absolute; top: 0; left: 0; right: 0; height: 3px;
-    background: linear-gradient(90deg, var(--accent), #38bdf8);
+    background: linear-gradient(90deg, #2563eb, #38bdf8);
     opacity: 0; transition: opacity 0.22s;
     border-radius: 14px 14px 0 0;
   }
@@ -537,18 +553,18 @@ const CSS = `
 
   .rf-feat-icon-wrap {
     width: 40px; height: 40px; border-radius: 10px;
-    background: var(--accent-dim); display: flex; align-items: center;
+    background: rgba(37,99,235,0.15); display: flex; align-items: center;
     justify-content: center; font-size: 18px; margin-bottom: 16px;
   }
   .rf-feat-n {
     font-size: 9.5px; font-weight: 700; letter-spacing: 0.14em;
-    color: var(--accent); opacity: 0.55; margin-bottom: 6px;
+    color: #60a5fa; opacity: 0.7; margin-bottom: 6px;
   }
   .rf-feat-name {
     font-family: 'Bricolage Grotesque', sans-serif; font-size: 15.5px; font-weight: 700;
-    color: var(--text); letter-spacing: -0.01em; margin-bottom: 8px;
+    color: #eef2ff; letter-spacing: -0.01em; margin-bottom: 8px;
   }
-  .rf-feat-desc { font-size: 13px; line-height: 1.7; color: var(--muted); }
+  .rf-feat-desc { font-size: 13px; line-height: 1.7; color: rgba(238,242,255,0.48); }
 
   /* ── CTA banner ──────────────────────────────────────────────── */
   .rf-cta-band {
@@ -643,7 +659,6 @@ const CSS = `
     .rf-headline  { font-size: 40px; }
     .rf-footer    { flex-direction: column; gap: 8px; text-align: center; }
     .rf-so-l, .rf-so-r { display: none; }
-    .rf-screens-wrap { height: 220px; }
     .rf-cta-band-actions { flex-direction: column; width: 100%; }
   }
 `
@@ -695,11 +710,6 @@ export default function LandingPage() {
 
           {/* LEFT — text */}
           <div className="rf-hero-left">
-            <div className="rf-eyebrow">
-              <span className="rf-eyebrow-dot" />
-              IT Management Platform
-            </div>
-
             <h1 className="rf-headline">
               <div className="rf-lw"><span className="rf-l1">Alles over uw</span></div>
               <div className="rf-lw"><span className="rf-l2">medewerkers</span></div>
@@ -723,7 +733,7 @@ export default function LandingPage() {
             </div>
 
             {!isLoggedIn && (
-              <p className="rf-notice">Geen creditcard vereist · Direct toegang tot alle functies</p>
+              <p className="rf-notice">30 dagen gratis uitproberen</p>
             )}
 
             <div className="rf-trust">
@@ -737,7 +747,7 @@ export default function LandingPage() {
               </div>
               <div className="rf-trust-item">
                 <div className="rf-trust-icon">🏢</div>
-                Multi-tenant
+                Multi-tenant MSP beheer
               </div>
             </div>
           </div>
@@ -754,6 +764,31 @@ export default function LandingPage() {
 
             {/* 3-D screen cluster */}
             <div className="rf-screens-wrap">
+
+              {/* Left — Medewerkers */}
+              <div className="rf-so rf-so-l">
+                <div className="rf-screen rf-screen-ls">
+                  <div className="rf-sc-chrome">
+                    <span className="rf-sc-dot rf-sc-dot-r" />
+                    <span className="rf-sc-dot rf-sc-dot-y" />
+                    <span className="rf-sc-dot rf-sc-dot-g" />
+                    <span className="rf-sc-title">Medewerkers</span>
+                  </div>
+                  <div className="rf-sc-body">
+                    <div className="rf-sc-tabs">
+                      <div className="rf-sc-tab active">Alle</div>
+                      <div className="rf-sc-tab">In dienst</div>
+                      <div className="rf-sc-tab">Vertrek</div>
+                    </div>
+                    <EmpRow color="#10b981" badge="In dienst" bCls="rf-badge-g" />
+                    <EmpRow color="#2563eb" w1="52%" w2="38%" badge="In dienst" bCls="rf-badge-g" />
+                    <EmpRow color="#f59e0b" w1="64%" w2="44%" badge="Vertrek" bCls="rf-badge-a" />
+                    <EmpRow color="#8b5cf6" w1="48%" w2="36%" badge="In dienst" bCls="rf-badge-g" />
+                    <EmpRow color="#06b6d4" w1="56%" w2="40%" badge="Start" bCls="rf-badge-b" />
+                  </div>
+                </div>
+                <span className="rf-so-caption">Alle medewerkers in één overzicht — van onboarding tot vertrek altijd bijgewerkt.</span>
+              </div>
 
               {/* Center — Hardware */}
               <div className="rf-so rf-so-c">
@@ -789,30 +824,7 @@ export default function LandingPage() {
                     <HwRow icon="📱" w1="45%" w2="38%" pct={100} barClr="#f59e0b" badge="In reparatie" bCls="rf-badge-a" />
                   </div>
                 </div>
-              </div>
-
-              {/* Left — Medewerkers */}
-              <div className="rf-so rf-so-l">
-                <div className="rf-screen rf-screen-ls">
-                  <div className="rf-sc-chrome">
-                    <span className="rf-sc-dot rf-sc-dot-r" />
-                    <span className="rf-sc-dot rf-sc-dot-y" />
-                    <span className="rf-sc-dot rf-sc-dot-g" />
-                    <span className="rf-sc-title">Medewerkers</span>
-                  </div>
-                  <div className="rf-sc-body">
-                    <div className="rf-sc-tabs">
-                      <div className="rf-sc-tab active">Alle</div>
-                      <div className="rf-sc-tab">In dienst</div>
-                      <div className="rf-sc-tab">Vertrek</div>
-                    </div>
-                    <EmpRow color="#10b981" badge="In dienst" bCls="rf-badge-g" />
-                    <EmpRow color="#2563eb" w1="52%" w2="38%" badge="In dienst" bCls="rf-badge-g" />
-                    <EmpRow color="#f59e0b" w1="64%" w2="44%" badge="Vertrek" bCls="rf-badge-a" />
-                    <EmpRow color="#8b5cf6" w1="48%" w2="36%" badge="In dienst" bCls="rf-badge-g" />
-                    <EmpRow color="#06b6d4" w1="56%" w2="40%" badge="Start" bCls="rf-badge-b" />
-                  </div>
-                </div>
+                <span className="rf-so-caption">Elke laptop, telefoon en monitor inzichtelijk — statussen en waarde altijd up-to-date.</span>
               </div>
 
               {/* Right — Licenties */}
@@ -830,6 +842,7 @@ export default function LandingPage() {
                     <LicCard name="Slack Pro" vendor="Salesforce" used={24} max={24} pct={100} barClr="#ef4444" delay="1.7s" />
                   </div>
                 </div>
+                <span className="rf-so-caption">Nooit meer een licentie overschrijden — gebruik per medewerker in één oogopslag.</span>
               </div>
 
             </div>
