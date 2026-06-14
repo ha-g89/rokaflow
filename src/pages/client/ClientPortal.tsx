@@ -29,6 +29,7 @@ import { SimCardModal } from '@/components/SimCardModal'
 import { SubscriptionModal } from '@/components/SubscriptionModal'
 import { DepartmentModal } from '@/components/DepartmentModal'
 import { LocationModal } from '@/components/LocationModal'
+import { ConfirmDeleteModal } from '@/components/ui/ConfirmDeleteModal'
 import type { ClientUserListItem, ClientUserDetailResponse } from '@/types/clientUser'
 import { STATUS_LABEL, STATUS_TONE } from '@/types/clientUser'
 import type { HardwareAssetListItem } from '@/types/hardware'
@@ -576,22 +577,16 @@ function HardwareDetailPanel({ asset, onEdit, onDelete, historyKey }: {
             <Button size="sm" variant="secondary" onClick={onEdit}>
               <Pencil size={13} /> Wijzigen
             </Button>
-            {!confirmDelete ? (
-              <Button size="sm" variant="danger" onClick={() => setConfirmDelete(true)}>
-                <Trash2 size={13} /> Verwijderen
-              </Button>
-            ) : (
-              <>
-                <span className="flex items-center text-xs text-red-700 font-medium">Zeker weten?</span>
-                <Button size="sm" variant="danger" onClick={() => { setConfirmDelete(false); onDelete() }}>
-                  Ja, verwijder
-                </Button>
-                <Button size="sm" variant="secondary" onClick={() => setConfirmDelete(false)}>
-                  Nee
-                </Button>
-              </>
-            )}
+            <Button size="sm" variant="danger" onClick={() => setConfirmDelete(true)}>
+              <Trash2 size={13} /> Verwijderen
+            </Button>
           </div>
+          <ConfirmDeleteModal
+            open={confirmDelete}
+            onClose={() => setConfirmDelete(false)}
+            onConfirm={() => { setConfirmDelete(false); onDelete() }}
+            itemName={`${asset.brand} ${asset.name}`}
+          />
 
           <ItemHistoryBlock
             key={`${asset.id}-${historyKey}`}
@@ -921,22 +916,16 @@ function LicenseDetailPanel({ license, teammates, onEdit, onDelete, onAssign, on
           <Button size="sm" variant="secondary" onClick={onEdit}>
             <Pencil size={13} /> Wijzigen
           </Button>
-          {!confirmDelete ? (
-            <Button size="sm" variant="danger" onClick={() => setConfirmDelete(true)}>
-              <Trash2 size={13} /> Verwijderen
-            </Button>
-          ) : (
-            <>
-              <span className="flex items-center text-xs text-red-700 font-medium">Zeker weten?</span>
-              <Button size="sm" variant="danger" onClick={() => { setConfirmDelete(false); onDelete() }}>
-                Ja, verwijder
-              </Button>
-              <Button size="sm" variant="secondary" onClick={() => setConfirmDelete(false)}>
-                Nee
-              </Button>
-            </>
-          )}
+          <Button size="sm" variant="danger" onClick={() => setConfirmDelete(true)}>
+            <Trash2 size={13} /> Verwijderen
+          </Button>
         </div>
+        <ConfirmDeleteModal
+          open={confirmDelete}
+          onClose={() => setConfirmDelete(false)}
+          onConfirm={() => { setConfirmDelete(false); onDelete() }}
+          itemName={license.name}
+        />
 
         <HistoryBlock entityType="License" entityId={license.id} labelFn={licenseAuditLabel} descriptionFn={licenseDescriptionFn} />
       </CardContent>
@@ -1558,22 +1547,16 @@ function SoftwareDetailPanel({ software, teammates, onEdit, onDelete, onUsersCha
           <Button size="sm" variant="secondary" onClick={onEdit}>
             <Pencil size={13} /> Wijzigen
           </Button>
-          {!confirmDelete ? (
-            <Button size="sm" variant="danger" onClick={() => setConfirmDelete(true)}>
-              <Trash2 size={13} /> Verwijderen
-            </Button>
-          ) : (
-            <>
-              <span className="flex items-center text-xs text-red-700 font-medium">Zeker weten?</span>
-              <Button size="sm" variant="danger" onClick={() => { setConfirmDelete(false); onDelete() }}>
-                Ja, verwijder
-              </Button>
-              <Button size="sm" variant="secondary" onClick={() => setConfirmDelete(false)}>
-                Nee
-              </Button>
-            </>
-          )}
+          <Button size="sm" variant="danger" onClick={() => setConfirmDelete(true)}>
+            <Trash2 size={13} /> Verwijderen
+          </Button>
         </div>
+        <ConfirmDeleteModal
+          open={confirmDelete}
+          onClose={() => setConfirmDelete(false)}
+          onConfirm={() => { setConfirmDelete(false); onDelete() }}
+          itemName={software.name}
+        />
 
         <HistoryBlock
           entityType="Software"
@@ -2699,18 +2682,16 @@ function PhonesTab({ teammates }: { teammates: ClientUserListItem[] }) {
                   <Button size="sm" variant="secondary" onClick={() => { setEditTarget(selected); setShowModal(true) }}>
                     <Pencil size={13} /> Wijzigen
                   </Button>
-                  {!confirmDelete ? (
-                    <Button size="sm" variant="danger" onClick={() => setConfirmDelete(true)}>
-                      <Trash2 size={13} /> Verwijderen
-                    </Button>
-                  ) : (
-                    <>
-                      <span className="flex items-center text-xs text-red-700 font-medium">Zeker weten?</span>
-                      <Button size="sm" variant="danger" onClick={() => handleDelete(selected.id)}>Ja</Button>
-                      <Button size="sm" variant="secondary" onClick={() => setConfirmDelete(false)}>Nee</Button>
-                    </>
-                  )}
+                  <Button size="sm" variant="danger" onClick={() => setConfirmDelete(true)}>
+                    <Trash2 size={13} /> Verwijderen
+                  </Button>
                 </div>
+                <ConfirmDeleteModal
+                  open={confirmDelete}
+                  onClose={() => setConfirmDelete(false)}
+                  onConfirm={() => { setConfirmDelete(false); handleDelete(selected.id) }}
+                  itemName={`${selected.brand} ${selected.model}`}
+                />
                 <ItemHistoryBlock
                   key={`${selected.id}-${historyKey}`}
                   url={`/portal/phones/${selected.id}/history`}
@@ -2894,18 +2875,16 @@ function SimCardsTab({ teammates }: { teammates: ClientUserListItem[] }) {
                 <Button size="sm" variant="secondary" onClick={() => { setEditTarget(selected); setShowModal(true) }}>
                   <Pencil size={13} /> Wijzigen
                 </Button>
-                {!confirmDelete ? (
                   <Button size="sm" variant="danger" onClick={() => setConfirmDelete(true)}>
                     <Trash2 size={13} /> Verwijderen
                   </Button>
-                ) : (
-                  <>
-                    <span className="flex items-center text-xs text-red-700 font-medium">Zeker weten?</span>
-                    <Button size="sm" variant="danger" onClick={() => handleDelete(selected.id)}>Ja</Button>
-                    <Button size="sm" variant="secondary" onClick={() => setConfirmDelete(false)}>Nee</Button>
-                  </>
-                )}
               </div>
+              <ConfirmDeleteModal
+                open={confirmDelete}
+                onClose={() => setConfirmDelete(false)}
+                onConfirm={() => { setConfirmDelete(false); handleDelete(selected.id) }}
+                itemName={selected.kaartNummer}
+              />
               <ItemHistoryBlock
                 key={`${selected.id}-${historyKey}`}
                 url={`/portal/simcards/${selected.id}/history`}
@@ -3098,18 +3077,16 @@ function SubscriptionsTab() {
                 <Button size="sm" variant="secondary" onClick={() => { setEditTarget(selected); setShowModal(true) }}>
                   <Pencil size={13} /> Wijzigen
                 </Button>
-                {!confirmDelete ? (
                   <Button size="sm" variant="danger" onClick={() => setConfirmDelete(true)}>
                     <Trash2 size={13} /> Verwijderen
                   </Button>
-                ) : (
-                  <>
-                    <span className="flex items-center text-xs text-red-700 font-medium">Zeker weten?</span>
-                    <Button size="sm" variant="danger" onClick={() => handleDelete(selected.id)}>Ja</Button>
-                    <Button size="sm" variant="secondary" onClick={() => setConfirmDelete(false)}>Nee</Button>
-                  </>
-                )}
               </div>
+              <ConfirmDeleteModal
+                open={confirmDelete}
+                onClose={() => setConfirmDelete(false)}
+                onConfirm={() => { setConfirmDelete(false); handleDelete(selected.id) }}
+                itemName={selected.name}
+              />
               <ItemHistoryBlock
                 key={`${selected.id}-${historyKey}`}
                 url={`/portal/subscriptions/${selected.id}/history`}
