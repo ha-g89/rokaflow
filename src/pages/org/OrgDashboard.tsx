@@ -3,7 +3,7 @@ import {
   Briefcase, Users, Plus, LogOut,
   Building2, Search, UserPlus, User, ExternalLink, Loader2,
   MoreVertical, Pencil, X, Mail, Ban, ShieldCheck, Calendar, ImagePlus,
-  Moon, Sun, Settings, ChevronDown,
+  Moon, Sun, Settings, ChevronDown, ArrowLeftRight, XCircle,
 } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { useThemeStore } from '@/store/themeStore'
@@ -14,8 +14,11 @@ import { Card, CardContent } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { AddClientModal } from '@/components/AddClientModal'
 import { AddUserModal } from '@/components/AddUserModal'
+import { TakeoverClientModal } from '@/components/TakeoverClientModal'
 import type { ClientListItem } from '@/types/client'
 import type { ClientUserListItem, ClientUserDetailResponse } from '@/types/clientUser'
+import type { MspTransferRequestDto } from '@/types/mspTransfer'
+import { TRANSFER_STATUS_LABEL, TRANSFER_STATUS_TONE } from '@/types/mspTransfer'
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -271,6 +274,9 @@ export default function OrgDashboard() {
   const [loadingDetail, setLoadingDetail]   = useState(false)
   const [showAddClient, setShowAddClient]   = useState(false)
   const [showAddUser, setShowAddUser]       = useState(false)
+  const [showTakeover, setShowTakeover]     = useState(false)
+  const [transfers, setTransfers]           = useState<MspTransferRequestDto[]>([])
+  const [cancellingId, setCancellingId]     = useState<string | null>(null)
   const [clientSearch, setClientSearch]     = useState('')
   const [userSearch, setUserSearch]         = useState('')
   const [switchingClientId, setSwitchingClientId] = useState<string | null>(null)
@@ -303,6 +309,21 @@ export default function OrgDashboard() {
     } finally { setLoadingClients(false) }
   }, [])
 
+  const fetchTransfers = useCallback(async () => {
+    try {
+      const { data } = await api.get<MspTransferRequestDto[]>('/msp-transfers')
+      setTransfers(data)
+    } catch { /* silently ignore */ }
+  }, [])
+
+  const handleCancelTransfer = async (id: string) => {
+    setCancellingId(id)
+    try {
+      await api.delete(`/msp-transfers/${id}`)
+      setTransfers(prev => prev.filter(t => t.id !== id))
+    } finally { setCancellingId(null) }
+  }
+
   const fetchUsers = useCallback(async (clientId: string) => {
     setLoadingUsers(true)
     setClientUsers([])
@@ -320,7 +341,7 @@ export default function OrgDashboard() {
     } finally { setLoadingDetail(false) }
   }, [])
 
-  useEffect(() => { fetchClients() }, [fetchClients])
+  useEffect(() => { fetchClients(); fetchTransfers() }, [fetchClients, fetchTransfers])
 
   const handleSelectClient = (client: ClientListItem) => {
     setSelectedClient(client)
@@ -497,6 +518,45 @@ export default function OrgDashboard() {
           <StatCard icon={<Users size={18} className="text-blue-600" />} label="Totaal gebruikers" value={totalUsers} color="bg-blue-50" />
         </div>
 
+        {/* Transfer requests panel */}
+        {transfers.length > 0 && (
+          <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+            <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-700 flex items-center gap-2">
+              <ArrowLeftRight size={14} className="text-slate-400" />
+              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">MSP Overdrachten</span>
+              <span className="ml-auto text-xs text-slate-400">{transfers.length}</span>
+            </div>
+            <div className="divide-y divide-slate-100 dark:divide-slate-700">
+              {transfers.map(t => (
+                <div key={t.id} className="flex items-center gap-3 px-4 py-2.5">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-semibold text-slate-800 dark:text-slate-100 truncate">{t.tenantName}</p>
+                    <p className="text-xs text-slate-400 truncate">
+                      {t.fromMspName ? `Van ${t.fromMspName} → ` : ''}{t.toMspName}
+                    </p>
+                  </div>
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${TRANSFER_STATUS_TONE[t.status]}`}>
+                    {TRANSFER_STATUS_LABEL[t.status]}
+                  </span>
+                  {t.status === 'Pending' && (
+                    <button
+                      onClick={() => handleCancelTransfer(t.id)}
+                      disabled={cancellingId === t.id}
+                      title="Annuleren"
+                      className="p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20 text-slate-400 hover:text-red-500 transition-colors disabled:opacity-50 flex-shrink-0"
+                    >
+                      {cancellingId === t.id
+                        ? <Loader2 size={13} className="animate-spin" />
+                        : <XCircle size={13} />
+                      }
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Three-column layout */}
         <div className="flex gap-4 flex-1 min-h-0" style={{ minHeight: '560px' }}>
 
@@ -509,8 +569,11 @@ export default function OrgDashboard() {
                   placeholder="Zoek client…"
                   className="w-full pl-7 pr-2 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:border-blue-400 dark:focus:border-blue-500" />
               </div>
-              <Button size="sm" onClick={() => setShowAddClient(true)} title="Client toevoegen">
+              <Button size="sm" onClick={() => setShowAddClient(true)} title="Nieuwe client aanmaken">
                 <Plus size={13} />
+              </Button>
+              <Button size="sm" variant="secondary" onClick={() => setShowTakeover(true)} title="Bestaande client overnemen">
+                <Building2 size={13} />
               </Button>
             </div>
             <Card className="flex-1 overflow-hidden flex flex-col">
@@ -670,6 +733,11 @@ export default function OrgDashboard() {
         onClose={() => setShowAddClient(false)}
         onSuccess={() => { fetchClients(); setSelectedClient(null); setClientUsers([]); setSelectedUser(null) }}
         endpoint="/clients"
+      />
+      <TakeoverClientModal
+        open={showTakeover}
+        onClose={() => setShowTakeover(false)}
+        onSuccess={() => { fetchClients(); fetchTransfers() }}
       />
       {selectedClient && (
         <AddUserModal

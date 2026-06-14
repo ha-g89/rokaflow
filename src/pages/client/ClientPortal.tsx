@@ -11,6 +11,7 @@ import {
   Package, Activity, Archive, XCircle, CheckCircle2, Clock,
   MoreVertical, Wifi, Moon, Sun, ArrowLeftCircle,
   AlertTriangle, Smartphone, ChevronDown, Download,
+  ArrowLeftRight, Copy,
 } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { useThemeStore } from '@/store/themeStore'
@@ -3522,7 +3523,7 @@ function SettingsView({ teammates, tenantName, onAddUser, mspStatus, onMspStatus
   teammates: ClientUserListItem[]
   tenantName: string
   onAddUser: () => void
-  mspStatus: { hasMspAccount: boolean; orgName?: string; hasMspManager: boolean; mspManagerName?: string } | null
+  mspStatus: { hasMspAccount: boolean; orgName?: string; hasMspManager: boolean; mspManagerName?: string; transferCode?: string; hasPendingTransfer?: boolean } | null
   onMspStatusRefresh: () => void
   onSwitchToMsp: () => void
   mspSwitching: boolean
@@ -3550,6 +3551,19 @@ function SettingsView({ teammates, tenantName, onAddUser, mspStatus, onMspStatus
 
   return (
     <div className="max-w-2xl space-y-6">
+
+      {/* Pending transfer banner */}
+      {mspStatus?.hasPendingTransfer && (
+        <div className="flex items-start gap-3 px-4 py-3.5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-xl">
+          <AlertTriangle size={16} className="text-amber-500 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">MSP-overdracht in behandeling</p>
+            <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">
+              Er is een openstaand overdrachtverzoek voor uw omgeving. Controleer uw e-mail voor de goedkeuringslink, of neem contact op met uw huidige MSP.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Weergave */}
       <Card>
@@ -3624,6 +3638,37 @@ function SettingsView({ teammates, tenantName, onAddUser, mspStatus, onMspStatus
           })()}
         </CardContent>
       </Card>
+
+      {/* Transfer code */}
+      {mspStatus?.transferCode && (
+        <Card>
+          <CardContent className="p-5">
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <ArrowLeftRight size={15} className="text-slate-500 dark:text-slate-400" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">MSP Transfer-code</p>
+                <p className="text-xs text-slate-500 mt-0.5 mb-3">
+                  Deel deze code met een nieuwe MSP als u van beheerder wilt wisselen. De MSP voert de code in om een overdrachtverzoek aan te maken.
+                </p>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg text-sm font-mono tracking-widest text-slate-800 dark:text-slate-100 text-center select-all">
+                    {mspStatus.transferCode}
+                  </code>
+                  <button
+                    onClick={() => navigator.clipboard.writeText(mspStatus.transferCode!)}
+                    title="Kopiëren"
+                    className="p-2 rounded-lg border border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
+                  >
+                    <Copy size={14} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* MSP Partner */}
       {mspStatus !== null && (

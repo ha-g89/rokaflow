@@ -7,6 +7,7 @@ import OrgDashboard from '@/pages/org/OrgDashboard'
 import OrgSettings from '@/pages/org/OrgSettings'
 import RegisterPage from '@/pages/RegisterPage'
 import ClientPortal from '@/pages/client/ClientPortal'
+import TransferApprovePage from '@/pages/TransferApprovePage'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import { useAuthStore } from '@/store/authStore'
 
@@ -44,6 +45,7 @@ export default function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/superuser/login" element={<SuperUserLoginPage />} />
+        <Route path="/transfer/approve" element={<TransferApprovePage />} />
 
         {/* SuperUser */}
         <Route
