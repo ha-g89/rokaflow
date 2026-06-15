@@ -3,7 +3,7 @@ import {
   Laptop, KeyRound, History, CheckCircle2, AlertTriangle,
   LogOut, ShieldCheck, ClipboardList, Mail,
   Briefcase, Calendar, User, RotateCcw, Smartphone, Phone,
-  Users, FileText, Pencil, Trash2, X, MapPin, Plus, Layers,
+  Users, FileText, Pencil, Trash2, X, MapPin, Plus, Layers, StickyNote,
 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/Card'
 import type { ClientUserDetailResponse, ClientUserListItem, UserStatus } from '@/types/clientUser'
@@ -16,6 +16,7 @@ import { HardwareModal } from '@/components/HardwareModal'
 import { PhoneSetupWizard } from '@/components/PhoneSetupWizard'
 import { LicenseModal } from '@/components/LicenseModal'
 import api from '@/lib/axios'
+import { NotesPanel } from '@/components/NotesPanel'
 
 interface AuditLogEntry {
   id: string
@@ -356,6 +357,7 @@ export function UserDetailPanel({ user, canEdit, departments = [], managers = []
   const [showHardwareModal, setShowHardwareModal] = useState(false)
   const [showPhoneWizard, setShowPhoneWizard] = useState(false)
   const [showLicenseModal, setShowLicenseModal] = useState(false)
+  const [activeTab, setActiveTab] = useState<'notes' | 'history'>('notes')
 
   const lockedUser = { id: user.id, name: `${user.firstName} ${user.lastName}` }
 
@@ -656,29 +658,60 @@ export function UserDetailPanel({ user, canEdit, departments = [], managers = []
         )}
       </div>
 
-      {/* ── History ── */}
+      {/* ── Notities / Historie tabs ── */}
       {historyPath && (
-        <Section title="Historie" icon={<History size={16} />}>
-          {historyLoading ? (
-            <p className="text-sm text-slate-400">Laden…</p>
-          ) : auditHistory.length === 0 ? (
-            <p className="text-sm text-slate-400">Nog geen activiteiten.</p>
-          ) : (
-            <div className="space-y-2">
-              {auditHistory.map(a => (
-                <div key={a.id} className="flex gap-3 rounded-xl bg-white p-3 border border-slate-100">
-                  <AuditIcon action={a.action} />
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-slate-800">{auditLabel(a)}</p>
-                    <p className="text-xs text-slate-400">
-                      {fmt(a.createdAt)}{a.userName ? ` • door ${a.userName}` : ''}
-                    </p>
-                  </div>
-                </div>
-              ))}
+        <Card className="rounded-2xl shadow-sm">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-1 mb-4 border-b border-slate-100 dark:border-slate-700 -mx-5 px-5 pb-3">
+              <button
+                onClick={() => setActiveTab('notes')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                  activeTab === 'notes'
+                    ? 'bg-blue-600 text-white'
+                    : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'
+                }`}
+              >
+                <StickyNote size={13} /> Notities
+              </button>
+              <button
+                onClick={() => setActiveTab('history')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                  activeTab === 'history'
+                    ? 'bg-blue-600 text-white'
+                    : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'
+                }`}
+              >
+                <History size={13} /> Historie
+              </button>
             </div>
-          )}
-        </Section>
+
+            {activeTab === 'notes' && (
+              <NotesPanel entityType="Employee" entityId={user.id} canEdit={canEdit} />
+            )}
+
+            {activeTab === 'history' && (
+              historyLoading ? (
+                <p className="text-sm text-slate-400">Laden…</p>
+              ) : auditHistory.length === 0 ? (
+                <p className="text-sm text-slate-400">Nog geen activiteiten.</p>
+              ) : (
+                <div className="space-y-2">
+                  {auditHistory.map(a => (
+                    <div key={a.id} className="flex gap-3 rounded-xl bg-white dark:bg-slate-800 p-3 border border-slate-100 dark:border-slate-700">
+                      <AuditIcon action={a.action} />
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-slate-800 dark:text-slate-100">{auditLabel(a)}</p>
+                        <p className="text-xs text-slate-400">
+                          {fmt(a.createdAt)}{a.userName ? ` • door ${a.userName}` : ''}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )
+            )}
+          </CardContent>
+        </Card>
       )}
     </div>
     </>

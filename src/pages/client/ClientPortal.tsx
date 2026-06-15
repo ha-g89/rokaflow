@@ -11,7 +11,7 @@ import {
   Package, Activity, Archive, XCircle, CheckCircle2, Clock,
   MoreVertical, Wifi, Moon, Sun, ArrowLeftCircle,
   AlertTriangle, Smartphone, ChevronDown, Download,
-  ArrowLeftRight, Copy,
+  ArrowLeftRight, Copy, StickyNote,
 } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { useThemeStore } from '@/store/themeStore'
@@ -31,6 +31,7 @@ import { SubscriptionModal } from '@/components/SubscriptionModal'
 import { DepartmentModal } from '@/components/DepartmentModal'
 import { LocationModal } from '@/components/LocationModal'
 import { ConfirmDeleteModal } from '@/components/ui/ConfirmDeleteModal'
+import { NotesPanel } from '@/components/NotesPanel'
 import type { ClientUserListItem, ClientUserDetailResponse } from '@/types/clientUser'
 import { STATUS_LABEL, STATUS_TONE } from '@/types/clientUser'
 import type { HardwareAssetListItem } from '@/types/hardware'
@@ -541,6 +542,7 @@ function HardwareDetailPanel({ asset, onEdit, onDelete, historyKey }: {
   historyKey: number
 }) {
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [activeTab, setActiveTab] = useState<'notes' | 'history'>('notes')
 
   function fmt(d: string | null | undefined) {
     if (!d) return '—'
@@ -589,11 +591,33 @@ function HardwareDetailPanel({ asset, onEdit, onDelete, historyKey }: {
             itemName={`${asset.brand} ${asset.name}`}
           />
 
-          <ItemHistoryBlock
-            key={`${asset.id}-${historyKey}`}
-            url={`/portal/hardware/${asset.id}/history`}
-            subtitle={`${asset.brand} ${asset.name}`}
-          />
+          {/* Notities / Historie tabs */}
+          <div className="mt-5 border-t border-slate-100 dark:border-slate-700 pt-4">
+            <div className="flex items-center gap-1 mb-4">
+              <button
+                onClick={() => setActiveTab('notes')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'notes' ? 'bg-blue-600 text-white' : 'text-slate-500 hover:bg-slate-100'}`}
+              >
+                <StickyNote size={13} /> Notities
+              </button>
+              <button
+                onClick={() => setActiveTab('history')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'history' ? 'bg-blue-600 text-white' : 'text-slate-500 hover:bg-slate-100'}`}
+              >
+                <History size={13} /> Historie
+              </button>
+            </div>
+            {activeTab === 'notes' && (
+              <NotesPanel entityType="Hardware" entityId={asset.id} />
+            )}
+            {activeTab === 'history' && (
+              <ItemHistoryBlock
+                key={`${asset.id}-${historyKey}`}
+                url={`/portal/hardware/${asset.id}/history`}
+                subtitle={`${asset.brand} ${asset.name}`}
+              />
+            )}
+          </div>
         </CardContent>
       </Card>
     </>
@@ -770,6 +794,7 @@ function LicenseDetailPanel({ license, teammates, onEdit, onDelete, onAssign, on
 }) {
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [assignUserId, setAssignUserId] = useState('')
+  const [activeTab, setActiveTab] = useState<'notes' | 'history'>('notes')
 
   const assignableUsers = teammates.filter(t => !license.users.some(u => u.userId === t.id))
   const isUnlimited = license.maxUsers === 0
@@ -928,7 +953,29 @@ function LicenseDetailPanel({ license, teammates, onEdit, onDelete, onAssign, on
           itemName={license.name}
         />
 
-        <HistoryBlock entityType="License" entityId={license.id} labelFn={licenseAuditLabel} descriptionFn={licenseDescriptionFn} />
+        {/* Notities / Historie tabs */}
+        <div className="border-t border-slate-100 dark:border-slate-700 pt-4">
+          <div className="flex items-center gap-1 mb-4">
+            <button
+              onClick={() => setActiveTab('notes')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'notes' ? 'bg-blue-600 text-white' : 'text-slate-500 hover:bg-slate-100'}`}
+            >
+              <StickyNote size={13} /> Notities
+            </button>
+            <button
+              onClick={() => setActiveTab('history')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'history' ? 'bg-blue-600 text-white' : 'text-slate-500 hover:bg-slate-100'}`}
+            >
+              <History size={13} /> Historie
+            </button>
+          </div>
+          {activeTab === 'notes' && (
+            <NotesPanel entityType="License" entityId={license.id} />
+          )}
+          {activeTab === 'history' && (
+            <HistoryBlock entityType="License" entityId={license.id} labelFn={licenseAuditLabel} descriptionFn={licenseDescriptionFn} />
+          )}
+        </div>
       </CardContent>
     </Card>
   )
@@ -1351,6 +1398,7 @@ function SoftwareDetailPanel({ software, teammates, onEdit, onDelete, onUsersCha
   const [loadingUsers, setLoadingUsers]     = useState(false)
   const [assignUserId, setAssignUserId]     = useState('')
   const [assigning, setAssigning]           = useState(false)
+  const [activeTab, setActiveTab]           = useState<'notes' | 'history'>('notes')
 
   const fetchLicenseUsers = useCallback(async () => {
     if (!software.licenseId) { setLicenseUsers([]); return }
@@ -1559,12 +1607,34 @@ function SoftwareDetailPanel({ software, teammates, onEdit, onDelete, onUsersCha
           itemName={software.name}
         />
 
-        <HistoryBlock
-          entityType="Software"
-          entityId={software.id}
-          labelFn={softwareAuditLabel}
-          descriptionFn={softwareDescriptionFn}
-        />
+        {/* Notities / Historie tabs */}
+        <div className="border-t border-slate-100 dark:border-slate-700 pt-4">
+          <div className="flex items-center gap-1 mb-4">
+            <button
+              onClick={() => setActiveTab('notes')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'notes' ? 'bg-blue-600 text-white' : 'text-slate-500 hover:bg-slate-100'}`}
+            >
+              <StickyNote size={13} /> Notities
+            </button>
+            <button
+              onClick={() => setActiveTab('history')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'history' ? 'bg-blue-600 text-white' : 'text-slate-500 hover:bg-slate-100'}`}
+            >
+              <History size={13} /> Historie
+            </button>
+          </div>
+          {activeTab === 'notes' && (
+            <NotesPanel entityType="Software" entityId={software.id} />
+          )}
+          {activeTab === 'history' && (
+            <HistoryBlock
+              entityType="Software"
+              entityId={software.id}
+              labelFn={softwareAuditLabel}
+              descriptionFn={softwareDescriptionFn}
+            />
+          )}
+        </div>
       </CardContent>
     </Card>
   )
@@ -2929,6 +2999,7 @@ function SubscriptionsTab() {
   const [editTarget, setEditTarget] = useState<SubscriptionListItem | null>(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [historyKey, setHistoryKey] = useState(0)
+  const [activeTab, setActiveTab] = useState<'notes' | 'history'>('notes')
 
   const fetchData = useCallback(async () => {
     try {
@@ -3088,11 +3159,33 @@ function SubscriptionsTab() {
                 onConfirm={() => { setConfirmDelete(false); handleDelete(selected.id) }}
                 itemName={selected.name}
               />
-              <ItemHistoryBlock
-                key={`${selected.id}-${historyKey}`}
-                url={`/portal/subscriptions/${selected.id}/history`}
-                subtitle={selected.name}
-              />
+              {/* Notities / Historie tabs */}
+              <div className="mt-4 border-t border-slate-100 dark:border-slate-700 pt-4">
+                <div className="flex items-center gap-1 mb-4">
+                  <button
+                    onClick={() => setActiveTab('notes')}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'notes' ? 'bg-blue-600 text-white' : 'text-slate-500 hover:bg-slate-100'}`}
+                  >
+                    <StickyNote size={13} /> Notities
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('history')}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'history' ? 'bg-blue-600 text-white' : 'text-slate-500 hover:bg-slate-100'}`}
+                  >
+                    <History size={13} /> Historie
+                  </button>
+                </div>
+                {activeTab === 'notes' && (
+                  <NotesPanel entityType="Subscription" entityId={selected.id} />
+                )}
+                {activeTab === 'history' && (
+                  <ItemHistoryBlock
+                    key={`${selected.id}-${historyKey}`}
+                    url={`/portal/subscriptions/${selected.id}/history`}
+                    subtitle={selected.name}
+                  />
+                )}
+              </div>
             </CardContent>
           </Card>
         ) : (
