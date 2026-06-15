@@ -65,6 +65,24 @@ function ActiveBadge({ isActive }: { isActive: boolean }) {
   )
 }
 
+// ── Sidebar helpers ───────────────────────────────────────────────────────────
+
+function NavItem({ icon, label, active, onClick }: {
+  icon: React.ReactNode; label: string; active: boolean; onClick: () => void
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-left text-sm transition-colors ${
+        active ? 'bg-blue-600 text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+      }`}
+    >
+      <span className="flex-shrink-0">{icon}</span>
+      <span className="truncate">{label}</span>
+    </button>
+  )
+}
+
 // ── OrgEditUserModal ──────────────────────────────────────────────────────────
 
 function OrgEditUserModal({ user, clientId, onClose, onSaved }: {
@@ -433,16 +451,30 @@ export default function OrgDashboard() {
   const activeClients = clients.filter(c => c.isActive).length
 
   return (
-    <div className="min-h-screen bg-slate-100 dark:bg-slate-950 flex flex-col">
-      {/* Header */}
-      <header className="bg-slate-900 dark:bg-slate-950 border-b border-slate-800 text-white px-6 py-3.5 flex items-center justify-between shadow-md flex-shrink-0">
-        <div className="flex items-center gap-2.5">
-          <Building2 size={20} className="text-blue-400" />
-          <span className="font-bold text-base">{user?.tenantName ?? 'Organisatie'}</span>
-          <span className="text-slate-500 text-xs ml-1.5 uppercase tracking-wider">MSP Portal</span>
+    <div className="flex h-screen overflow-hidden bg-slate-100 dark:bg-slate-950">
+
+      {/* ── Sidebar ── */}
+      <aside className="w-56 bg-slate-900 dark:bg-slate-950 flex flex-col flex-shrink-0">
+        <div className="h-16 px-4 flex flex-col justify-center border-b border-slate-800 flex-shrink-0">
+          <span className="font-bold text-white text-sm truncate">{user?.tenantName ?? 'MSP'}</span>
+          <p className="text-xs text-slate-500 mt-0.5">MSP Portal</p>
         </div>
-        {/* User avatar + dropdown */}
-        <div className="relative" ref={userMenuRef}>
+        <nav className="flex-1 px-2 py-3 overflow-y-auto space-y-1">
+          <NavItem icon={<Users size={14} />} label="Clients" active={true} onClick={() => {}} />
+        </nav>
+        <div className="px-2 pb-3 flex-shrink-0 border-t border-slate-800 pt-2 space-y-1">
+          <NavItem icon={<Settings size={14} />} label="Instellingen" active={false} onClick={() => navigate('/org/settings')} />
+          <NavItem icon={<LogOut size={14} />} label="Uitloggen" active={false} onClick={handleLogout} />
+        </div>
+      </aside>
+
+      {/* ── Main column ── */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Top bar */}
+        <div className="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-6 flex items-center justify-between flex-shrink-0">
+          <h1 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Clients</h1>
+          {/* User avatar + dropdown */}
+          <div className="relative" ref={userMenuRef}>
           <button
             onClick={() => setShowUserMenu(v => !v)}
             className="flex items-center gap-2 pl-1 pr-2 py-1 rounded-xl hover:bg-slate-800 transition-colors group"
@@ -507,10 +539,11 @@ export default function OrgDashboard() {
               </div>
             </div>
           )}
+          </div>
         </div>
-      </header>
 
-      <div className="flex-1 max-w-7xl w-full mx-auto px-6 py-5 flex flex-col gap-5 bg-slate-200 dark:bg-slate-900">
+        {/* Scrollable content */}
+        <div className="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-5 bg-slate-200 dark:bg-slate-900">
         {/* Stats */}
         <div className="grid grid-cols-3 gap-4">
           <StatCard icon={<Briefcase size={18} className="text-blue-600" />} label="Totaal clients" value={clients.length} color="bg-blue-50" />
@@ -835,6 +868,7 @@ export default function OrgDashboard() {
           </div>
         </div>
       )}
+      </div>   {/* end main column */}
     </div>
   )
 }
