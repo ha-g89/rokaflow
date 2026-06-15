@@ -12,12 +12,21 @@ export interface ProcessTemplateListItem {
   sortOrder: number
 }
 
+export type AutomationKey =
+  | 'device_assigned'
+  | 'device_returned'
+  | 'phone_assigned'
+  | 'phone_returned'
+  | 'license_assigned'
+  | 'license_revoked'
+
 export interface ProcessTemplateItem {
   id: string
   title: string
   description: string | null
   sortOrder: number
   isRequired: boolean
+  automationKey: string | null
 }
 
 export interface ProcessTemplateDetail extends ProcessTemplateListItem {
@@ -50,4 +59,23 @@ export const CHECKLIST_TYPE_LABEL: Record<DefaultChecklistType, string> = {
 export const CHECKLIST_TYPE_TONE: Record<DefaultChecklistType, string> = {
   Starter: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200',
   Leaver:  'bg-red-50 text-red-600 ring-1 ring-red-200',
+}
+
+export const AUTOMATION_KEY_OPTIONS: { value: string; label: string }[] = [
+  { value: '',                 label: '— Geen automatisering —' },
+  { value: 'device_assigned',  label: 'Device gekoppeld (aantreden)' },
+  { value: 'phone_assigned',   label: 'Telefoon gekoppeld (aantreden)' },
+  { value: 'license_assigned', label: 'Licentie gekoppeld (aantreden)' },
+  { value: 'device_returned',  label: 'Device ingeleverd (aftreden)' },
+  { value: 'phone_returned',   label: 'Telefoon ingeleverd (aftreden)' },
+  { value: 'license_revoked',  label: 'Licentie ingetrokken (aftreden)' },
+]
+
+export const AUTOMATION_KEY_LABEL: Record<string, string> = {
+  device_assigned:  'Device ↗',
+  phone_assigned:   'Telefoon ↗',
+  license_assigned: 'Licentie ↗',
+  device_returned:  'Device ↙',
+  phone_returned:   'Telefoon ↙',
+  license_revoked:  'Licentie ↙',
 }

@@ -1,4 +1,4 @@
-﻿import { useEffect, useRef, useState } from 'react'
+﻿import { useEffect, useRef, useState, useMemo } from 'react'
 import {
   Laptop, KeyRound, History, CheckCircle2, AlertTriangle,
   LogOut, ShieldCheck, ClipboardList, Mail,
@@ -12,6 +12,7 @@ import { HARDWARE_STATUS_LABEL, HARDWARE_STATUS_TONE, HARDWARE_TYPE_LABEL } from
 import { LICENSE_TYPE_LABEL, LICENSE_TYPE_TONE } from '@/types/license'
 import { PHONE_STATUS_LABEL, PHONE_STATUS_TONE } from '@/types/phone'
 import type { LocationListItem } from '@/types/location'
+import type { ProcessTemplateListItem } from '@/types/processTemplate'
 import { HardwareModal } from '@/components/HardwareModal'
 import { PhoneSetupWizard } from '@/components/PhoneSetupWizard'
 import { LicenseModal } from '@/components/LicenseModal'
@@ -138,7 +139,22 @@ function EditUserModal({ user, departments, managers, locations, onClose, onSave
   const [locationId, setLocationId]     = useState(user.locationId ?? '')
   const [saving, setSaving]             = useState(false)
   const [error, setError]               = useState<string | null>(null)
+  const [leaverTemplates, setLeaverTemplates] = useState<ProcessTemplateListItem[]>([])
+  const [leaverTemplateId, setLeaverTemplateId] = useState<string>('')
   const overlayRef                      = useRef<HTMLDivElement>(null)
+
+  const hadLeaveDate = useMemo(() => !!user.leaveDate, [user.leaveDate])
+
+  useEffect(() => {
+    api.get<ProcessTemplateListItem[]>('/portal/process-templates')
+      .then(res => {
+        const employee = res.data.filter(t => t.targetEntityType === 'Employee')
+        setLeaverTemplates(employee)
+        const defaultLeaver = employee.find(t => t.defaultChecklistType === 'Leaver')
+        if (defaultLeaver) setLeaverTemplateId(defaultLeaver.id)
+      })
+      .catch(() => {})
+  }, [])
 
   const handleDepartmentChange = (deptId: string) => {
     setDepartmentId(deptId)
@@ -174,6 +190,7 @@ function EditUserModal({ user, departments, managers, locations, onClose, onSave
         departmentId: departmentId || null,
         managerId: managerId || null,
         locationId: locationId || null,
+        leaverTemplateId: (!hadLeaveDate && leaveDate && leaverTemplateId) ? leaverTemplateId : null,
       })
       onSaved()
       onClose()
@@ -279,6 +296,23 @@ function EditUserModal({ user, departments, managers, locations, onClose, onSave
             </div>
           </div>
 
+          {/* Aftreden checklist template — tonen als leaveDate nieuw wordt ingesteld */}
+          {!hadLeaveDate && leaveDate && (
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1">Aftreden checklist</label>
+              <select
+                value={leaverTemplateId}
+                onChange={e => setLeaverTemplateId(e.target.value)}
+                className={field}
+              >
+                <option value="">— Standaard —</option>
+                {leaverTemplates.map(t => (
+                  <option key={t.id} value={t.id}>{t.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
           {/* status — auto wanneer datums een status bepalen */}
           {derivedStatus ? (
             <div className={`rounded-xl border px-4 py-3 text-xs ${
@@ -359,6 +393,16 @@ export function UserDetailPanel({ user, canEdit, departments = [], managers = []
   const [showLicenseModal, setShowLicenseModal] = useState(false)
   const [activeTab, setActiveTab] = useState<'notes' | 'history'>('notes')
 
+  // Local checklist state for optimistic updates
+  const [localStarter, setLocalStarter] = useState(user.starterChecklist)
+  const [localLeaver, setLocalLeaver] = useState(user.leaverChecklist)
+
+  // Sync when a different user is loaded or when the parent refetches
+  useEffect(() => {
+    setLocalStarter(user.starterChecklist)
+    setLocalLeaver(user.leaverChecklist)
+  }, [user.id, user.starterChecklist, user.leaverChecklist])
+
   const lockedUser = { id: user.id, name: `${user.firstName} ${user.lastName}` }
 
   useEffect(() => {
@@ -375,11 +419,22 @@ export function UserDetailPanel({ user, canEdit, departments = [], managers = []
 
   const handleToggle = async (entryId: string, checked: boolean) => {
     if (!canEdit) return
+
+    // Optimistic update
+    const patch = (list: typeof localStarter) =>
+      list.map(e => e.id === entryId ? { ...e, isChecked: checked } : e)
+    const prevStarter = localStarter
+    const prevLeaver = localLeaver
+    setLocalStarter(patch(localStarter))
+    setLocalLeaver(patch(localLeaver))
+
     try {
       await api.put(`${checklistBasePath}/checklist/${entryId}`, { isChecked: checked })
       onChecklistToggle?.(entryId, checked)
     } catch {
-      // silently ignore — optimistic update handled by parent
+      // Revert on failure
+      setLocalStarter(prevStarter)
+      setLocalLeaver(prevLeaver)
     }
   }
 
@@ -642,16 +697,18 @@ export function UserDetailPanel({ user, canEdit, departments = [], managers = []
       <div className="grid gap-4 xl:grid-cols-2">
         <ChecklistCard
           title="Checklist aantreden"
+          completedLabel="Checklist aantreden afgewerkt"
           icon={<ClipboardList size={16} />}
-          entries={user.starterChecklist}
+          entries={localStarter}
           canEdit={canEdit}
           onToggle={handleToggle}
         />
         {(status === 'LeavePlanned' || status === 'Left') && (
           <ChecklistCard
-            title="Checklist uit dienst"
+            title="Checklist aftreden"
+            completedLabel="Checklist aftreden afgewerkt"
             icon={<LogOut size={16} />}
-            entries={user.leaverChecklist}
+            entries={localLeaver}
             canEdit={canEdit}
             onToggle={handleToggle}
           />
@@ -733,15 +790,17 @@ function InfoRow({ icon, label, value }: { icon: React.ReactNode; label: string;
 // ── Checklist sub-component ───────────────────────────────────────────────────
 
 function ChecklistCard({
-  title, icon, entries, canEdit, onToggle,
+  title, completedLabel, icon, entries, canEdit, onToggle,
 }: {
   title: string
+  completedLabel: string
   icon: React.ReactNode
   entries: ClientUserDetailResponse['starterChecklist']
   canEdit: boolean
   onToggle: (id: string, checked: boolean) => void
 }) {
-  const checked = entries.filter(e => e.isChecked).length
+  const checkedCount = entries.filter(e => e.isChecked).length
+  const allDone = entries.length > 0 && checkedCount === entries.length
 
   return (
     <Card className="rounded-2xl shadow-sm">
@@ -751,32 +810,49 @@ function ChecklistCard({
             {icon}
             {title}
           </h3>
-          <span className="text-xs text-slate-400">{checked}/{entries.length}</span>
+          <span className="text-xs text-slate-400">{checkedCount}/{entries.length}</span>
         </div>
-        <div className="mb-3">
-          <Progress value={entries.length ? Math.round((checked / entries.length) * 100) : 0} />
-        </div>
-        <div className="grid gap-1.5">
-          {entries.map(e => (
-            <label
-              key={e.id}
-              className={`flex items-center gap-3 rounded-xl p-3 text-sm cursor-${canEdit ? 'pointer' : 'default'} transition-colors ${
-                e.isChecked ? 'bg-emerald-50 text-emerald-800' : 'bg-slate-50 text-slate-700'
-              }`}
+
+        {allDone ? (
+          <div className="flex flex-col items-center justify-center gap-3 py-6 text-center rounded-2xl bg-emerald-50 border border-emerald-100">
+            <CheckCircle2 size={36} className="text-emerald-500" />
+            <p className="text-sm font-semibold text-emerald-800">{completedLabel}</p>
+            <button
+              onClick={() => onToggle(entries[entries.length - 1].id, false)}
+              className="text-xs text-emerald-600 hover:text-emerald-800 underline underline-offset-2"
             >
-              <input
-                type="checkbox"
-                checked={e.isChecked}
-                disabled={!canEdit}
-                onChange={ev => onToggle(e.id, ev.target.checked)}
-                className="accent-slate-900 w-4 h-4 flex-shrink-0"
-              />
-              <span className={e.isChecked ? 'line-through opacity-60' : ''}>{e.item}</span>
-              {e.isChecked && <CheckCircle2 size={14} className="ml-auto text-emerald-500 flex-shrink-0" />}
-              {!e.isChecked && <AlertTriangle size={14} className="ml-auto text-slate-300 flex-shrink-0" />}
-            </label>
-          ))}
-        </div>
+              Item terugzetten
+            </button>
+          </div>
+        ) : (
+          <>
+            <div className="mb-3">
+              <Progress value={entries.length ? Math.round((checkedCount / entries.length) * 100) : 0} />
+            </div>
+            <div className="grid gap-1.5">
+              {entries.map(e => (
+                <label
+                  key={e.id}
+                  className={`flex items-center gap-3 rounded-xl p-3 text-sm transition-colors ${
+                    canEdit ? 'cursor-pointer' : 'cursor-default'
+                  } ${e.isChecked ? 'bg-emerald-50 text-emerald-800' : 'bg-slate-50 text-slate-700'}`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={e.isChecked}
+                    disabled={!canEdit}
+                    onChange={ev => onToggle(e.id, ev.target.checked)}
+                    className="accent-slate-900 w-4 h-4 flex-shrink-0"
+                  />
+                  <span className={e.isChecked ? 'line-through opacity-60' : ''}>{e.item}</span>
+                  {e.isChecked
+                    ? <CheckCircle2 size={14} className="ml-auto text-emerald-500 flex-shrink-0" />
+                    : <AlertTriangle size={14} className="ml-auto text-slate-300 flex-shrink-0" />}
+                </label>
+              ))}
+            </div>
+          </>
+        )}
       </CardContent>
     </Card>
   )

@@ -1,10 +1,11 @@
-﻿import { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import api from '@/lib/axios'
+import type { ProcessTemplateListItem } from '@/types/processTemplate'
 
 const schema = z.object({
   firstName: z.string().min(1, 'Voornaam is verplicht').max(100),
@@ -51,6 +52,10 @@ const CONTRACT_OPTIONS = [
 
 export function AddEmployeeModal({ open, onClose, onSuccess, departments = [], managers = [], locations = [] }: Props) {
   const [apiError, setApiError] = useState<string | null>(null)
+  const [starterTemplates, setStarterTemplates] = useState<ProcessTemplateListItem[]>([])
+  const [leaverTemplates, setLeaverTemplates]   = useState<ProcessTemplateListItem[]>([])
+  const [starterTemplateId, setStarterTemplateId] = useState<string>('')
+  const [leaverTemplateId, setLeaverTemplateId]   = useState<string>('')
 
   const {
     register,
@@ -71,6 +76,22 @@ export function AddEmployeeModal({ open, onClose, onSuccess, departments = [], m
   const selectedStartDate = watch('startDate')
   const startIsPlanned = selectedStartDate ? new Date(selectedStartDate) > new Date() : false
 
+  // Load available Employee Starter templates when modal opens
+  useEffect(() => {
+    if (!open) return
+    api.get<ProcessTemplateListItem[]>('/portal/process-templates')
+      .then(res => {
+        const employee = res.data.filter(t => t.targetEntityType === 'Employee')
+        setStarterTemplates(employee)
+        setLeaverTemplates(employee)
+        const defaultStarter = employee.find(t => t.defaultChecklistType === 'Starter')
+        const defaultLeaver  = employee.find(t => t.defaultChecklistType === 'Leaver')
+        if (defaultStarter) setStarterTemplateId(defaultStarter.id)
+        if (defaultLeaver)  setLeaverTemplateId(defaultLeaver.id)
+      })
+      .catch(() => { setStarterTemplates([]); setLeaverTemplates([]) })
+  }, [open])
+
   // auto-fill manager when department changes
   useEffect(() => {
     if (selectedDeptId) {
@@ -79,7 +100,13 @@ export function AddEmployeeModal({ open, onClose, onSuccess, departments = [], m
     }
   }, [selectedDeptId, departments, setValue])
 
-  const handleClose = () => { reset(); setApiError(null); onClose() }
+  const handleClose = () => {
+    reset()
+    setApiError(null)
+    setStarterTemplateId('')
+    setLeaverTemplateId('')
+    onClose()
+  }
 
   const onSubmit = async (values: FormValues) => {
     setApiError(null)
@@ -96,8 +123,12 @@ export function AddEmployeeModal({ open, onClose, onSuccess, departments = [], m
         status: parseInt(values.status, 10),
         contractType: values.contractType !== '' ? parseInt(values.contractType, 10) : null,
         startDate: values.startDate ? new Date(values.startDate).toISOString() : null,
+        starterTemplateId: starterTemplateId || null,
+        leaverTemplateId: leaverTemplateId || null,
       })
       reset()
+      setStarterTemplateId('')
+      setLeaverTemplateId('')
       onSuccess()
       onClose()
     } catch (err: unknown) {
@@ -200,6 +231,35 @@ export function AddEmployeeModal({ open, onClose, onSuccess, departments = [], m
               ))}
             </select>
             {errors.contractType && <p className="mt-1 text-xs text-red-600">{errors.contractType.message}</p>}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs font-medium text-slate-600 mb-1">Aantreden checklist</label>
+            <select
+              value={starterTemplateId}
+              onChange={e => setStarterTemplateId(e.target.value)}
+              className={field}
+            >
+              <option value="">— Standaard —</option>
+              {starterTemplates.map(t => (
+                <option key={t.id} value={t.id}>{t.name}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-slate-600 mb-1">Aftreden checklist</label>
+            <select
+              value={leaverTemplateId}
+              onChange={e => setLeaverTemplateId(e.target.value)}
+              className={field}
+            >
+              <option value="">— Standaard —</option>
+              {leaverTemplates.map(t => (
+                <option key={t.id} value={t.id}>{t.name}</option>
+              ))}
+            </select>
           </div>
         </div>
 
