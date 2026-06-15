@@ -950,10 +950,6 @@ export default function LandingPage() {
         {/* ── MSP Transfer section ── */}
         <section className="rf-msp-xfer">
           <div className="rf-msp-xfer-inner" style={{ gridTemplateColumns: '1fr', maxWidth: 640, textAlign: 'center', gap: 16 }}>
-            <div className="rf-msp-xfer-tag" style={{ margin: '0 auto 20px' }}>
-              <span className="rf-msp-xfer-dot" />
-              MSP-platform
-            </div>
             <h2 className="rf-msp-xfer-h">Eenvoudig clients overdragen</h2>
             <p className="rf-msp-xfer-p" style={{ margin: '0 auto 28px' }}>
               Vanuit het MSP-dashboard kunt u bestaande klanten overnemen en overdragen — zonder handmatig werk.

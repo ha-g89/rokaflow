@@ -140,6 +140,13 @@ const MSP = [
 const CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap');
 
+  @property --pr-angle {
+    syntax: '<angle>';
+    initial-value: 0deg;
+    inherits: false;
+  }
+
+
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   .pr-page {
@@ -300,16 +307,63 @@ const CSS = `
     to   { opacity: 1; transform: perspective(1000px) translateY(0)    rotateX(0deg); }
   }
 
-  /* Floating orb behind featured card */
-  .pr-card-feat::before {
-    content: '';
-    position: absolute; bottom: -60px; right: -60px;
-    width: 200px; height: 200px; border-radius: 50%;
-    background: radial-gradient(circle, rgba(37,99,235,0.18) 0%, transparent 70%);
-    pointer-events: none; z-index: 0;
-    animation: prOrbFloat 5s ease-in-out infinite alternate;
+  /* ── Rotating border wrapper ── */
+  .pr-feat-wrap {
+    position: relative;
+    z-index: 1;
+    border-radius: 22px;
+    align-self: center;
   }
-  @keyframes prOrbFloat { from{transform:translate(0,0)} to{transform:translate(-12px,-16px)} }
+
+  /* Rotating gradient — extends 5px outside the card */
+  .pr-feat-wrap::before {
+    content: '';
+    position: absolute;
+    inset: -5px;
+    border-radius: 27px;
+    background: conic-gradient(
+      from var(--pr-angle),
+      #1e3a8a 0%,
+      #2563eb 18%,
+      #60a5fa 35%,
+      #bae6fd 50%,
+      #60a5fa 65%,
+      #2563eb 82%,
+      #1e3a8a 100%
+    );
+    opacity: 0;
+    transition: opacity 0.45s ease;
+    z-index: 0;
+  }
+
+  /* Interior mask — hides gradient from card face */
+  .pr-feat-wrap::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 22px;
+    background: #050d1a;
+    z-index: 1;
+  }
+
+  @keyframes prBorderSpin {
+    to { --pr-angle: 360deg; }
+  }
+
+  .pr-feat-wrap:hover::before {
+    opacity: 1;
+    animation: prBorderSpin 3.5s linear infinite;
+  }
+
+  /* Card sits above the mask, hides its own border on hover */
+  .pr-feat-wrap .pr-card-feat {
+    position: relative;
+    z-index: 2;
+  }
+  .pr-feat-wrap:hover .pr-card-feat {
+    border-color: transparent;
+  }
+
 
   /* Featured badge */
   .pr-feat-badge {
@@ -578,11 +632,8 @@ export default function PricingPage() {
           </TiltCard>
 
           {/* MSP Platform — featured center */}
+          <div className="pr-feat-wrap">
           <TiltCard featured delay="0.12s">
-            <div className="pr-feat-badge">
-              <span className="pr-feat-dot" />
-              Meest gekozen
-            </div>
             <div className="pr-card-tag">MSP Platform</div>
             <div className="pr-price-row">
               <span className="pr-currency">€</span>
@@ -609,6 +660,7 @@ export default function PricingPage() {
               Gebruikersprijs geldt per actieve client-gebruiker.<br />MSP-beheerders worden apart gefactureerd.
             </p>
           </TiltCard>
+          </div>
 
           {/* Portal Pro */}
           <TiltCard delay="0.19s">
