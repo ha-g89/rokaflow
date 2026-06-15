@@ -8,6 +8,7 @@ import OrgSettings from '@/pages/org/OrgSettings'
 import RegisterPage from '@/pages/RegisterPage'
 import ClientPortal from '@/pages/client/ClientPortal'
 import TransferApprovePage from '@/pages/TransferApprovePage'
+import PricingPage from '@/pages/PricingPage'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import { useAuthStore } from '@/store/authStore'
 
@@ -87,6 +88,7 @@ export default function App() {
 
         {/* Landing & fallback */}
         <Route path="/" element={<LandingPage />} />
+        <Route path="/pricing" element={<PricingPage />} />
         <Route path="*" element={<RootRedirect />} />
       </Routes>
     </BrowserRouter>

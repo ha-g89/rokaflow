@@ -566,6 +566,72 @@ const CSS = `
   }
   .rf-feat-desc { font-size: 13px; line-height: 1.7; color: rgba(238,242,255,0.48); }
 
+  /* ── MSP Transfer ────────────────────────────────────────────── */
+  .rf-msp-xfer {
+    background: #060d1a;
+    padding: 80px 56px 88px;
+    border-top: 1px solid rgba(255,255,255,0.05);
+  }
+  .rf-msp-xfer-inner {
+    max-width: 1160px; margin: 0 auto;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center;
+  }
+  .rf-msp-xfer-tag {
+    display: inline-flex; align-items: center; gap: 7px;
+    font-size: 10.5px; font-weight: 700; letter-spacing: 0.11em; text-transform: uppercase;
+    color: #60a5fa;
+    background: rgba(37,99,235,0.12); border: 1px solid rgba(37,99,235,0.25);
+    padding: 4px 12px; border-radius: 99px; margin-bottom: 20px;
+  }
+  .rf-msp-xfer-dot { width: 4px; height: 4px; border-radius: 50%; background: #60a5fa; animation: rfDotPulse 2s ease-in-out infinite; }
+  .rf-msp-xfer-h {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-size: clamp(26px, 2.8vw, 40px); font-weight: 800;
+    color: #eef2ff; letter-spacing: -0.02em; line-height: 1.1; margin-bottom: 18px;
+  }
+  .rf-msp-xfer-h em { font-style: normal; color: #60a5fa; }
+  .rf-msp-xfer-p {
+    font-size: 15px; color: rgba(238,242,255,0.5); line-height: 1.72; margin-bottom: 32px;
+  }
+  .rf-msp-xfer-link {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 14px; font-weight: 600; color: #60a5fa;
+    background: rgba(37,99,235,0.12); border: 1px solid rgba(37,99,235,0.28);
+    padding: 10px 22px; border-radius: 10px; cursor: pointer;
+    border-width: 0; transition: background 0.18s, border-color 0.18s;
+  }
+  .rf-msp-xfer-link em { font-style: normal; transition: transform 0.15s; }
+  .rf-msp-xfer-link:hover { background: rgba(37,99,235,0.2); }
+  .rf-msp-xfer-link:hover em { transform: translateX(3px); }
+
+  /* Flow diagram */
+  .rf-flow {
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .rf-flow-step {
+    display: flex; align-items: flex-start; gap: 16px;
+    background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 14px; padding: 18px 20px;
+    transition: border-color 0.25s, background 0.25s;
+  }
+  .rf-flow-step:hover { background: rgba(37,99,235,0.07); border-color: rgba(37,99,235,0.25); }
+  .rf-flow-num {
+    width: 28px; height: 28px; border-radius: 8px; flex-shrink: 0;
+    background: rgba(37,99,235,0.18); border: 1px solid rgba(37,99,235,0.35);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; color: #60a5fa; font-family: 'Bricolage Grotesque', sans-serif;
+  }
+  .rf-flow-body {}
+  .rf-flow-title { font-size: 13.5px; font-weight: 600; color: #eef2ff; margin-bottom: 3px; }
+  .rf-flow-desc  { font-size: 12.5px; color: rgba(238,242,255,0.45); line-height: 1.55; }
+  .rf-flow-arrow {
+    text-align: center; color: rgba(37,99,235,0.4); font-size: 14px; letter-spacing: 0.1em;
+    padding: 0 20px;
+  }
+
+  /* ── Pricing nav link ─────────────────────────────────────────── */
+  .rf-nav-sep { width: 1px; height: 18px; background: var(--line-md); }
+
   /* ── CTA banner ──────────────────────────────────────────────── */
   .rf-cta-band {
     background: var(--accent); padding: 64px 56px;
@@ -694,6 +760,10 @@ export default function LandingPage() {
         <nav className="rf-nav">
           <img src={logo} alt="RokaFlow" className="rf-nav-logo" />
           <div className="rf-nav-actions">
+            <button className="rf-nav-link" onClick={() => navigate('/pricing')}>
+              Prijzen
+            </button>
+            <div className="rf-nav-sep" />
             <button className="rf-nav-link" onClick={handleLogin}>
               {ctaLabel} <em>→</em>
             </button>
@@ -877,12 +947,29 @@ export default function LandingPage() {
           </div>
         </section>
 
+        {/* ── MSP Transfer section ── */}
+        <section className="rf-msp-xfer">
+          <div className="rf-msp-xfer-inner" style={{ gridTemplateColumns: '1fr', maxWidth: 640, textAlign: 'center', gap: 16 }}>
+            <div className="rf-msp-xfer-tag" style={{ margin: '0 auto 20px' }}>
+              <span className="rf-msp-xfer-dot" />
+              MSP-platform
+            </div>
+            <h2 className="rf-msp-xfer-h">Eenvoudig clients overdragen</h2>
+            <p className="rf-msp-xfer-p" style={{ margin: '0 auto 28px' }}>
+              Vanuit het MSP-dashboard kunt u bestaande klanten overnemen en overdragen — zonder handmatig werk.
+            </p>
+            <button className="rf-msp-xfer-link" style={{ margin: '0 auto' }} onClick={() => navigate('/pricing')}>
+              Bekijk MSP-abonnement <em>→</em>
+            </button>
+          </div>
+        </section>
+
         {/* ── CTA band ── */}
         {!isLoggedIn && (
           <div className="rf-cta-band">
             <div className="rf-cta-band-text">
               <h2 className="rf-cta-band-h">Klaar om te beginnen?</h2>
-              <p className="rf-cta-band-sub">Gratis te starten. Geen creditcard vereist.</p>
+              <p className="rf-cta-band-sub">Gratis proefperiode</p>
             </div>
             <div className="rf-cta-band-actions">
               <button className="rf-btn-white" onClick={handleRegister}>
