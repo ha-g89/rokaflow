@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import {
   Users, LogOut, Laptop, Shield, Phone as PhoneIcon,
-  PackageCheck, BarChart3, History, FileText,
+  ClipboardList, BarChart3, History, FileText,
   Settings, Building2, MapPin,
   ChevronDown, Moon, Sun, ArrowLeftCircle, ArrowLeft,
 } from 'lucide-react'
@@ -21,6 +21,7 @@ import { TelefonieView } from './views/TelefonieView'
 import { DepartmentsView } from './views/DepartmentsView'
 import { LocationsView } from './views/LocationsView'
 import { EmployeeListView, EmployeeDetailView, DeleteEmployeeModal } from './views/EmployeesView'
+import { ProcessesView } from './views/ProcessesView'
 import type { ClientUserListItem, ClientUserDetailResponse } from '@/types/clientUser'
 import type { LocationListItem } from '@/types/location'
 import type { DepartmentListItem } from '@/types/department'
@@ -31,25 +32,24 @@ type View =
   | 'employees' | 'employee-detail'
   | 'departments' | 'locations'
   | 'hardware' | 'software' | 'phones'
-  | 'starter-checklist' | 'leaver-checklist'
+  | 'processes'
   | 'overviews' | 'history' | 'contracts'
   | 'settings' | 'help'
 
 const VIEW_TITLES: Record<View, string> = {
-  employees:           'Medewerkers',
-  'employee-detail':   'Medewerker details',
-  departments:         'Afdelingen',
-  locations:           'Locaties',
-  hardware:            'Hardware',
-  software:            'Software',
-  phones:              'Telefonie',
-  'starter-checklist': 'Aantreden checklist',
-  'leaver-checklist':  'Checklist uit dienst',
-  overviews:           'Overzichten',
-  history:             'Historie',
-  contracts:           'Contracten',
-  settings:            'Instellingen',
-  help:                'Help',
+  employees:         'Medewerkers',
+  'employee-detail': 'Medewerker details',
+  departments:       'Afdelingen',
+  locations:         'Locaties',
+  hardware:          'Hardware',
+  software:          'Software',
+  phones:            'Telefonie',
+  processes:         'Processen',
+  overviews:         'Overzichten',
+  history:           'Historie',
+  contracts:         'Contracten',
+  settings:          'Instellingen',
+  help:              'Help',
 }
 
 // ── Main component ────────────────────────────────────────────────────────────
@@ -291,8 +291,7 @@ export default function ClientPortal() {
             <NavItem icon={<PhoneIcon size={14} />} label="Telefonie" active={view === 'phones'}   onClick={() => handleNavClick('phones')} />
 
             <SectionLabel label="Processen" />
-            <NavItem icon={<PackageCheck size={14} />} label="Aantreden checklist" active={view === 'starter-checklist'} onClick={() => handleNavClick('starter-checklist')} />
-            <NavItem icon={<LogOut size={14} />}       label="Checklist uit dienst" active={view === 'leaver-checklist'} onClick={() => handleNavClick('leaver-checklist')} />
+            <NavItem icon={<ClipboardList size={14} />} label="Checklist Templates" active={view === 'processes'} onClick={() => handleNavClick('processes')} />
 
             <SectionLabel label="Rapportages" />
             <NavItem icon={<BarChart3 size={14} />} label="Overzichten" active={view === 'overviews'} onClick={() => handleNavClick('overviews')} />
@@ -382,9 +381,9 @@ export default function ClientPortal() {
             {view === 'locations'    && <LocationsView />}
             {view === 'overviews'    && <OverviewView />}
             {view === 'history'      && <HistoryView />}
+            {view === 'processes'    && <ProcessesView />}
 
-            {(view === 'starter-checklist' || view === 'leaver-checklist' ||
-              view === 'contracts' || view === 'help') && (
+            {(view === 'contracts' || view === 'help') && (
               <PlaceholderView title={VIEW_TITLES[view]} />
             )}
           </div>
