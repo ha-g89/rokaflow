@@ -19,6 +19,8 @@ import {
   TARGET_ENTITY_TONE,
   CHECKLIST_TYPE_LABEL,
   CHECKLIST_TYPE_TONE,
+  AUTOMATION_KEY_OPTIONS,
+  AUTOMATION_KEY_LABEL,
 } from '@/types/processTemplate'
 
 // ── Icons per entity type ─────────────────────────────────────────────────────
@@ -159,7 +161,7 @@ function ItemRow({
   isEditing: boolean
   isSaving: boolean
   onStartEdit: () => void
-  onSaveEdit: (title: string, isRequired: boolean) => void
+  onSaveEdit: (title: string, isRequired: boolean, automationKey: string | null) => void
   onCancelEdit: () => void
   onMoveUp: () => void
   onMoveDown: () => void
@@ -168,79 +170,87 @@ function ItemRow({
   onDeleteCancel: () => void
   isConfirmingDelete: boolean
 }) {
-  const [draftTitle, setDraftTitle]         = useState(item.title)
-  const [draftRequired, setDraftRequired]   = useState(item.isRequired)
+  const [draftTitle, setDraftTitle]           = useState(item.title)
+  const [draftRequired, setDraftRequired]     = useState(item.isRequired)
+  const [draftAutoKey, setDraftAutoKey]       = useState(item.automationKey ?? '')
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (isEditing) {
       setDraftTitle(item.title)
       setDraftRequired(item.isRequired)
+      setDraftAutoKey(item.automationKey ?? '')
       setTimeout(() => inputRef.current?.focus(), 0)
     }
-  }, [isEditing, item.title, item.isRequired])
+  }, [isEditing, item.title, item.isRequired, item.automationKey])
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') { e.preventDefault(); onSaveEdit(draftTitle, draftRequired) }
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') { e.preventDefault(); onSaveEdit(draftTitle, draftRequired, draftAutoKey || null) }
     if (e.key === 'Escape') onCancelEdit()
   }
 
   return (
-    <div className={`group flex items-center gap-3 px-4 py-3 border-b border-slate-100 last:border-0 transition-colors ${isEditing ? 'bg-blue-50/60' : 'hover:bg-slate-50'}`}>
-      {/* Drag handle (visual only) */}
-      <GripVertical size={13} className="text-slate-300 flex-shrink-0 cursor-grab opacity-0 group-hover:opacity-100 transition-opacity" />
+    <div className={`group border-b border-slate-100 last:border-0 transition-colors ${isEditing ? 'bg-blue-50/60' : 'hover:bg-slate-50'}`}>
+      <div className="flex items-center gap-3 px-4 py-3">
+        {/* Drag handle (visual only) */}
+        <GripVertical size={13} className="text-slate-300 flex-shrink-0 cursor-grab opacity-0 group-hover:opacity-100 transition-opacity" />
 
-      {/* Step number */}
-      <span className="w-6 h-6 rounded-full bg-blue-600 text-white text-[10px] font-bold flex items-center justify-center flex-shrink-0 select-none">
-        {index + 1}
-      </span>
+        {/* Step number */}
+        <span className="w-6 h-6 rounded-full bg-blue-600 text-white text-[10px] font-bold flex items-center justify-center flex-shrink-0 select-none">
+          {index + 1}
+        </span>
 
-      {/* Title — editable inline */}
-      {isEditing ? (
-        <div className="flex-1 flex items-center gap-2 min-w-0">
-          <input
-            ref={inputRef}
-            value={draftTitle}
-            onChange={e => setDraftTitle(e.target.value)}
-            onKeyDown={handleKeyDown}
-            className="flex-1 text-sm text-slate-800 border-b border-blue-400 bg-transparent outline-none pb-0.5 min-w-0"
-            placeholder="Stap omschrijving…"
-          />
+        {/* Title — editable inline */}
+        {isEditing ? (
+          <div className="flex-1 flex items-center gap-2 min-w-0">
+            <input
+              ref={inputRef}
+              value={draftTitle}
+              onChange={e => setDraftTitle(e.target.value)}
+              onKeyDown={handleKeyDown}
+              className="flex-1 text-sm text-slate-800 border-b border-blue-400 bg-transparent outline-none pb-0.5 min-w-0"
+              placeholder="Stap omschrijving…"
+            />
+            <button
+              onClick={() => setDraftRequired(!draftRequired)}
+              className={`text-[10px] font-semibold px-2 py-0.5 rounded-full flex-shrink-0 transition-colors ${
+                draftRequired
+                  ? 'bg-orange-100 text-orange-600 hover:bg-orange-200'
+                  : 'bg-slate-100 text-slate-400 hover:bg-slate-200'
+              }`}
+            >
+              {draftRequired ? 'Verplicht' : 'Optioneel'}
+            </button>
+          </div>
+        ) : (
           <button
-            onClick={() => setDraftRequired(!draftRequired)}
-            className={`text-[10px] font-semibold px-2 py-0.5 rounded-full flex-shrink-0 transition-colors ${
-              draftRequired
-                ? 'bg-orange-100 text-orange-600 hover:bg-orange-200'
-                : 'bg-slate-100 text-slate-400 hover:bg-slate-200'
-            }`}
+            onClick={onStartEdit}
+            title="Klik om te bewerken"
+            className="flex-1 flex items-center gap-2 text-left group/title min-w-0"
           >
-            {draftRequired ? 'Verplicht' : 'Optioneel'}
-          </button>
-        </div>
-      ) : (
-        <button
-          onClick={onStartEdit}
-          title="Klik om te bewerken"
-          className="flex-1 flex items-center gap-2 text-left group/title min-w-0"
-        >
-          <span className="text-sm text-slate-800 truncate group-hover/title:text-blue-600 transition-colors">
-            {item.title}
-          </span>
-          {item.isRequired && (
-            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-orange-50 text-orange-500 ring-1 ring-orange-200 flex-shrink-0">
-              Verplicht
+            <span className="text-sm text-slate-800 truncate group-hover/title:text-blue-600 transition-colors">
+              {item.title}
             </span>
-          )}
-          <Pencil size={11} className="text-slate-300 group-hover/title:text-blue-400 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-all" />
-        </button>
-      )}
+            {item.isRequired && (
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-orange-50 text-orange-500 ring-1 ring-orange-200 flex-shrink-0">
+                Verplicht
+              </span>
+            )}
+            {item.automationKey && (
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-violet-50 text-violet-600 ring-1 ring-violet-200 flex-shrink-0">
+                ⚡ {AUTOMATION_KEY_LABEL[item.automationKey] ?? item.automationKey}
+              </span>
+            )}
+            <Pencil size={11} className="text-slate-300 group-hover/title:text-blue-400 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-all" />
+          </button>
+        )}
 
       {/* Actions */}
       <div className="flex items-center gap-0.5 flex-shrink-0">
         {isEditing ? (
           <>
             <button
-              onClick={() => onSaveEdit(draftTitle, draftRequired)}
+              onClick={() => onSaveEdit(draftTitle, draftRequired, draftAutoKey || null)}
               disabled={isSaving || !draftTitle.trim()}
               title="Opslaan (Enter)"
               className="w-7 h-7 flex items-center justify-center rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-40 transition-colors"
@@ -299,6 +309,23 @@ function ItemRow({
           </>
         )}
       </div>
+      </div>
+
+      {/* Automation key row — only while editing */}
+      {isEditing && (
+        <div className="px-4 pb-3 flex items-center gap-2 ml-[52px]">
+          <span className="text-[10px] text-slate-400 flex-shrink-0">Automatisch afvinken bij:</span>
+          <select
+            value={draftAutoKey}
+            onChange={e => setDraftAutoKey(e.target.value)}
+            className="flex-1 text-[11px] border border-slate-200 rounded-lg px-2 py-1 text-slate-700 bg-white focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100 transition-all"
+          >
+            {AUTOMATION_KEY_OPTIONS.map(o => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
+          </select>
+        </div>
+      )}
     </div>
   )
 }
@@ -387,13 +414,13 @@ export function ProcessesView() {
 
   // ── Items ────────────────────────────────────────────────────────────────
 
-  const saveItem = async (itemId: string, title: string, isRequired: boolean) => {
+  const saveItem = async (itemId: string, title: string, isRequired: boolean, automationKey: string | null) => {
     if (!selected || !title.trim()) return
     setSavingItemId(itemId)
     try {
       const { data } = await api.put<ProcessTemplateItem>(
         `/portal/process-templates/${selected.id}/items/${itemId}`,
-        { title: title.trim(), isRequired }
+        { title: title.trim(), isRequired, automationKey: automationKey || null }
       )
       setSelected(prev => prev ? {
         ...prev,
@@ -652,7 +679,7 @@ export function ProcessesView() {
                         isSaving={savingItemId === item.id}
                         isConfirmingDelete={deletingItemId === item.id}
                         onStartEdit={() => { setEditingItemId(item.id); setDeletingItemId(null) }}
-                        onSaveEdit={(title, isRequired) => saveItem(item.id, title, isRequired)}
+                        onSaveEdit={(title, isRequired, automationKey) => saveItem(item.id, title, isRequired, automationKey)}
                         onCancelEdit={() => setEditingItemId(null)}
                         onMoveUp={() => moveItem(item.id, 'up')}
                         onMoveDown={() => moveItem(item.id, 'down')}
