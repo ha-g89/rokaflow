@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   Plus, Trash2, ChevronUp, ChevronDown, Lock, Check, X,
   ClipboardList, Pencil, Users, Laptop, Phone as PhoneIcon,
-  CreditCard, Key, MapPin, AlertCircle, GripVertical,
+  CreditCard, Key, MapPin, AlertCircle, GripVertical, Zap, ChevronRight,
 } from 'lucide-react'
 import api from '@/lib/axios'
 import { Card, CardContent } from '@/components/ui/Card'
@@ -22,8 +22,6 @@ import {
   AUTOMATION_KEY_OPTIONS,
   AUTOMATION_KEY_LABEL,
 } from '@/types/processTemplate'
-
-// ── Icons per entity type ─────────────────────────────────────────────────────
 
 const ENTITY_ICON: Record<TargetEntityType, React.ReactNode> = {
   Employee: <Users size={13} />,
@@ -154,6 +152,8 @@ function ItemRow({
   onStartEdit, onSaveEdit, onCancelEdit,
   onMoveUp, onMoveDown, onDeleteClick, onDeleteConfirm, onDeleteCancel,
   isConfirmingDelete,
+  isDragging, isDragOver,
+  onDragStart, onDragOver, onDrop, onDragEnd,
 }: {
   item: ProcessTemplateItem
   index: number
@@ -169,10 +169,16 @@ function ItemRow({
   onDeleteConfirm: () => void
   onDeleteCancel: () => void
   isConfirmingDelete: boolean
+  isDragging: boolean
+  isDragOver: boolean
+  onDragStart: (e: React.DragEvent) => void
+  onDragOver: (e: React.DragEvent) => void
+  onDrop: (e: React.DragEvent) => void
+  onDragEnd: () => void
 }) {
-  const [draftTitle, setDraftTitle]           = useState(item.title)
-  const [draftRequired, setDraftRequired]     = useState(item.isRequired)
-  const [draftAutoKey, setDraftAutoKey]       = useState(item.automationKey ?? '')
+  const [draftTitle, setDraftTitle]       = useState(item.title)
+  const [draftRequired, setDraftRequired] = useState(item.isRequired)
+  const [draftAutoKey, setDraftAutoKey]   = useState(item.automationKey ?? '')
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -180,7 +186,8 @@ function ItemRow({
       setDraftTitle(item.title)
       setDraftRequired(item.isRequired)
       setDraftAutoKey(item.automationKey ?? '')
-      setTimeout(() => inputRef.current?.focus(), 0)
+      // slight delay so the grid animation plays first
+      setTimeout(() => inputRef.current?.focus(), 150)
     }
   }, [isEditing, item.title, item.isRequired, item.automationKey])
 
@@ -190,45 +197,57 @@ function ItemRow({
   }
 
   return (
-    <div className={`group border-b border-slate-100 last:border-0 transition-colors ${isEditing ? 'bg-blue-50/60' : 'hover:bg-slate-50'}`}>
-      <div className="flex items-center gap-3 px-4 py-3">
-        {/* Drag handle (visual only) */}
-        <GripVertical size={13} className="text-slate-300 flex-shrink-0 cursor-grab opacity-0 group-hover:opacity-100 transition-opacity" />
+    <div
+      draggable={!isEditing}
+      onDragStart={onDragStart}
+      onDragOver={onDragOver}
+      onDrop={onDrop}
+      onDragEnd={onDragEnd}
+      className={`group border-b border-slate-100 last:border-0 transition-all select-none ${
+        isDragging         ? 'opacity-40 bg-slate-50 scale-[0.99]' :
+        isDragOver         ? 'border-t-2 border-t-blue-400 bg-blue-50/40' :
+        isConfirmingDelete ? 'bg-red-50' :
+        isEditing          ? 'bg-blue-50/40' :
+        'hover:bg-slate-50'
+      }`}
+    >
+      {/* ── Always-visible row — titel wordt input bij bewerken ── */}
+      <div className={`flex items-center gap-3 px-4 py-3 transition-all ${
+        isEditing          ? 'bg-blue-50/40 border-l-[3px] border-l-blue-500' :
+        isDragOver         ? '' :
+        isConfirmingDelete ? '' :
+        'border-l-[3px] border-l-transparent cursor-pointer'
+      }`}
+        onClick={isEditing ? undefined : onStartEdit}
+      >
+        {/* Drag handle */}
+        <GripVertical
+          size={13}
+          onClick={e => e.stopPropagation()}
+          className="text-slate-300 flex-shrink-0 cursor-grab active:cursor-grabbing group-hover:text-slate-400 transition-colors"
+        />
 
         {/* Step number */}
-        <span className="w-6 h-6 rounded-full bg-blue-600 text-white text-[10px] font-bold flex items-center justify-center flex-shrink-0 select-none">
+        <span className={`w-6 h-6 rounded-full text-[10px] font-bold flex items-center justify-center flex-shrink-0 select-none transition-colors ${
+          isEditing ? 'bg-blue-600 text-white' : 'bg-blue-100 text-blue-600 group-hover:bg-blue-600 group-hover:text-white'
+        }`}>
           {index + 1}
         </span>
 
-        {/* Title — editable inline */}
+        {/* Titel OF textbox */}
         {isEditing ? (
-          <div className="flex-1 flex items-center gap-2 min-w-0">
-            <input
-              ref={inputRef}
-              value={draftTitle}
-              onChange={e => setDraftTitle(e.target.value)}
-              onKeyDown={handleKeyDown}
-              className="flex-1 text-sm text-slate-800 border-b border-blue-400 bg-transparent outline-none pb-0.5 min-w-0"
-              placeholder="Stap omschrijving…"
-            />
-            <button
-              onClick={() => setDraftRequired(!draftRequired)}
-              className={`text-[10px] font-semibold px-2 py-0.5 rounded-full flex-shrink-0 transition-colors ${
-                draftRequired
-                  ? 'bg-orange-100 text-orange-600 hover:bg-orange-200'
-                  : 'bg-slate-100 text-slate-400 hover:bg-slate-200'
-              }`}
-            >
-              {draftRequired ? 'Verplicht' : 'Optioneel'}
-            </button>
-          </div>
+          <input
+            ref={inputRef}
+            value={draftTitle}
+            onChange={e => setDraftTitle(e.target.value)}
+            onKeyDown={handleKeyDown}
+            onClick={e => e.stopPropagation()}
+            placeholder="Stap omschrijving…"
+            className="flex-1 text-sm text-slate-800 px-2.5 py-1 rounded-lg border border-blue-200 bg-white shadow-sm focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all min-w-0"
+          />
         ) : (
-          <button
-            onClick={onStartEdit}
-            title="Klik om te bewerken"
-            className="flex-1 flex items-center gap-2 text-left group/title min-w-0"
-          >
-            <span className="text-sm text-slate-800 truncate group-hover/title:text-blue-600 transition-colors">
+          <div className="flex-1 flex items-center gap-2 min-w-0">
+            <span className="text-sm text-slate-800 font-medium truncate group-hover:text-blue-600 transition-colors">
               {item.title}
             </span>
             {item.isRequired && (
@@ -237,95 +256,105 @@ function ItemRow({
               </span>
             )}
             {item.automationKey && (
-              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-violet-50 text-violet-600 ring-1 ring-violet-200 flex-shrink-0">
-                ⚡ {AUTOMATION_KEY_LABEL[item.automationKey] ?? item.automationKey}
+              <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-violet-50 text-violet-600 ring-1 ring-violet-200 flex-shrink-0">
+                <Zap size={9} /> {AUTOMATION_KEY_LABEL[item.automationKey] ?? item.automationKey}
               </span>
             )}
-            <Pencil size={11} className="text-slate-300 group-hover/title:text-blue-400 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-all" />
-          </button>
+          </div>
         )}
 
-      {/* Actions */}
-      <div className="flex items-center gap-0.5 flex-shrink-0">
-        {isEditing ? (
-          <>
-            <button
-              onClick={() => onSaveEdit(draftTitle, draftRequired, draftAutoKey || null)}
-              disabled={isSaving || !draftTitle.trim()}
-              title="Opslaan (Enter)"
-              className="w-7 h-7 flex items-center justify-center rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-40 transition-colors"
-            >
-              {isSaving ? <span className="w-3 h-3 border-2 border-white/40 border-t-white rounded-full animate-spin" /> : <Check size={12} />}
-            </button>
-            <button
-              onClick={onCancelEdit}
-              title="Annuleren (Esc)"
-              className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 transition-colors"
-            >
-              <X size={12} />
-            </button>
-          </>
-        ) : isConfirmingDelete ? (
-          <>
-            <span className="text-xs text-red-500 font-medium mr-1">Verwijderen?</span>
-            <button
-              onClick={onDeleteConfirm}
-              className="px-2 py-0.5 rounded text-xs font-semibold bg-red-500 text-white hover:bg-red-600 transition-colors"
-            >
-              Ja
-            </button>
-            <button
-              onClick={onDeleteCancel}
-              className="px-2 py-0.5 rounded text-xs font-medium text-slate-500 hover:bg-slate-100 transition-colors"
-            >
-              Nee
-            </button>
-          </>
-        ) : (
-          <>
-            <button
-              onClick={onMoveUp}
-              disabled={index === 0}
-              title="Omhoog"
-              className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 disabled:opacity-20 disabled:cursor-not-allowed transition-all opacity-0 group-hover:opacity-100"
-            >
-              <ChevronUp size={13} />
-            </button>
-            <button
-              onClick={onMoveDown}
-              disabled={index === total - 1}
-              title="Omlaag"
-              className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 disabled:opacity-20 disabled:cursor-not-allowed transition-all opacity-0 group-hover:opacity-100"
-            >
-              <ChevronDown size={13} />
-            </button>
-            <button
-              onClick={onDeleteClick}
-              title="Verwijderen"
-              className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-300 hover:bg-red-50 hover:text-red-500 transition-all opacity-0 group-hover:opacity-100"
-            >
-              <Trash2 size={12} />
-            </button>
-          </>
-        )}
-      </div>
-      </div>
-
-      {/* Automation key row — only while editing */}
-      {isEditing && (
-        <div className="px-4 pb-3 flex items-center gap-2 ml-[52px]">
-          <span className="text-[10px] text-slate-400 flex-shrink-0">Automatisch afvinken bij:</span>
-          <select
-            value={draftAutoKey}
-            onChange={e => setDraftAutoKey(e.target.value)}
-            className="flex-1 text-[11px] border border-slate-200 rounded-lg px-2 py-1 text-slate-700 bg-white focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100 transition-all"
-          >
-            {AUTOMATION_KEY_OPTIONS.map(o => (
-              <option key={o.value} value={o.value}>{o.label}</option>
-            ))}
-          </select>
+        {/* Acties */}
+        <div className="flex items-center gap-0.5 flex-shrink-0" onClick={e => e.stopPropagation()}>
+          {isEditing ? (
+            <>
+              <button
+                onClick={() => onSaveEdit(draftTitle, draftRequired, draftAutoKey || null)}
+                disabled={isSaving || !draftTitle.trim()}
+                title="Opslaan (Enter)"
+                className="h-7 px-2.5 flex items-center gap-1 rounded-lg bg-blue-600 text-white text-xs font-medium hover:bg-blue-700 disabled:opacity-40 transition-colors"
+              >
+                {isSaving
+                  ? <span className="w-3 h-3 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                  : <Check size={11} />}
+                <span>Opslaan</span>
+              </button>
+              <button
+                onClick={onCancelEdit}
+                title="Annuleren (Esc)"
+                className="h-7 w-7 flex items-center justify-center rounded-lg bg-white ring-1 ring-slate-200 text-slate-500 hover:bg-red-50 hover:text-red-500 hover:ring-red-200 transition-all shadow-sm"
+              >
+                <X size={12} />
+              </button>
+            </>
+          ) : isConfirmingDelete ? (
+            <>
+              <span className="text-xs text-red-500 font-medium mr-1">Verwijderen?</span>
+              <button onClick={onDeleteConfirm} className="px-2 py-0.5 rounded text-xs font-semibold bg-red-500 text-white hover:bg-red-600 transition-colors">Ja</button>
+              <button onClick={onDeleteCancel}  className="px-2 py-0.5 rounded text-xs font-medium text-slate-500 hover:bg-slate-100 transition-colors">Nee</button>
+            </>
+          ) : (
+            <>
+              <button onClick={onMoveUp}    disabled={index === 0}         title="Omhoog" className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 disabled:opacity-20 disabled:cursor-not-allowed transition-all opacity-0 group-hover:opacity-100"><ChevronUp size={13} /></button>
+              <button onClick={onMoveDown}  disabled={index === total - 1} title="Omlaag" className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 disabled:opacity-20 disabled:cursor-not-allowed transition-all opacity-0 group-hover:opacity-100"><ChevronDown size={13} /></button>
+              <button onClick={onDeleteClick} title="Verwijderen"          className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-300 hover:bg-red-50 hover:text-red-500 transition-all opacity-0 group-hover:opacity-100"><Trash2 size={12} /></button>
+            </>
+          )}
         </div>
-      )}
+      </div>
+
+      {/* ── Chips — animeren in als bewerken actief is ── */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateRows: isEditing ? '1fr' : '0fr',
+          transition: 'grid-template-rows 200ms cubic-bezier(0.4, 0, 0.2, 1)',
+        }}
+      >
+        <div style={{ overflow: 'hidden' }}>
+          <div className="flex items-center gap-3 px-4 pt-2 pb-3 border-t border-t-blue-100 border-l-[3px] border-l-blue-500 bg-blue-50/40">
+            {/* spacer gelijk aan grip + step number + gap */}
+            <div className="w-[52px] flex-shrink-0" />
+
+            {/* Verplicht toggle */}
+            <button
+              type="button"
+              role="switch"
+              aria-checked={draftRequired}
+              onClick={() => setDraftRequired(!draftRequired)}
+              className="flex items-center gap-1.5 flex-shrink-0"
+            >
+              <span className={`relative inline-flex h-4 w-7 items-center rounded-full transition-colors duration-200 ${
+                draftRequired ? 'bg-orange-400' : 'bg-slate-200'
+              }`}>
+                <span className={`inline-block h-3 w-3 transform rounded-full bg-white shadow-sm transition-transform duration-200 ${
+                  draftRequired ? 'translate-x-3.5' : 'translate-x-0.5'
+                }`} />
+              </span>
+              <span className={`text-[10px] font-semibold transition-colors ${
+                draftRequired ? 'text-orange-600' : 'text-slate-400'
+              }`}>Verplicht</span>
+            </button>
+
+            {/* Automatisering dropdown */}
+            <div className={`flex items-center gap-1 text-[10px] rounded-full px-2 py-0.5 transition-all ${
+              draftAutoKey ? 'bg-violet-100 ring-1 ring-violet-200' : 'bg-slate-100'
+            }`}>
+              <Zap size={9} className={draftAutoKey ? 'text-violet-500' : 'text-slate-400'} />
+              <select
+                value={draftAutoKey}
+                onChange={e => setDraftAutoKey(e.target.value)}
+                className={`text-[10px] font-semibold bg-transparent border-0 focus:outline-none focus:ring-0 cursor-pointer ${
+                  draftAutoKey ? 'text-violet-600' : 'text-slate-400'
+                }`}
+              >
+                {AUTOMATION_KEY_OPTIONS.map(o => (
+                  <option key={o.value} value={o.value}>{o.label}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
@@ -333,38 +362,36 @@ function ItemRow({
 // ── Main view ─────────────────────────────────────────────────────────────────
 
 export function ProcessesView() {
-  const [templates, setTemplates]       = useState<ProcessTemplateListItem[]>([])
-  const [selected, setSelected]         = useState<ProcessTemplateDetail | null>(null)
-  const [loadingList, setLoadingList]   = useState(true)
-  const [loadingDetail, setLoadingDetail] = useState(false)
+  const [templates, setTemplates]           = useState<ProcessTemplateListItem[]>([])
+  const [selected, setSelected]             = useState<ProcessTemplateDetail | null>(null)
+  const [loadingList, setLoadingList]       = useState(true)
+  const [loadingDetail, setLoadingDetail]   = useState(false)
 
-  // Template header editing
   const [editingHeader, setEditingHeader]   = useState(false)
   const [headerName, setHeaderName]         = useState('')
   const [headerDesc, setHeaderDesc]         = useState('')
   const [savingHeader, setSavingHeader]     = useState(false)
 
-  // Item inline editing
   const [editingItemId, setEditingItemId]   = useState<string | null>(null)
   const [savingItemId, setSavingItemId]     = useState<string | null>(null)
   const [deletingItemId, setDeletingItemId] = useState<string | null>(null)
 
-  // New item at bottom
   const [addingItem, setAddingItem]         = useState(false)
   const [newItemTitle, setNewItemTitle]     = useState('')
   const [savingNewItem, setSavingNewItem]   = useState(false)
   const newItemRef = useRef<HTMLInputElement>(null)
 
-  // Template management
-  const [showNewModal, setShowNewModal]             = useState(false)
+  const [showNewModal, setShowNewModal]                   = useState(false)
   const [confirmDeleteTemplate, setConfirmDeleteTemplate] = useState(false)
-  const [deletingTemplate, setDeletingTemplate]     = useState(false)
+  const [deletingTemplate, setDeletingTemplate]           = useState(false)
+
+  // ── Drag and drop state ──────────────────────────────────────────────────
+  const [draggedId, setDraggedId] = useState<string | null>(null)
+  const [dragOverId, setDragOverId] = useState<string | null>(null)
 
   useEffect(() => {
     if (addingItem) setTimeout(() => newItemRef.current?.focus(), 0)
   }, [addingItem])
-
-  // ── Fetch ────────────────────────────────────────────────────────────────
 
   const fetchTemplates = useCallback(async () => {
     setLoadingList(true)
@@ -389,8 +416,6 @@ export function ProcessesView() {
     } finally { setLoadingDetail(false) }
   }
 
-  // ── Template header ──────────────────────────────────────────────────────
-
   const startEditHeader = () => {
     if (!selected) return
     setHeaderName(selected.name)
@@ -412,8 +437,6 @@ export function ProcessesView() {
     } finally { setSavingHeader(false) }
   }
 
-  // ── Items ────────────────────────────────────────────────────────────────
-
   const saveItem = async (itemId: string, title: string, isRequired: boolean, automationKey: string | null) => {
     if (!selected || !title.trim()) return
     setSavingItemId(itemId)
@@ -422,10 +445,7 @@ export function ProcessesView() {
         `/portal/process-templates/${selected.id}/items/${itemId}`,
         { title: title.trim(), isRequired, automationKey: automationKey || null }
       )
-      setSelected(prev => prev ? {
-        ...prev,
-        items: prev.items.map(i => i.id === itemId ? data : i),
-      } : null)
+      setSelected(prev => prev ? { ...prev, items: prev.items.map(i => i.id === itemId ? data : i) } : null)
       setEditingItemId(null)
     } finally { setSavingItemId(null) }
   }
@@ -434,9 +454,7 @@ export function ProcessesView() {
     if (!selected) return
     try {
       await api.delete(`/portal/process-templates/${selected.id}/items/${itemId}`)
-      const newItems = selected.items
-        .filter(i => i.id !== itemId)
-        .map((i, idx) => ({ ...i, sortOrder: idx }))
+      const newItems = selected.items.filter(i => i.id !== itemId).map((i, idx) => ({ ...i, sortOrder: idx }))
       setSelected({ ...selected, items: newItems })
       setTemplates(prev => prev.map(t => t.id === selected.id ? { ...t, itemCount: newItems.length } : t))
       setDeletingItemId(null)
@@ -449,11 +467,9 @@ export function ProcessesView() {
     const idx   = items.findIndex(i => i.id === itemId)
     if (direction === 'up'   && idx === 0) return
     if (direction === 'down' && idx === items.length - 1) return
-
     const swap = direction === 'up' ? idx - 1 : idx + 1
     ;[items[idx], items[swap]] = [items[swap], items[idx]]
-    items.forEach((item, i) => { item = { ...item, sortOrder: i }; items[i] = item })
-
+    items.forEach((item, i) => { items[i] = { ...item, sortOrder: i } })
     setSelected({ ...selected, items })
     await api.put(`/portal/process-templates/${selected.id}/items/reorder`, items.map(i => i.id))
   }
@@ -474,8 +490,6 @@ export function ProcessesView() {
     } finally { setSavingNewItem(false) }
   }
 
-  // ── Delete template ──────────────────────────────────────────────────────
-
   const deleteTemplate = async () => {
     if (!selected) return
     setDeletingTemplate(true)
@@ -487,7 +501,38 @@ export function ProcessesView() {
     } finally { setDeletingTemplate(false) }
   }
 
-  // ── Group templates by entity type ───────────────────────────────────────
+  // ── Drag handlers ────────────────────────────────────────────────────────
+
+  const handleDragStart = (e: React.DragEvent, itemId: string) => {
+    setDraggedId(itemId)
+    e.dataTransfer.effectAllowed = 'move'
+  }
+
+  const handleDragOver = (e: React.DragEvent, itemId: string) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    if (itemId !== draggedId) setDragOverId(itemId)
+  }
+
+  const handleDrop = async (e: React.DragEvent, targetId: string) => {
+    e.preventDefault()
+    if (!draggedId || draggedId === targetId || !selected) {
+      setDraggedId(null); setDragOverId(null); return
+    }
+    const items   = [...selected.items]
+    const fromIdx = items.findIndex(i => i.id === draggedId)
+    const toIdx   = items.findIndex(i => i.id === targetId)
+    const [moved] = items.splice(fromIdx, 1)
+    items.splice(toIdx, 0, moved)
+    items.forEach((item, i) => { items[i] = { ...item, sortOrder: i } })
+    setSelected({ ...selected, items })
+    setDraggedId(null); setDragOverId(null)
+    await api.put(`/portal/process-templates/${selected.id}/items/reorder`, items.map(i => i.id))
+  }
+
+  const handleDragEnd = () => { setDraggedId(null); setDragOverId(null) }
+
+  // ── Group templates ──────────────────────────────────────────────────────
 
   const grouped = templates.reduce<Partial<Record<string, ProcessTemplateListItem[]>>>((acc, t) => {
     const key = t.targetEntityType
@@ -499,12 +544,10 @@ export function ProcessesView() {
   const entityOrder: TargetEntityType[] = ['Employee', 'Hardware', 'Phone', 'SimCard', 'License', 'Location']
   const presentTypes = entityOrder.filter(t => (grouped[t]?.length ?? 0) > 0)
 
-  // ── Render ───────────────────────────────────────────────────────────────
-
   return (
     <div className="flex h-full gap-4 min-h-0">
 
-      {/* ── Left panel: template list ─────────────────────────────────────── */}
+      {/* ── Left panel ───────────────────────────────────────────────────────── */}
       <div className="w-72 flex-shrink-0 flex flex-col gap-3 min-h-0">
         <div className="flex items-center justify-between flex-shrink-0">
           <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Checklist Templates</h2>
@@ -573,7 +616,7 @@ export function ProcessesView() {
         </Card>
       </div>
 
-      {/* ── Right panel: template editor ──────────────────────────────────── */}
+      {/* ── Right panel ──────────────────────────────────────────────────────── */}
       <div className="flex-1 min-w-0 min-h-0">
         <Card className="h-full flex flex-col min-h-0 overflow-hidden">
           {loadingDetail ? (
@@ -604,12 +647,8 @@ export function ProcessesView() {
                       placeholder="Omschrijving (optioneel)…"
                     />
                     <div className="flex items-center gap-2 pt-1">
-                      <Button size="sm" onClick={saveHeader} disabled={savingHeader}>
-                        {savingHeader ? 'Opslaan…' : 'Opslaan'}
-                      </Button>
-                      <Button size="sm" variant="secondary" onClick={() => setEditingHeader(false)}>
-                        Annuleren
-                      </Button>
+                      <Button size="sm" onClick={saveHeader} disabled={savingHeader}>{savingHeader ? 'Opslaan…' : 'Opslaan'}</Button>
+                      <Button size="sm" variant="secondary" onClick={() => setEditingHeader(false)}>Annuleren</Button>
                     </div>
                   </div>
                 ) : (
@@ -636,17 +675,11 @@ export function ProcessesView() {
                       )}
                     </div>
                     <div className="flex items-center gap-1.5 flex-shrink-0">
-                      <button
-                        onClick={startEditHeader}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-500 hover:bg-slate-100 transition-colors"
-                      >
+                      <button onClick={startEditHeader} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-500 hover:bg-slate-100 transition-colors">
                         <Pencil size={12} /> Bewerken
                       </button>
                       {!selected.isSystemDefault && (
-                        <button
-                          onClick={() => setConfirmDeleteTemplate(true)}
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-red-500 hover:bg-red-50 transition-colors"
-                        >
+                        <button onClick={() => setConfirmDeleteTemplate(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-red-500 hover:bg-red-50 transition-colors">
                           <Trash2 size={12} /> Verwijderen
                         </button>
                       )}
@@ -660,10 +693,7 @@ export function ProcessesView() {
                 {selected.items.length === 0 && !addingItem ? (
                   <div className="flex flex-col items-center justify-center h-40 text-center">
                     <p className="text-sm text-slate-400 mb-3">Nog geen stappen toegevoegd</p>
-                    <button
-                      onClick={() => setAddingItem(true)}
-                      className="flex items-center gap-1.5 text-sm font-medium text-blue-600 hover:underline"
-                    >
+                    <button onClick={() => setAddingItem(true)} className="flex items-center gap-1.5 text-sm font-medium text-blue-600 hover:underline">
                       <Plus size={14} /> Eerste stap toevoegen
                     </button>
                   </div>
@@ -678,6 +708,8 @@ export function ProcessesView() {
                         isEditing={editingItemId === item.id}
                         isSaving={savingItemId === item.id}
                         isConfirmingDelete={deletingItemId === item.id}
+                        isDragging={draggedId === item.id}
+                        isDragOver={dragOverId === item.id}
                         onStartEdit={() => { setEditingItemId(item.id); setDeletingItemId(null) }}
                         onSaveEdit={(title, isRequired, automationKey) => saveItem(item.id, title, isRequired, automationKey)}
                         onCancelEdit={() => setEditingItemId(null)}
@@ -686,13 +718,17 @@ export function ProcessesView() {
                         onDeleteClick={() => { setDeletingItemId(item.id); setEditingItemId(null) }}
                         onDeleteConfirm={() => deleteItem(item.id)}
                         onDeleteCancel={() => setDeletingItemId(null)}
+                        onDragStart={e => handleDragStart(e, item.id)}
+                        onDragOver={e => handleDragOver(e, item.id)}
+                        onDrop={e => handleDrop(e, item.id)}
+                        onDragEnd={handleDragEnd}
                       />
                     ))}
                   </>
                 )}
 
                 {/* Add item row */}
-                {addingItem ? (
+                {addingItem && (
                   <div className="flex items-center gap-3 px-4 py-3 bg-blue-50/60 border-t border-slate-100">
                     <GripVertical size={13} className="text-slate-300 flex-shrink-0" />
                     <span className="w-6 h-6 rounded-full bg-blue-200 text-blue-700 text-[10px] font-bold flex items-center justify-center flex-shrink-0">
@@ -717,8 +753,7 @@ export function ProcessesView() {
                       >
                         {savingNewItem
                           ? <span className="w-3 h-3 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                          : <Check size={12} />
-                        }
+                          : <Check size={12} />}
                       </button>
                       <button
                         onClick={() => { setAddingItem(false); setNewItemTitle('') }}
@@ -728,7 +763,7 @@ export function ProcessesView() {
                       </button>
                     </div>
                   </div>
-                ) : null}
+                )}
               </div>
 
               {/* Footer */}
@@ -738,8 +773,7 @@ export function ProcessesView() {
                   disabled={addingItem}
                   className="flex items-center gap-1.5 text-sm font-medium text-blue-600 hover:text-blue-700 disabled:opacity-40 transition-colors"
                 >
-                  <Plus size={14} />
-                  Stap toevoegen
+                  <Plus size={14} /> Stap toevoegen
                 </button>
               </div>
             </>
