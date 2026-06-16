@@ -2,10 +2,29 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   Plus, Trash2, ChevronUp, ChevronDown, Lock, Check, X,
   ClipboardList, Pencil, Users, Laptop, Phone as PhoneIcon,
-  CreditCard, Key, MapPin, AlertCircle, GripVertical, Zap, ChevronRight,
+  CreditCard, Key, MapPin, AlertCircle, GripVertical, Zap,
 } from 'lucide-react'
+import {
+  DndContext,
+  DragEndEvent,
+  DragOverlay,
+  DragStartEvent,
+  KeyboardSensor,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core'
+import {
+  SortableContext,
+  arrayMove,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import api from '@/lib/axios'
-import { Card, CardContent } from '@/components/ui/Card'
+import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { ConfirmDeleteModal } from '@/components/ui/ConfirmDeleteModal'
 import type {
@@ -152,8 +171,6 @@ function ItemRow({
   onStartEdit, onSaveEdit, onCancelEdit,
   onMoveUp, onMoveDown, onDeleteClick, onDeleteConfirm, onDeleteCancel,
   isConfirmingDelete,
-  isDragging, isDragOver,
-  onDragStart, onDragOver, onDrop, onDragEnd,
 }: {
   item: ProcessTemplateItem
   index: number
@@ -169,24 +186,31 @@ function ItemRow({
   onDeleteConfirm: () => void
   onDeleteCancel: () => void
   isConfirmingDelete: boolean
-  isDragging: boolean
-  isDragOver: boolean
-  onDragStart: (e: React.DragEvent) => void
-  onDragOver: (e: React.DragEvent) => void
-  onDrop: (e: React.DragEvent) => void
-  onDragEnd: () => void
 }) {
   const [draftTitle, setDraftTitle]       = useState(item.title)
   const [draftRequired, setDraftRequired] = useState(item.isRequired)
   const [draftAutoKey, setDraftAutoKey]   = useState(item.automationKey ?? '')
   const inputRef = useRef<HTMLInputElement>(null)
 
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: item.id, disabled: isEditing })
+
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  }
+
   useEffect(() => {
     if (isEditing) {
       setDraftTitle(item.title)
       setDraftRequired(item.isRequired)
       setDraftAutoKey(item.automationKey ?? '')
-      // slight delay so the grid animation plays first
       setTimeout(() => inputRef.current?.focus(), 150)
     }
   }, [isEditing, item.title, item.isRequired, item.automationKey])
@@ -198,34 +222,36 @@ function ItemRow({
 
   return (
     <div
-      draggable={!isEditing}
-      onDragStart={onDragStart}
-      onDragOver={onDragOver}
-      onDrop={onDrop}
-      onDragEnd={onDragEnd}
-      className={`group border-b border-slate-100 last:border-0 transition-all select-none ${
-        isDragging         ? 'opacity-40 bg-slate-50 scale-[0.99]' :
-        isDragOver         ? 'border-t-2 border-t-blue-400 bg-blue-50/40' :
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      className={`group border-b border-slate-100 last:border-0 select-none ${
+        isDragging         ? 'opacity-40 bg-slate-50 z-10' :
         isConfirmingDelete ? 'bg-red-50' :
         isEditing          ? 'bg-blue-50/40' :
         'hover:bg-slate-50'
       }`}
     >
-      {/* ── Always-visible row — titel wordt input bij bewerken ── */}
-      <div className={`flex items-center gap-3 px-4 py-3 transition-all ${
-        isEditing          ? 'bg-blue-50/40 border-l-[3px] border-l-blue-500' :
-        isDragOver         ? '' :
-        isConfirmingDelete ? '' :
-        'border-l-[3px] border-l-transparent cursor-pointer'
-      }`}
+      {/* ── Always-visible row ── */}
+      <div
+        className={`flex items-center gap-3 px-4 py-3 transition-all ${
+          isEditing          ? 'bg-blue-50/40 border-l-[3px] border-l-blue-500' :
+          isConfirmingDelete ? '' :
+          'border-l-[3px] border-l-transparent cursor-pointer'
+        }`}
         onClick={isEditing ? undefined : onStartEdit}
       >
-        {/* Drag handle */}
-        <GripVertical
-          size={13}
+        {/* Drag handle — only this area triggers drag */}
+        <div
+          {...listeners}
           onClick={e => e.stopPropagation()}
-          className="text-slate-300 flex-shrink-0 cursor-grab active:cursor-grabbing group-hover:text-slate-400 transition-colors"
-        />
+          className="flex-shrink-0 touch-none cursor-grab active:cursor-grabbing"
+        >
+          <GripVertical
+            size={13}
+            className="text-slate-300 group-hover:text-slate-400 transition-colors"
+          />
+        </div>
 
         {/* Step number */}
         <span className={`w-6 h-6 rounded-full text-[10px] font-bold flex items-center justify-center flex-shrink-0 select-none transition-colors ${
@@ -359,6 +385,32 @@ function ItemRow({
   )
 }
 
+// ── Drag overlay card (floating preview while dragging) ───────────────────────
+
+function DragPreview({ item, index }: { item: ProcessTemplateItem; index: number }) {
+  return (
+    <div className="bg-white border border-blue-300 rounded-xl shadow-xl shadow-blue-200/50 ring-1 ring-blue-100">
+      <div className="flex items-center gap-3 px-4 py-3">
+        <GripVertical size={13} className="text-blue-400 flex-shrink-0" />
+        <span className="w-6 h-6 rounded-full bg-blue-600 text-white text-[10px] font-bold flex items-center justify-center flex-shrink-0">
+          {index + 1}
+        </span>
+        <span className="text-sm text-slate-800 font-medium flex-1 truncate">{item.title}</span>
+        {item.isRequired && (
+          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-orange-50 text-orange-500 ring-1 ring-orange-200 flex-shrink-0">
+            Verplicht
+          </span>
+        )}
+        {item.automationKey && (
+          <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-violet-50 text-violet-600 ring-1 ring-violet-200 flex-shrink-0">
+            <Zap size={9} /> {AUTOMATION_KEY_LABEL[item.automationKey] ?? item.automationKey}
+          </span>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ── Main view ─────────────────────────────────────────────────────────────────
 
 export function ProcessesView() {
@@ -385,9 +437,13 @@ export function ProcessesView() {
   const [confirmDeleteTemplate, setConfirmDeleteTemplate] = useState(false)
   const [deletingTemplate, setDeletingTemplate]           = useState(false)
 
-  // ── Drag and drop state ──────────────────────────────────────────────────
-  const [draggedId, setDraggedId] = useState<string | null>(null)
-  const [dragOverId, setDragOverId] = useState<string | null>(null)
+  // ── dnd-kit drag state ───────────────────────────────────────────────────
+  const [activeId, setActiveId] = useState<string | null>(null)
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  )
 
   useEffect(() => {
     if (addingItem) setTimeout(() => newItemRef.current?.focus(), 0)
@@ -501,36 +557,21 @@ export function ProcessesView() {
     } finally { setDeletingTemplate(false) }
   }
 
-  // ── Drag handlers ────────────────────────────────────────────────────────
+  // ── dnd-kit handlers ─────────────────────────────────────────────────────
 
-  const handleDragStart = (e: React.DragEvent, itemId: string) => {
-    setDraggedId(itemId)
-    e.dataTransfer.effectAllowed = 'move'
+  const handleDragStart = ({ active }: DragStartEvent) => {
+    setActiveId(active.id as string)
   }
 
-  const handleDragOver = (e: React.DragEvent, itemId: string) => {
-    e.preventDefault()
-    e.dataTransfer.dropEffect = 'move'
-    if (itemId !== draggedId) setDragOverId(itemId)
+  const handleDragEnd = async ({ active, over }: DragEndEvent) => {
+    setActiveId(null)
+    if (!over || active.id === over.id || !selected) return
+    const oldIndex = selected.items.findIndex(i => i.id === active.id)
+    const newIndex = selected.items.findIndex(i => i.id === over.id)
+    const newItems = arrayMove(selected.items, oldIndex, newIndex).map((item, i) => ({ ...item, sortOrder: i }))
+    setSelected({ ...selected, items: newItems })
+    await api.put(`/portal/process-templates/${selected.id}/items/reorder`, newItems.map(i => i.id))
   }
-
-  const handleDrop = async (e: React.DragEvent, targetId: string) => {
-    e.preventDefault()
-    if (!draggedId || draggedId === targetId || !selected) {
-      setDraggedId(null); setDragOverId(null); return
-    }
-    const items   = [...selected.items]
-    const fromIdx = items.findIndex(i => i.id === draggedId)
-    const toIdx   = items.findIndex(i => i.id === targetId)
-    const [moved] = items.splice(fromIdx, 1)
-    items.splice(toIdx, 0, moved)
-    items.forEach((item, i) => { items[i] = { ...item, sortOrder: i } })
-    setSelected({ ...selected, items })
-    setDraggedId(null); setDragOverId(null)
-    await api.put(`/portal/process-templates/${selected.id}/items/reorder`, items.map(i => i.id))
-  }
-
-  const handleDragEnd = () => { setDraggedId(null); setDragOverId(null) }
 
   // ── Group templates ──────────────────────────────────────────────────────
 
@@ -543,6 +584,9 @@ export function ProcessesView() {
 
   const entityOrder: TargetEntityType[] = ['Employee', 'Hardware', 'Phone', 'SimCard', 'License', 'Location']
   const presentTypes = entityOrder.filter(t => (grouped[t]?.length ?? 0) > 0)
+
+  const activeItem = activeId ? selected?.items.find(i => i.id === activeId) : null
+  const activeIndex = activeId ? selected?.items.findIndex(i => i.id === activeId) ?? -1 : -1
 
   return (
     <div className="flex h-full gap-4 min-h-0">
@@ -699,31 +743,46 @@ export function ProcessesView() {
                   </div>
                 ) : (
                   <>
-                    {selected.items.map((item, idx) => (
-                      <ItemRow
-                        key={item.id}
-                        item={item}
-                        index={idx}
-                        total={selected.items.length}
-                        isEditing={editingItemId === item.id}
-                        isSaving={savingItemId === item.id}
-                        isConfirmingDelete={deletingItemId === item.id}
-                        isDragging={draggedId === item.id}
-                        isDragOver={dragOverId === item.id}
-                        onStartEdit={() => { setEditingItemId(item.id); setDeletingItemId(null) }}
-                        onSaveEdit={(title, isRequired, automationKey) => saveItem(item.id, title, isRequired, automationKey)}
-                        onCancelEdit={() => setEditingItemId(null)}
-                        onMoveUp={() => moveItem(item.id, 'up')}
-                        onMoveDown={() => moveItem(item.id, 'down')}
-                        onDeleteClick={() => { setDeletingItemId(item.id); setEditingItemId(null) }}
-                        onDeleteConfirm={() => deleteItem(item.id)}
-                        onDeleteCancel={() => setDeletingItemId(null)}
-                        onDragStart={e => handleDragStart(e, item.id)}
-                        onDragOver={e => handleDragOver(e, item.id)}
-                        onDrop={e => handleDrop(e, item.id)}
-                        onDragEnd={handleDragEnd}
-                      />
-                    ))}
+                    <DndContext
+                      sensors={sensors}
+                      collisionDetection={closestCenter}
+                      onDragStart={handleDragStart}
+                      onDragEnd={handleDragEnd}
+                    >
+                      <SortableContext
+                        items={selected.items.map(i => i.id)}
+                        strategy={verticalListSortingStrategy}
+                      >
+                        {selected.items.map((item, idx) => (
+                          <ItemRow
+                            key={item.id}
+                            item={item}
+                            index={idx}
+                            total={selected.items.length}
+                            isEditing={editingItemId === item.id}
+                            isSaving={savingItemId === item.id}
+                            isConfirmingDelete={deletingItemId === item.id}
+                            onStartEdit={() => { setEditingItemId(item.id); setDeletingItemId(null) }}
+                            onSaveEdit={(title, isRequired, automationKey) => saveItem(item.id, title, isRequired, automationKey)}
+                            onCancelEdit={() => setEditingItemId(null)}
+                            onMoveUp={() => moveItem(item.id, 'up')}
+                            onMoveDown={() => moveItem(item.id, 'down')}
+                            onDeleteClick={() => { setDeletingItemId(item.id); setEditingItemId(null) }}
+                            onDeleteConfirm={() => deleteItem(item.id)}
+                            onDeleteCancel={() => setDeletingItemId(null)}
+                          />
+                        ))}
+                      </SortableContext>
+
+                      <DragOverlay dropAnimation={{
+                        duration: 200,
+                        easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)',
+                      }}>
+                        {activeItem ? (
+                          <DragPreview item={activeItem} index={activeIndex} />
+                        ) : null}
+                      </DragOverlay>
+                    </DndContext>
                   </>
                 )}
 
