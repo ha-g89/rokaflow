@@ -129,7 +129,6 @@ export function DepartmentModal({ open, onClose, onSuccess, editTarget }: Props)
   return (
     <div
       className={`fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 transition-opacity duration-200 ${visible ? 'opacity-100' : 'opacity-0'}`}
-      onClick={e => { if (e.target === e.currentTarget) onClose() }}
     >
       <div className={`bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col transition-all duration-200 ease-out ${visible ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-2'}`}>
 
