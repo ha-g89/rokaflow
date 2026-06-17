@@ -110,10 +110,10 @@ const CONTRACT_OPTIONS = [
   { value: '0', label: 'Vast' },
   { value: '1', label: 'Tijdelijk' },
   { value: '2', label: 'Stagiair' },
-  { value: '3', label: 'Inhuur' },
+  { value: '3', label: 'Extern' },
 ]
 const STATUS_TO_INT: Record<string, string> = { InService: '0', LeavePlanned: '1', Left: '2', StartPlanned: '0' }
-const CONTRACT_TO_INT: Record<string, string> = { Vast: '0', Tijdelijk: '1', Stagiair: '2', Inhuur: '3' }
+const CONTRACT_TO_INT: Record<string, string> = { Vast: '0', Tijdelijk: '1', Stagiair: '2', Extern: '3' }
 
 function EditUserModal({ user, departments, managers, locations, onClose, onSaved }: {
   user: ClientUserDetailResponse

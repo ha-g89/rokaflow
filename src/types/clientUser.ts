@@ -29,7 +29,7 @@ export interface ClientUserResponse {
   createdAt: string
 }
 
-export type ContractType = 'Vast' | 'Tijdelijk' | 'Stagiair' | 'Inhuur'
+export type ContractType = 'Vast' | 'Tijdelijk' | 'Stagiair' | 'Extern'
 
 export interface ClientUserDetailResponse {
   id: string

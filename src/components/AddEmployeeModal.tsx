@@ -47,7 +47,7 @@ const CONTRACT_OPTIONS = [
   { value: '0', label: 'Vast' },
   { value: '1', label: 'Tijdelijk' },
   { value: '2', label: 'Stagiair' },
-  { value: '3', label: 'Inhuur' },
+  { value: '3', label: 'Extern' },
 ]
 
 export function AddEmployeeModal({ open, onClose, onSuccess, departments = [], managers = [], locations = [] }: Props) {

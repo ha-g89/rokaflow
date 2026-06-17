@@ -1,5 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Laptop, Search, Plus, Package, Activity, Archive, XCircle, Pencil, Trash2, StickyNote, History } from 'lucide-react'
+import {
+  Laptop, Search, Plus, Package, Activity, Archive, XCircle,
+  Pencil, Trash2, StickyNote, History, Link2Off, User, Maximize2, ArrowLeft,
+} from 'lucide-react'
 import api from '@/lib/axios'
 import { Card, CardContent } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -18,90 +21,254 @@ function fmtDate(d: string | null | undefined) {
   return new Date(d).toLocaleDateString('nl-NL', { day: '2-digit', month: '2-digit', year: 'numeric' })
 }
 
-function HardwareDetailPanel({ asset, onEdit, onDelete, historyKey }: {
+function typeNameToValue(typeName: string): number {
+  const map: Record<string, number> = {
+    Laptop: 0, Desktop: 1, Phone: 2, Tablet: 3, Monitor: 4, Other: 5,
+  }
+  return map[typeName] ?? 0
+}
+
+// ── Detail panel ──────────────────────────────────────────────────────────────
+
+function HardwareDetailPanel({ asset, teammates, onEdit, onDelete, onUnlink, onLink, onExpand, historyKey }: {
   asset: HardwareAssetListItem
+  teammates: ClientUserListItem[]
   onEdit: () => void
   onDelete: () => void
+  onUnlink: () => Promise<void>
+  onLink: (userId: string) => Promise<void>
+  onExpand: () => void
   historyKey: number
 }) {
-  const [confirmDelete, setConfirmDelete] = useState(false)
-  const [activeTab, setActiveTab]         = useState<'notes' | 'history'>('notes')
+  const [confirmDelete, setConfirmDelete]   = useState(false)
+  const [confirmUnlink, setConfirmUnlink]   = useState(false)
+  const [unlinking, setUnlinking]           = useState(false)
+  const [showLinking, setShowLinking]       = useState(false)
+  const [linkUserId, setLinkUserId]         = useState('')
+  const [linking, setLinking]               = useState(false)
+  const [activeTab, setActiveTab]           = useState<'notes' | 'history'>('notes')
+
+  const handleUnlinkConfirm = async () => {
+    setUnlinking(true)
+    try { await onUnlink() }
+    finally { setUnlinking(false); setConfirmUnlink(false) }
+  }
+
+  const handleLinkConfirm = async () => {
+    if (!linkUserId) return
+    setLinking(true)
+    try { await onLink(linkUserId) }
+    finally { setLinking(false); setShowLinking(false); setLinkUserId('') }
+  }
+
+  // Reset states when a different asset is shown
+  useEffect(() => {
+    setConfirmDelete(false)
+    setConfirmUnlink(false)
+    setShowLinking(false)
+    setLinkUserId('')
+  }, [asset.id])
 
   return (
-    <>
-      <Card>
-        <CardContent className="p-5">
-          <div className="flex items-start justify-between mb-5 gap-3">
+    <Card className="overflow-hidden">
+      {/* ── Header ─────────────────────────────────────────────────────────── */}
+      <div className="px-5 pt-4 pb-4 border-b border-slate-100">
+        {/* Knoppen rechts */}
+        <div className="flex items-center justify-end gap-2 mb-2">
+          <div className="flex items-center gap-1">
+            <button onClick={onEdit} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-500 hover:bg-slate-100 transition-colors">
+              <Pencil size={12} /> Wijzigen
+            </button>
+            <button onClick={() => setConfirmDelete(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-red-500 hover:bg-red-50 transition-colors">
+              <Trash2 size={12} /> Verwijderen
+            </button>
+            <button onClick={onExpand} title="Volledig openen" className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors">
+              <Maximize2 size={13} />
+            </button>
+          </div>
+        </div>
+        <h2 className="text-base font-bold text-slate-900 truncate mb-0.5">{asset.name}</h2>
+        <p className="text-sm text-slate-500 truncate">
+          {[asset.brand, HARDWARE_TYPE_LABEL[asset.type] ?? asset.type].filter(Boolean).join(' · ')}
+        </p>
+      </div>
+
+      <CardContent className="p-5 space-y-4">
+
+        {/* ── Info grid ───────────────────────────────────────────────────── */}
+        <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+          {asset.assetNumber && (
             <div>
-              <h2 className="text-base font-bold text-slate-900">{asset.name}</h2>
-              <p className="text-sm text-slate-500 mt-0.5">
-                {asset.brand || '—'} • {HARDWARE_TYPE_LABEL[asset.type] ?? asset.type}
-              </p>
+              <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">Assetnummer</p>
+              <p className="text-sm font-medium text-slate-800 tabular-nums">{asset.assetNumber}</p>
             </div>
-            <span className={`text-xs px-2.5 py-1 rounded-full font-medium flex-shrink-0 ${HARDWARE_STATUS_TONE[asset.status] ?? 'bg-slate-100 text-slate-600'}`}>
+          )}
+          {asset.serialNumber && (
+            <div>
+              <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">Serienummer</p>
+              <p className="text-sm font-medium text-slate-800 tabular-nums">{asset.serialNumber}</p>
+            </div>
+          )}
+          {asset.location && (
+            <div>
+              <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">Locatie</p>
+              <p className="text-sm font-medium text-slate-800">{asset.location}</p>
+            </div>
+          )}
+          {asset.purchaseValue != null && (
+            <div>
+              <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">Aanschafwaarde</p>
+              <p className="text-sm font-medium text-slate-800">€ {asset.purchaseValue.toFixed(2)}</p>
+            </div>
+          )}
+          {asset.supplier && (
+            <div>
+              <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">Leverancier</p>
+              <p className="text-sm font-medium text-slate-800">{asset.supplier}</p>
+            </div>
+          )}
+          <div>
+            <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">Status</p>
+            <span className={`text-xs font-semibold ${
+              asset.status === 'InUse'          ? 'text-emerald-600' :
+              asset.status === 'InStock'        ? 'text-blue-600' :
+              asset.status === 'UnderRepair'    ? 'text-orange-500' :
+              asset.status === 'Decommissioned' ? 'text-red-500' : 'text-slate-500'
+            }`}>
               {HARDWARE_STATUS_LABEL[asset.status] ?? asset.status}
             </span>
           </div>
-
-          <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-xs text-slate-600">
-            {asset.assetNumber   && <p><span className="text-slate-400">Assetnummer</span><br /><span className="font-medium text-slate-800">{asset.assetNumber}</span></p>}
-            {asset.serialNumber  && <p><span className="text-slate-400">Serienummer</span><br /><span className="font-medium text-slate-800">{asset.serialNumber}</span></p>}
-            {asset.location      && <p><span className="text-slate-400">Locatie</span><br /><span className="font-medium text-slate-800">{asset.location}</span></p>}
-            {asset.purchaseValue != null && <p><span className="text-slate-400">Aanschafwaarde</span><br /><span className="font-medium text-slate-800">€ {asset.purchaseValue.toFixed(2)}</span></p>}
-            {asset.supplier      && <p><span className="text-slate-400">Leverancier</span><br /><span className="font-medium text-slate-800">{asset.supplier}</span></p>}
-            {asset.assignedToName && <p className="col-span-2"><span className="text-slate-400">Toegewezen aan</span><br /><span className="font-medium text-slate-800">{asset.assignedToName}</span></p>}
-            {asset.issuedAt      && <p><span className="text-slate-400">Uitgiftedatum</span><br /><span className="font-medium text-slate-800">{fmtDate(asset.issuedAt)}</span></p>}
-            {asset.returnedAt    && <p><span className="text-slate-400">Inleverdatum</span><br /><span className="font-medium text-slate-800">{fmtDate(asset.returnedAt)}</span></p>}
-          </div>
-
-          <div className="mt-4 flex flex-wrap gap-2">
-            <Button size="sm" variant="secondary" onClick={onEdit}>
-              <Pencil size={13} /> Wijzigen
-            </Button>
-            <Button size="sm" variant="danger" onClick={() => setConfirmDelete(true)}>
-              <Trash2 size={13} /> Verwijderen
-            </Button>
-          </div>
-          <ConfirmDeleteModal
-            open={confirmDelete}
-            onClose={() => setConfirmDelete(false)}
-            onConfirm={() => { setConfirmDelete(false); onDelete() }}
-            itemName={`${asset.brand} ${asset.name}`}
-          />
-
-          <div className="mt-5 border-t border-slate-100 dark:border-slate-700 pt-4">
-            <div className="flex items-center gap-1 mb-4">
-              <button
-                onClick={() => setActiveTab('notes')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'notes' ? 'bg-blue-600 text-white' : 'text-slate-500 hover:bg-slate-100'}`}
-              >
-                <StickyNote size={13} /> Notities
-              </button>
-              <button
-                onClick={() => setActiveTab('history')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'history' ? 'bg-blue-600 text-white' : 'text-slate-500 hover:bg-slate-100'}`}
-              >
-                <History size={13} /> Historie
-              </button>
+          {asset.issuedAt && (
+            <div>
+              <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">Uitgiftedatum</p>
+              <p className="text-sm font-medium text-slate-800">{fmtDate(asset.issuedAt)}</p>
             </div>
-            {activeTab === 'notes' && (
-              <NotesPanel entityType="Hardware" entityId={asset.id} />
-            )}
-            {activeTab === 'history' && (
-              <ItemHistoryBlock
-                key={`${asset.id}-${historyKey}`}
-                url={`/portal/hardware/${asset.id}/history`}
-                subtitle={`${asset.brand} ${asset.name}`}
-              />
+          )}
+          {asset.returnedAt && (
+            <div>
+              <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">Inleverdatum</p>
+              <p className="text-sm font-medium text-slate-800">{fmtDate(asset.returnedAt)}</p>
+            </div>
+          )}
+        </div>
+
+        {/* ── Toegewezen aan / Koppelen ────────────────────────────────────── */}
+        {asset.assignedToName ? (
+          /* Gekoppeld */
+          <div className="rounded-xl bg-blue-50 border border-blue-100 px-4 py-3">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-8 h-8 rounded-full bg-blue-200 flex items-center justify-center flex-shrink-0">
+                  <User size={14} className="text-blue-700" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs text-blue-500 font-medium">Toegewezen aan</p>
+                  <p className="text-sm font-semibold text-slate-800 truncate">{asset.assignedToName}</p>
+                  {asset.issuedAt && (
+                    <p className="text-xs text-slate-400 mt-0.5">Uitgegeven {fmtDate(asset.issuedAt)}</p>
+                  )}
+                </div>
+              </div>
+              {confirmUnlink ? (
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <span className="text-xs text-slate-600 font-medium">Ontkoppelen?</span>
+                  <button onClick={handleUnlinkConfirm} disabled={unlinking} className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-orange-500 text-white hover:bg-orange-600 disabled:opacity-50 transition-colors">
+                    {unlinking ? 'Bezig…' : 'Ja'}
+                  </button>
+                  <button onClick={() => setConfirmUnlink(false)} className="px-2.5 py-1 rounded-lg text-xs font-medium text-slate-500 hover:bg-white transition-colors">
+                    Nee
+                  </button>
+                </div>
+              ) : (
+                <button onClick={() => setConfirmUnlink(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-orange-600 bg-white ring-1 ring-orange-200 hover:bg-orange-50 transition-colors flex-shrink-0">
+                  <Link2Off size={12} /> Ontkoppelen
+                </button>
+              )}
+            </div>
+          </div>
+        ) : (
+          /* Niet gekoppeld */
+          <div className="rounded-xl bg-slate-50 border border-slate-200 px-4 py-3">
+            {showLinking ? (
+              <div className="space-y-3">
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Koppelen aan medewerker</p>
+                <select
+                  value={linkUserId}
+                  onChange={e => setLinkUserId(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm text-slate-900 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-colors bg-white"
+                >
+                  <option value="">— Kies medewerker —</option>
+                  {teammates.map(u => (
+                    <option key={u.id} value={u.id}>{u.firstName} {u.lastName}</option>
+                  ))}
+                </select>
+                <div className="flex gap-2">
+                  <button onClick={() => { setShowLinking(false); setLinkUserId('') }} className="flex-1 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-500 bg-white ring-1 ring-slate-200 hover:bg-slate-50 transition-colors">
+                    Annuleren
+                  </button>
+                  <button onClick={handleLinkConfirm} disabled={!linkUserId || linking} className="flex-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-40 transition-colors">
+                    {linking ? 'Koppelen…' : 'Koppelen'}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center flex-shrink-0">
+                    <User size={14} className="text-slate-400" />
+                  </div>
+                  <p className="text-sm text-slate-400 font-medium">Niet gekoppeld aan medewerker</p>
+                </div>
+                <button onClick={() => setShowLinking(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-blue-600 bg-white ring-1 ring-blue-200 hover:bg-blue-50 transition-colors flex-shrink-0">
+                  <User size={12} /> Koppelen
+                </button>
+              </div>
             )}
           </div>
-        </CardContent>
-      </Card>
-    </>
+        )}
+
+        {/* ── Notes / History tabs ─────────────────────────────────────────── */}
+        <div className="border-t border-slate-100 pt-4">
+          <div className="flex items-center gap-1 mb-4">
+            <button
+              onClick={() => setActiveTab('notes')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'notes' ? 'bg-blue-600 text-white' : 'text-slate-500 hover:bg-slate-100'}`}
+            >
+              <StickyNote size={13} /> Notities
+            </button>
+            <button
+              onClick={() => setActiveTab('history')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'history' ? 'bg-blue-600 text-white' : 'text-slate-500 hover:bg-slate-100'}`}
+            >
+              <History size={13} /> Historie
+            </button>
+          </div>
+          {activeTab === 'notes' && (
+            <NotesPanel entityType="Hardware" entityId={asset.id} />
+          )}
+          {activeTab === 'history' && (
+            <ItemHistoryBlock
+              key={`${asset.id}-${historyKey}`}
+              url={`/portal/hardware/${asset.id}/history`}
+              subtitle={`${asset.brand} ${asset.name}`}
+            />
+          )}
+        </div>
+      </CardContent>
+
+      <ConfirmDeleteModal
+        open={confirmDelete}
+        onClose={() => setConfirmDelete(false)}
+        onConfirm={() => { setConfirmDelete(false); onDelete() }}
+        itemName={`${asset.brand} ${asset.name}`}
+      />
+    </Card>
   )
 }
 
-export function HardwareView({ teammates }: { teammates: ClientUserListItem[] }) {
+// ── Main view ─────────────────────────────────────────────────────────────────
+
+export function HardwareView({ teammates, onExpand }: { teammates: ClientUserListItem[]; onExpand?: (asset: HardwareAssetListItem) => void }) {
   const [assets, setAssets]         = useState<HardwareAssetListItem[]>([])
   const [locations, setLocations]   = useState<LocationListItem[]>([])
   const [loading, setLoading]       = useState(true)
@@ -129,22 +296,62 @@ export function HardwareView({ teammates }: { teammates: ClientUserListItem[] })
       const updated = assets.find(a => a.id === selected.id)
       if (updated) setSelected(updated)
     }
-  }, [assets])
+  }, [assets]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const filtered = assets.filter(a =>
     `${a.name} ${a.brand} ${a.assetNumber} ${a.serialNumber} ${a.assignedToName ?? ''} ${a.location}`
       .toLowerCase().includes(search.toLowerCase())
   )
 
-  const totaal      = assets.length
-  const inGebruik   = assets.filter(a => a.status === 'InUse').length
-  const opVoorraad  = assets.filter(a => a.status === 'InStock').length
+  const totaal       = assets.length
+  const inGebruik    = assets.filter(a => a.status === 'InUse').length
+  const opVoorraad   = assets.filter(a => a.status === 'InStock').length
   const afgeschreven = assets.filter(a => a.status === 'Decommissioned').length
 
   const handleDelete = async (id: string) => {
     await api.delete(`/portal/hardware/${id}`)
     setAssets(prev => prev.filter(a => a.id !== id))
     if (selected?.id === id) setSelected(null)
+    setHistoryKey(k => k + 1)
+  }
+
+  const handleUnlink = async (asset: HardwareAssetListItem) => {
+    await api.put(`/portal/hardware/${asset.id}`, {
+      name:             asset.name,
+      brand:            asset.brand || '',
+      type:             typeNameToValue(asset.type),
+      assetNumber:      asset.assetNumber || '',
+      serialNumber:     asset.serialNumber || '',
+      status:           0, // InStock
+      location:         asset.location || '',
+      locationId:       asset.locationId || null,
+      purchaseValue:    asset.purchaseValue ?? null,
+      supplier:         asset.supplier ?? null,
+      assignedToUserId: null,
+      issuedAt:         asset.issuedAt ?? null,
+      returnedAt:       new Date().toISOString(),
+    })
+    await fetchAssets()
+    setHistoryKey(k => k + 1)
+  }
+
+  const handleLink = async (asset: HardwareAssetListItem, userId: string) => {
+    await api.put(`/portal/hardware/${asset.id}`, {
+      name:             asset.name,
+      brand:            asset.brand || '',
+      type:             typeNameToValue(asset.type),
+      assetNumber:      asset.assetNumber || '',
+      serialNumber:     asset.serialNumber || '',
+      status:           1, // InUse
+      location:         asset.location || '',
+      locationId:       asset.locationId || null,
+      purchaseValue:    asset.purchaseValue ?? null,
+      supplier:         asset.supplier ?? null,
+      assignedToUserId: userId,
+      issuedAt:         new Date().toISOString(),
+      returnedAt:       null,
+    })
+    await fetchAssets()
     setHistoryKey(k => k + 1)
   }
 
@@ -155,10 +362,10 @@ export function HardwareView({ teammates }: { teammates: ClientUserListItem[] })
   return (
     <div className="flex flex-col gap-4 h-full">
       <div className="grid grid-cols-4 gap-3 flex-shrink-0">
-        <StatCard label="Totaal"      value={totaal}      icon={<Package size={18} />} />
-        <StatCard label="In gebruik"  value={inGebruik}   icon={<Activity size={18} />} tone="emerald" />
-        <StatCard label="Op voorraad" value={opVoorraad}  icon={<Archive size={18} />}  tone="blue" />
-        <StatCard label="Afgeschreven" value={afgeschreven} icon={<XCircle size={18} />} tone="slate" />
+        <StatCard label="Totaal"       value={totaal}       icon={<Package size={18} />} />
+        <StatCard label="In gebruik"   value={inGebruik}    icon={<Activity size={18} />} tone="emerald" />
+        <StatCard label="Op voorraad"  value={opVoorraad}   icon={<Archive size={18} />}  tone="blue" />
+        <StatCard label="Afgeschreven" value={afgeschreven} icon={<XCircle size={18} />}  tone="slate" />
       </div>
 
       <div className="grid grid-cols-[1fr_20%] grid-rows-[auto_1fr] gap-x-4 gap-y-3 flex-1 min-h-0">
@@ -224,8 +431,12 @@ export function HardwareView({ teammates }: { teammates: ClientUserListItem[] })
           {selected ? (
             <HardwareDetailPanel
               asset={selected}
+              teammates={teammates}
               onEdit={() => handleOpenEdit(selected)}
               onDelete={() => handleDelete(selected.id)}
+              onUnlink={() => handleUnlink(selected)}
+              onLink={(userId) => handleLink(selected, userId)}
+              onExpand={() => onExpand?.(selected)}
               historyKey={historyKey}
             />
           ) : (
@@ -248,6 +459,270 @@ export function HardwareView({ teammates }: { teammates: ClientUserListItem[] })
         teammates={teammates}
         locations={locations}
         asset={editTarget}
+      />
+    </div>
+  )
+}
+
+// ── Full-screen detail view ───────────────────────────────────────────────────
+
+export function HardwareDetailFullView({ initialAsset, teammates, onBack, onDeleted }: {
+  initialAsset: HardwareAssetListItem
+  teammates: ClientUserListItem[]
+  onBack: () => void
+  onDeleted: () => void
+}) {
+  const [asset, setAsset]           = useState<HardwareAssetListItem>(initialAsset)
+  const [locations, setLocations]   = useState<LocationListItem[]>([])
+  const [showModal, setShowModal]   = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [confirmUnlink, setConfirmUnlink] = useState(false)
+  const [unlinking, setUnlinking]   = useState(false)
+  const [showLinking, setShowLinking] = useState(false)
+  const [linkUserId, setLinkUserId] = useState('')
+  const [linking, setLinking]       = useState(false)
+  const [historyKey, setHistoryKey] = useState(0)
+  const [activeTab, setActiveTab]   = useState<'notes' | 'history'>('notes')
+
+  useEffect(() => {
+    api.get<LocationListItem[]>('/portal/locations')
+      .then(r => setLocations(r.data))
+      .catch(() => {})
+  }, [])
+
+  const refresh = async () => {
+    const { data } = await api.get<HardwareAssetListItem[]>('/portal/hardware')
+    const updated = data.find(a => a.id === asset.id)
+    if (updated) setAsset(updated)
+    setHistoryKey(k => k + 1)
+  }
+
+  const handleUnlink = async () => {
+    setUnlinking(true)
+    try {
+      await api.put(`/portal/hardware/${asset.id}`, {
+        name: asset.name, brand: asset.brand || '', type: typeNameToValue(asset.type),
+        assetNumber: asset.assetNumber || '', serialNumber: asset.serialNumber || '',
+        status: 0, location: asset.location || '', locationId: asset.locationId || null,
+        purchaseValue: asset.purchaseValue ?? null, supplier: asset.supplier ?? null,
+        assignedToUserId: null, issuedAt: asset.issuedAt ?? null, returnedAt: new Date().toISOString(),
+      })
+      await refresh()
+    } finally { setUnlinking(false); setConfirmUnlink(false) }
+  }
+
+  const handleLink = async () => {
+    if (!linkUserId) return
+    setLinking(true)
+    try {
+      await api.put(`/portal/hardware/${asset.id}`, {
+        name: asset.name, brand: asset.brand || '', type: typeNameToValue(asset.type),
+        assetNumber: asset.assetNumber || '', serialNumber: asset.serialNumber || '',
+        status: 1, location: asset.location || '', locationId: asset.locationId || null,
+        purchaseValue: asset.purchaseValue ?? null, supplier: asset.supplier ?? null,
+        assignedToUserId: linkUserId, issuedAt: new Date().toISOString(), returnedAt: null,
+      })
+      await refresh()
+    } finally { setLinking(false); setShowLinking(false); setLinkUserId('') }
+  }
+
+  const handleDelete = async () => {
+    await api.delete(`/portal/hardware/${asset.id}`)
+    onDeleted()
+  }
+
+  return (
+    <div className="flex flex-col gap-4 h-full">
+      {/* Back button */}
+      <div>
+        <button
+          onClick={onBack}
+          className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-800 transition-colors"
+        >
+          <ArrowLeft size={15} />
+          Terug naar hardware
+        </button>
+      </div>
+
+      <div className="flex-1 overflow-y-auto min-h-0 space-y-4">
+        {/* ── Header card ── */}
+        <Card>
+          <div className="px-6 pt-5 pb-5">
+            <div className="flex justify-end gap-1 mb-3">
+              <button onClick={() => setShowModal(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-500 hover:bg-slate-100 transition-colors">
+                <Pencil size={12} /> Wijzigen
+              </button>
+              <button onClick={() => setConfirmDelete(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-red-500 hover:bg-red-50 transition-colors">
+                <Trash2 size={12} /> Verwijderen
+              </button>
+            </div>
+            <h1 className="text-xl font-bold text-slate-900 mb-0.5">{asset.name}</h1>
+            <p className="text-sm text-slate-500">
+              {[asset.brand, HARDWARE_TYPE_LABEL[asset.type] ?? asset.type].filter(Boolean).join(' · ')}
+            </p>
+          </div>
+        </Card>
+
+        {/* ── Details + Toewijzing naast elkaar ── */}
+        <div className="grid grid-cols-[1fr_360px] gap-4 items-stretch">
+        <Card>
+          <CardContent className="p-6">
+            <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4">Details</h3>
+              <div className="grid grid-cols-2 gap-x-8 gap-y-4">
+                {asset.assetNumber && (
+                  <div>
+                    <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">Assetnummer</p>
+                    <p className="text-sm font-medium text-slate-800 tabular-nums">{asset.assetNumber}</p>
+                  </div>
+                )}
+                {asset.serialNumber && (
+                  <div>
+                    <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">Serienummer</p>
+                    <p className="text-sm font-medium text-slate-800 tabular-nums">{asset.serialNumber}</p>
+                  </div>
+                )}
+                {asset.location && (
+                  <div>
+                    <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">Locatie</p>
+                    <p className="text-sm font-medium text-slate-800">{asset.location}</p>
+                  </div>
+                )}
+                {asset.purchaseValue != null && (
+                  <div>
+                    <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">Aanschafwaarde</p>
+                    <p className="text-sm font-medium text-slate-800">€ {asset.purchaseValue.toFixed(2)}</p>
+                  </div>
+                )}
+                {asset.supplier && (
+                  <div>
+                    <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">Leverancier</p>
+                    <p className="text-sm font-medium text-slate-800">{asset.supplier}</p>
+                  </div>
+                )}
+                <div>
+                  <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">Status</p>
+                  <span className={`text-xs px-2.5 py-0.5 rounded-full font-semibold ${HARDWARE_STATUS_TONE[asset.status] ?? 'bg-slate-100 text-slate-600'}`}>
+                    {HARDWARE_STATUS_LABEL[asset.status] ?? asset.status}
+                  </span>
+                </div>
+                {asset.issuedAt && (
+                  <div>
+                    <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">Uitgiftedatum</p>
+                    <p className="text-sm font-medium text-slate-800">{fmtDate(asset.issuedAt)}</p>
+                  </div>
+                )}
+                {asset.returnedAt && (
+                  <div>
+                    <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">Inleverdatum</p>
+                    <p className="text-sm font-medium text-slate-800">{fmtDate(asset.returnedAt)}</p>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+        {/* ── Toewijzing ── */}
+        <Card className="h-full">
+            <CardContent className="p-5">
+              <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Toewijzing</h3>
+              {asset.assignedToName ? (
+                <div className="rounded-xl bg-blue-50 border border-blue-100 px-4 py-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-8 h-8 rounded-full bg-blue-200 flex items-center justify-center flex-shrink-0">
+                        <User size={14} className="text-blue-700" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs text-blue-500 font-medium">Toegewezen aan</p>
+                        <p className="text-sm font-semibold text-slate-800 truncate">{asset.assignedToName}</p>
+                        {asset.issuedAt && <p className="text-xs text-slate-400 mt-0.5">Uitgegeven {fmtDate(asset.issuedAt)}</p>}
+                      </div>
+                    </div>
+                    {confirmUnlink ? (
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <span className="text-xs text-slate-600 font-medium">Ontkoppelen?</span>
+                        <button onClick={handleUnlink} disabled={unlinking} className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-orange-500 text-white hover:bg-orange-600 disabled:opacity-50 transition-colors">
+                          {unlinking ? 'Bezig…' : 'Ja'}
+                        </button>
+                        <button onClick={() => setConfirmUnlink(false)} className="px-2.5 py-1 rounded-lg text-xs font-medium text-slate-500 hover:bg-white transition-colors">Nee</button>
+                      </div>
+                    ) : (
+                      <button onClick={() => setConfirmUnlink(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-orange-600 bg-white ring-1 ring-orange-200 hover:bg-orange-50 transition-colors flex-shrink-0">
+                        <Link2Off size={12} /> Ontkoppelen
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="rounded-xl bg-slate-50 border border-slate-200 px-4 py-3">
+                  {showLinking ? (
+                    <div className="space-y-3">
+                      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Koppelen aan medewerker</p>
+                      <select value={linkUserId} onChange={e => setLinkUserId(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm text-slate-900 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-colors bg-white">
+                        <option value="">— Kies medewerker —</option>
+                        {teammates.map(u => <option key={u.id} value={u.id}>{u.firstName} {u.lastName}</option>)}
+                      </select>
+                      <div className="flex gap-2">
+                        <button onClick={() => { setShowLinking(false); setLinkUserId('') }} className="flex-1 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-500 bg-white ring-1 ring-slate-200 hover:bg-slate-50 transition-colors">Annuleren</button>
+                        <button onClick={handleLink} disabled={!linkUserId || linking} className="flex-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-40 transition-colors">{linking ? 'Koppelen…' : 'Koppelen'}</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center flex-shrink-0">
+                          <User size={14} className="text-slate-400" />
+                        </div>
+                        <p className="text-sm text-slate-400 font-medium">Niet gekoppeld</p>
+                      </div>
+                      <button onClick={() => setShowLinking(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-blue-600 bg-white ring-1 ring-blue-200 hover:bg-blue-50 transition-colors flex-shrink-0">
+                        <User size={12} /> Koppelen
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* ── Notities + Historie — volle breedte onderaan ── */}
+        <Card>
+          <CardContent className="p-5">
+            <div className="flex items-center gap-1 mb-4">
+              <button onClick={() => setActiveTab('notes')} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'notes' ? 'bg-blue-600 text-white' : 'text-slate-500 hover:bg-slate-100'}`}>
+                <StickyNote size={13} /> Notities
+              </button>
+              <button onClick={() => setActiveTab('history')} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'history' ? 'bg-blue-600 text-white' : 'text-slate-500 hover:bg-slate-100'}`}>
+                <History size={13} /> Historie
+              </button>
+            </div>
+            {activeTab === 'notes' && <NotesPanel entityType="Hardware" entityId={asset.id} />}
+            {activeTab === 'history' && (
+              <ItemHistoryBlock
+                key={`${asset.id}-${historyKey}`}
+                url={`/portal/hardware/${asset.id}/history`}
+                subtitle={`${asset.brand} ${asset.name}`}
+              />
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      <HardwareModal
+        open={showModal}
+        onClose={() => setShowModal(false)}
+        onSuccess={async () => { await refresh(); setShowModal(false) }}
+        teammates={teammates}
+        locations={locations}
+        asset={asset}
+      />
+
+      <ConfirmDeleteModal
+        open={confirmDelete}
+        onClose={() => setConfirmDelete(false)}
+        onConfirm={() => { setConfirmDelete(false); handleDelete() }}
+        itemName={`${asset.brand} ${asset.name}`}
       />
     </div>
   )

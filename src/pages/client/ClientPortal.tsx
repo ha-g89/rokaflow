@@ -15,7 +15,7 @@ import { SectionLabel, NavItem, PlaceholderView } from '@/components/portal/Port
 import { OverviewView } from './views/OverviewView'
 import { HistoryView } from './views/HistoryView'
 import { SettingsView } from './views/SettingsView'
-import { HardwareView } from './views/HardwareView'
+import { HardwareView, HardwareDetailFullView } from './views/HardwareView'
 import { SoftwareView } from './views/SoftwareView'
 import { TelefonieView } from './views/TelefonieView'
 import { DepartmentsView } from './views/DepartmentsView'
@@ -31,7 +31,7 @@ import type { DepartmentListItem } from '@/types/department'
 type View =
   | 'employees' | 'employee-detail'
   | 'departments' | 'locations'
-  | 'hardware' | 'software' | 'phones'
+  | 'hardware' | 'hardware-detail' | 'software' | 'phones'
   | 'processes'
   | 'overviews' | 'history' | 'contracts'
   | 'settings' | 'help'
@@ -42,6 +42,7 @@ const VIEW_TITLES: Record<View, string> = {
   departments:       'Afdelingen',
   locations:         'Locaties',
   hardware:          'Hardware',
+  'hardware-detail': 'Hardware details',
   software:          'Software',
   phones:            'Telefonie',
   processes:         'Processen',
@@ -167,9 +168,14 @@ export default function ClientPortal() {
 
   // ── Handlers ──────────────────────────────────────────────────────────────
 
-  const handleSelectEmployee = (id: string) => { fetchUserDetail(id); setView('employee-detail') }
-  const handleBackToList     = () => { setView('employees'); setSelectedUser(null) }
-  const handleOpenDelete     = (id: string, name: string) => setDeleteTarget({ id, name })
+  const handleSelectEmployee   = (id: string) => { fetchUserDetail(id); setView('employee-detail') }
+  const handleBackToList       = () => { setView('employees'); setSelectedUser(null) }
+  const handleOpenDelete       = (id: string, name: string) => setDeleteTarget({ id, name })
+
+  const [selectedHardwareAsset, setSelectedHardwareAsset] = useState<import('@/types/hardware').HardwareAssetListItem | null>(null)
+  const handleExpandHardware   = (asset: import('@/types/hardware').HardwareAssetListItem) => { setSelectedHardwareAsset(asset); setView('hardware-detail') }
+  const handleBackToHardware   = () => { setView('hardware'); setSelectedHardwareAsset(null) }
+  const handleHardwareDeleted  = () => { setView('hardware'); setSelectedHardwareAsset(null) }
 
   const handleEmployeeDeleted = () => {
     setDeleteTarget(null)
@@ -181,6 +187,7 @@ export default function ClientPortal() {
   const handleNavClick = (v: View) => {
     setView(v)
     if (v !== 'employee-detail') setSelectedUser(null)
+    if (v !== 'hardware-detail') setSelectedHardwareAsset(null)
     fetchUsers()
     fetchDepartmentOptions()
     fetchManagers()
@@ -189,6 +196,7 @@ export default function ClientPortal() {
   const handleLogout = () => { logout(); navigate('/login') }
   const tenantName   = user?.tenantName ?? 'Portal'
   const employeesActive = view === 'employees' || view === 'employee-detail'
+  const hardwareActive  = view === 'hardware'  || view === 'hardware-detail'
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-slate-100 dark:bg-slate-950">
@@ -286,7 +294,7 @@ export default function ClientPortal() {
             <NavItem icon={<MapPin size={14} />}    label="Locaties"    active={view === 'locations'}     onClick={() => handleNavClick('locations')} />
 
             <SectionLabel label="Assets" />
-            <NavItem icon={<Laptop size={14} />}   label="Hardware"   active={view === 'hardware'} onClick={() => handleNavClick('hardware')} />
+            <NavItem icon={<Laptop size={14} />}   label="Hardware"   active={hardwareActive}     onClick={() => handleNavClick('hardware')} />
             <NavItem icon={<Shield size={14} />}   label="Software"   active={view === 'software'} onClick={() => handleNavClick('software')} />
             <NavItem icon={<PhoneIcon size={14} />} label="Telefonie" active={view === 'phones'}   onClick={() => handleNavClick('phones')} />
 
@@ -374,7 +382,15 @@ export default function ClientPortal() {
               />
             )}
 
-            {view === 'hardware'     && <HardwareView teammates={teammates} />}
+            {view === 'hardware'        && <HardwareView teammates={teammates} onExpand={handleExpandHardware} />}
+            {view === 'hardware-detail' && selectedHardwareAsset && (
+              <HardwareDetailFullView
+                initialAsset={selectedHardwareAsset}
+                teammates={teammates}
+                onBack={handleBackToHardware}
+                onDeleted={handleHardwareDeleted}
+              />
+            )}
             {view === 'software'     && <SoftwareView teammates={teammates} />}
             {view === 'phones'       && <TelefonieView teammates={teammates} />}
             {view === 'departments'  && <DepartmentsView />}
