@@ -318,7 +318,7 @@ export function EmployeeListView({ teammates, loading, search, currentUserId, on
 
 // ── Employee detail view ──────────────────────────────────────────────────────
 
-export function EmployeeDetailView({ user, loading, onBack, onUserUpdated, onDelete, departments, managers, locations, teammates }: {
+export function EmployeeDetailView({ user, loading, onBack, onUserUpdated, onDelete, departments, managers, locations, teammates, onHardwareClick, onPhoneClick }: {
   user: ClientUserDetailResponse | null
   loading: boolean
   onBack: () => void
@@ -328,6 +328,8 @@ export function EmployeeDetailView({ user, loading, onBack, onUserUpdated, onDel
   managers?: { id: string; fullName: string }[]
   locations?: LocationListItem[]
   teammates?: ClientUserListItem[]
+  onHardwareClick?: (asset: import('@/types/hardware').HardwareAssetListItem) => void
+  onPhoneClick?: (phone: import('@/types/phone').PhoneListItem) => void
 }) {
   return (
     <div className="flex flex-col gap-4 h-full">
@@ -357,6 +359,8 @@ export function EmployeeDetailView({ user, loading, onBack, onUserUpdated, onDel
             historyPath={`/portal/history/User/${user.id}`}
             onUserUpdated={onUserUpdated}
             onDelete={onDelete ? () => onDelete(user.id, `${user.firstName} ${user.lastName}`) : undefined}
+            onHardwareClick={onHardwareClick}
+            onPhoneClick={onPhoneClick}
           />
         )}
       </div>

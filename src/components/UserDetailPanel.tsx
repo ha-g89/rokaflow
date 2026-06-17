@@ -3,14 +3,18 @@ import {
   Laptop, KeyRound, History, CheckCircle2, AlertTriangle,
   LogOut, ShieldCheck, ClipboardList, Mail,
   Briefcase, Calendar, User, RotateCcw, Smartphone, Phone,
-  Users, FileText, Pencil, Trash2, X, MapPin, Plus, Layers, StickyNote,
+  Users, FileText, Pencil, Trash2, X, MapPin, Plus, Layers, StickyNote, Unlink,
 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/Card'
+import { Modal } from '@/components/ui/Modal'
+import { Button } from '@/components/ui/Button'
 import type { ClientUserDetailResponse, ClientUserListItem, UserStatus } from '@/types/clientUser'
 import { STATUS_LABEL } from '@/types/clientUser'
 import { HARDWARE_STATUS_LABEL, HARDWARE_STATUS_TONE, HARDWARE_TYPE_LABEL } from '@/types/hardware'
+import type { HardwareAssetListItem } from '@/types/hardware'
 import { LICENSE_TYPE_LABEL, LICENSE_TYPE_TONE } from '@/types/license'
 import { PHONE_STATUS_LABEL, PHONE_STATUS_TONE } from '@/types/phone'
+import type { PhoneListItem } from '@/types/phone'
 import type { LocationListItem } from '@/types/location'
 import type { ProcessTemplateListItem } from '@/types/processTemplate'
 import { HardwareModal } from '@/components/HardwareModal'
@@ -379,9 +383,11 @@ interface Props {
   onChecklistToggle?: (entryId: string, checked: boolean) => void
   onUserUpdated?: () => void
   onDelete?: () => void
+  onHardwareClick?: (asset: HardwareAssetListItem) => void
+  onPhoneClick?: (phone: PhoneListItem) => void
 }
 
-export function UserDetailPanel({ user, canEdit, departments = [], managers = [], locations = [], teammates = [], checklistBasePath, historyPath, onChecklistToggle, onUserUpdated, onDelete }: Props) {
+export function UserDetailPanel({ user, canEdit, departments = [], managers = [], locations = [], teammates = [], checklistBasePath, historyPath, onChecklistToggle, onUserUpdated, onDelete, onHardwareClick, onPhoneClick }: Props) {
   const status = user.status as UserStatus
   const statusTone = status === 'InService' ? 'good' : status === 'StartPlanned' ? 'info' : status === 'LeavePlanned' ? 'warn' : 'bad'
 
@@ -392,6 +398,8 @@ export function UserDetailPanel({ user, canEdit, departments = [], managers = []
   const [showPhoneWizard, setShowPhoneWizard] = useState(false)
   const [showLicenseModal, setShowLicenseModal] = useState(false)
   const [activeTab, setActiveTab] = useState<'notes' | 'history'>('notes')
+  const [confirmUnlink, setConfirmUnlink] = useState<{ name: string; onConfirm: () => Promise<void> } | null>(null)
+  const [unlinking, setUnlinking] = useState(false)
 
   // Local checklist state for optimistic updates
   const [localStarter, setLocalStarter] = useState(user.starterChecklist)
@@ -440,6 +448,72 @@ export function UserDetailPanel({ user, canEdit, departments = [], managers = []
 
   const dept = user.departmentName || user.department
 
+  const typeNameToValue = (typeName: string) => {
+    const map: Record<string, number> = { Laptop: 0, Desktop: 1, Phone: 2, Tablet: 3, Monitor: 4, Other: 5 }
+    return map[typeName] ?? 0
+  }
+
+  const toPhoneListItem = (p: typeof user.phones[0]): PhoneListItem => ({
+    id: p.id, brand: p.brand, model: p.model,
+    serialNumber: p.serialNumber, imeiNumber: p.imeiNumber,
+    supplier: null, status: p.status as PhoneListItem['status'],
+    assignedToUserId: user.id, assignedToName: `${user.firstName} ${user.lastName}`,
+    simCardId: null, simCardNumber: p.simCardNumber, simPhoneNumber: p.simPhoneNumber,
+    issuedAt: p.issuedAt, returnedAt: null, createdAt: '',
+  })
+
+  const toHardwareListItem = (h: typeof user.hardware[0]): HardwareAssetListItem => ({
+    id: h.id, name: h.name, brand: h.brand, type: h.type,
+    assetNumber: h.assetNumber, serialNumber: h.serialNumber,
+    status: h.status, location: h.location, purchaseValue: h.purchaseValue,
+    supplier: null, locationId: null, locationName: null,
+    assignedToUserId: user.id, assignedToName: `${user.firstName} ${user.lastName}`,
+    issuedAt: h.issuedAt, returnedAt: h.returnedAt,
+  })
+
+  const openUnlinkHardware = (h: typeof user.hardware[0]) => {
+    setConfirmUnlink({
+      name: h.name,
+      onConfirm: async () => {
+        await api.put(`/portal/hardware/${h.id}`, {
+          name: h.name, brand: h.brand, type: typeNameToValue(h.type),
+          assetNumber: h.assetNumber || '', serialNumber: h.serialNumber || '',
+          location: h.location || '', locationId: null,
+          purchaseValue: h.purchaseValue ?? null, supplier: null,
+          assignedToUserId: null, issuedAt: h.issuedAt ?? null,
+          returnedAt: new Date().toISOString(), status: 0,
+        })
+        onUserUpdated?.()
+      },
+    })
+  }
+
+  const openUnlinkPhone = (p: typeof user.phones[0]) => {
+    setConfirmUnlink({
+      name: `${p.brand} ${p.model}`.trim(),
+      onConfirm: async () => {
+        await api.put(`/portal/phones/${p.id}`, {
+          brand: p.brand, model: p.model || '',
+          serialNumber: p.serialNumber || '', imeiNumber: p.imeiNumber || '',
+          status: 0, assignedToUserId: null,
+          issuedAt: p.issuedAt ?? null, returnedAt: new Date().toISOString(),
+        })
+        onUserUpdated?.()
+      },
+    })
+  }
+
+  const handleConfirmUnlink = async () => {
+    if (!confirmUnlink) return
+    setUnlinking(true)
+    try {
+      await confirmUnlink.onConfirm()
+      setConfirmUnlink(null)
+    } finally {
+      setUnlinking(false)
+    }
+  }
+
   return (
     <>
       {editOpen && (
@@ -477,6 +551,34 @@ export function UserDetailPanel({ user, canEdit, departments = [], managers = []
         teammates={teammates}
         lockedUser={lockedUser}
       />
+
+      <Modal
+        open={!!confirmUnlink}
+        onClose={() => !unlinking && setConfirmUnlink(null)}
+        title="Ontkoppelen bevestigen"
+      >
+        <div className="flex flex-col items-center text-center gap-4 py-2">
+          <div className="w-12 h-12 rounded-full bg-orange-50 flex items-center justify-center">
+            <Unlink size={22} className="text-orange-500" />
+          </div>
+          <div>
+            <p className="text-sm text-slate-700 leading-relaxed">
+              Weet je zeker dat je{' '}
+              <span className="font-semibold">"{confirmUnlink?.name}"</span>{' '}
+              wilt ontkoppelen van deze medewerker?
+            </p>
+            <p className="text-xs text-slate-400 mt-1">Het apparaat komt terug op voorraad.</p>
+          </div>
+        </div>
+        <div className="flex gap-2 mt-6">
+          <Button variant="secondary" className="flex-1" onClick={() => setConfirmUnlink(null)} disabled={unlinking}>
+            Annuleren
+          </Button>
+          <Button variant="danger" className="flex-1" onClick={handleConfirmUnlink} disabled={unlinking}>
+            {unlinking ? 'Bezig…' : 'Ontkoppelen'}
+          </Button>
+        </div>
+      </Modal>
 
       <div className="space-y-4">
       {/* ── Profile header ── */}
@@ -586,26 +688,28 @@ export function UserDetailPanel({ user, canEdit, departments = [], managers = []
           ) : (
             <div className="space-y-3">
               {user.hardware.map(h => (
-                <div key={h.id} className="rounded-xl border border-slate-100 bg-white p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="text-sm font-semibold text-slate-800">{h.name}</p>
+                <div
+                  key={h.id}
+                  onClick={() => onHardwareClick?.(toHardwareListItem(h))}
+                  className={`rounded-xl border border-slate-100 bg-white p-3 transition-colors ${onHardwareClick ? 'cursor-pointer hover:border-blue-200 hover:bg-blue-50/30' : ''}`}
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-slate-800 truncate">{h.name}</p>
                       <p className="text-xs text-slate-500">
-                        {h.brand && `${h.brand} • `}{HARDWARE_TYPE_LABEL[h.type] ?? h.type}
-                        {h.assetNumber && ` • ${h.assetNumber}`}
+                        {h.brand && `${h.brand} · `}{HARDWARE_TYPE_LABEL[h.type] ?? h.type}
+                        {h.assetNumber && ` · ${h.assetNumber}`}
                       </p>
                     </div>
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${HARDWARE_STATUS_TONE[h.status] ?? 'bg-slate-100 text-slate-600'}`}>
+                    <span className={`flex-shrink-0 text-xs px-2 py-0.5 rounded-full font-medium ${HARDWARE_STATUS_TONE[h.status] ?? 'bg-slate-100 text-slate-600'}`}>
                       {HARDWARE_STATUS_LABEL[h.status] ?? h.status}
                     </span>
                   </div>
-                  <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-slate-600">
-                    {h.serialNumber && <p><span className="text-slate-400">Serienr:</span><br />{h.serialNumber}</p>}
-                    {h.location && <p><span className="text-slate-400">Locatie:</span><br />{h.location}</p>}
-                    {h.issuedAt && <p><span className="text-slate-400">Uitgifte:</span><br />{fmt(h.issuedAt)}</p>}
-                    {h.purchaseValue != null && (
-                      <p><span className="text-slate-400">Waarde:</span><br />€ {h.purchaseValue.toFixed(2)}</p>
-                    )}
+                  {h.issuedAt && (
+                    <p className="mt-1 text-xs text-slate-400">Uitgifte: {fmt(h.issuedAt)}</p>
+                  )}
+                  <div className="mt-2 flex justify-end">
+                    <button onClick={e => { e.stopPropagation(); openUnlinkHardware(h) }} className="text-xs font-medium text-slate-400 hover:text-red-500 transition-colors">Ontkoppelen</button>
                   </div>
                 </div>
               ))}
@@ -623,23 +727,27 @@ export function UserDetailPanel({ user, canEdit, departments = [], managers = []
           ) : (
             <div className="space-y-3">
               {user.phones.map(p => (
-                <div key={p.id} className="rounded-xl border border-slate-100 bg-white p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="text-sm font-semibold text-slate-800">{p.brand} {p.model}</p>
-                      {p.simPhoneNumber && (
-                        <p className="text-xs text-slate-500">{p.simPhoneNumber}</p>
-                      )}
+                <div
+                  key={p.id}
+                  onClick={() => onPhoneClick?.(toPhoneListItem(p))}
+                  className={`rounded-xl border border-slate-100 bg-white p-3 transition-colors ${onPhoneClick ? 'cursor-pointer hover:border-blue-200 hover:bg-blue-50/30' : ''}`}
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-slate-800 truncate">{p.brand} {p.model}</p>
+                      <p className="text-xs text-slate-500 truncate">
+                        {p.simPhoneNumber || p.serialNumber || '—'}
+                      </p>
                     </div>
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${PHONE_STATUS_TONE[p.status as keyof typeof PHONE_STATUS_TONE] ?? 'bg-slate-100 text-slate-600'}`}>
+                    <span className={`flex-shrink-0 text-xs px-2 py-0.5 rounded-full font-medium ${PHONE_STATUS_TONE[p.status as keyof typeof PHONE_STATUS_TONE] ?? 'bg-slate-100 text-slate-600'}`}>
                       {PHONE_STATUS_LABEL[p.status as keyof typeof PHONE_STATUS_LABEL] ?? p.status}
                     </span>
                   </div>
-                  <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-slate-600">
-                    {p.serialNumber && <p><span className="text-slate-400">Serienr:</span><br />{p.serialNumber}</p>}
-                    {p.imeiNumber && <p><span className="text-slate-400">IMEI:</span><br />{p.imeiNumber}</p>}
-                    {p.simCardNumber && <p><span className="text-slate-400">SIM:</span><br />{p.simCardNumber}</p>}
-                    {p.issuedAt && <p><span className="text-slate-400">Uitgifte:</span><br />{fmt(p.issuedAt)}</p>}
+                  {p.issuedAt && (
+                    <p className="mt-1 text-xs text-slate-400">Uitgifte: {fmt(p.issuedAt)}</p>
+                  )}
+                  <div className="mt-2 flex justify-end">
+                    <button onClick={e => { e.stopPropagation(); openUnlinkPhone(p) }} className="text-xs font-medium text-slate-400 hover:text-red-500 transition-colors">Ontkoppelen</button>
                   </div>
                 </div>
               ))}

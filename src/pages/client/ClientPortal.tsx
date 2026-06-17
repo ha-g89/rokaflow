@@ -17,7 +17,7 @@ import { HistoryView } from './views/HistoryView'
 import { SettingsView } from './views/SettingsView'
 import { HardwareView, HardwareDetailFullView } from './views/HardwareView'
 import { SoftwareView } from './views/SoftwareView'
-import { TelefonieView } from './views/TelefonieView'
+import { TelefonieView, PhoneDetailFullView } from './views/TelefonieView'
 import { DepartmentsView } from './views/DepartmentsView'
 import { LocationsView } from './views/LocationsView'
 import { EmployeeListView, EmployeeDetailView, DeleteEmployeeModal } from './views/EmployeesView'
@@ -31,7 +31,7 @@ import type { DepartmentListItem } from '@/types/department'
 type View =
   | 'employees' | 'employee-detail'
   | 'departments' | 'locations'
-  | 'hardware' | 'hardware-detail' | 'software' | 'phones'
+  | 'hardware' | 'hardware-detail' | 'software' | 'phones' | 'phone-detail'
   | 'processes'
   | 'overviews' | 'history' | 'contracts'
   | 'settings' | 'help'
@@ -45,6 +45,7 @@ const VIEW_TITLES: Record<View, string> = {
   'hardware-detail': 'Hardware details',
   software:          'Software',
   phones:            'Telefonie',
+  'phone-detail':    'Telefoon details',
   processes:         'Processen',
   overviews:         'Overzichten',
   history:           'Historie',
@@ -173,9 +174,30 @@ export default function ClientPortal() {
   const handleOpenDelete       = (id: string, name: string) => setDeleteTarget({ id, name })
 
   const [selectedHardwareAsset, setSelectedHardwareAsset] = useState<import('@/types/hardware').HardwareAssetListItem | null>(null)
-  const handleExpandHardware   = (asset: import('@/types/hardware').HardwareAssetListItem) => { setSelectedHardwareAsset(asset); setView('hardware-detail') }
-  const handleBackToHardware   = () => { setView('hardware'); setSelectedHardwareAsset(null) }
-  const handleHardwareDeleted  = () => { setView('hardware'); setSelectedHardwareAsset(null) }
+  const [navHistory, setNavHistory] = useState<Array<{ view: View; backLabel: string }>>([])
+
+  const pushAndNavigate = (target: View, backLabel: string) => {
+    setNavHistory(h => [...h, { view, backLabel }])
+    setView(target)
+  }
+  const goBack = () => {
+    const entry = navHistory[navHistory.length - 1]
+    if (!entry) return
+    setNavHistory(h => h.slice(0, -1))
+    setView(entry.view)
+    setSelectedHardwareAsset(null)
+  }
+
+  const handleExpandHardware   = (asset: import('@/types/hardware').HardwareAssetListItem) => { setSelectedHardwareAsset(asset); pushAndNavigate('hardware-detail', 'Terug naar hardware') }
+  const handleBackToHardware   = () => { setView('hardware'); setSelectedHardwareAsset(null); setNavHistory([]) }
+  const handleHardwareDeleted  = () => { setView('hardware'); setSelectedHardwareAsset(null); setNavHistory([]) }
+  const handleHardwareFromEmployee = (asset: import('@/types/hardware').HardwareAssetListItem) => { setSelectedHardwareAsset(asset); pushAndNavigate('hardware-detail', 'Terug naar medewerker') }
+
+  const [selectedPhone, setSelectedPhone] = useState<import('@/types/phone').PhoneListItem | null>(null)
+  const handleExpandPhone      = (phone: import('@/types/phone').PhoneListItem) => { setSelectedPhone(phone); pushAndNavigate('phone-detail', 'Terug naar telefonie') }
+  const handleBackToPhones     = () => { setView('phones'); setSelectedPhone(null); setNavHistory([]) }
+  const handlePhoneDeleted     = () => { setView('phones'); setSelectedPhone(null); setNavHistory([]) }
+  const handlePhoneFromEmployee = (phone: import('@/types/phone').PhoneListItem) => { setSelectedPhone(phone); pushAndNavigate('phone-detail', 'Terug naar medewerker') }
 
   const handleEmployeeDeleted = () => {
     setDeleteTarget(null)
@@ -188,6 +210,7 @@ export default function ClientPortal() {
     setView(v)
     if (v !== 'employee-detail') setSelectedUser(null)
     if (v !== 'hardware-detail') setSelectedHardwareAsset(null)
+    if (v !== 'phone-detail') setSelectedPhone(null)
     fetchUsers()
     fetchDepartmentOptions()
     fetchManagers()
@@ -367,6 +390,8 @@ export default function ClientPortal() {
                 managers={managers}
                 locations={locationOptions}
                 teammates={teammates}
+                onHardwareClick={handleHardwareFromEmployee}
+                onPhoneClick={handlePhoneFromEmployee}
               />
             )}
 
@@ -387,12 +412,22 @@ export default function ClientPortal() {
               <HardwareDetailFullView
                 initialAsset={selectedHardwareAsset}
                 teammates={teammates}
-                onBack={handleBackToHardware}
+                onBack={navHistory.length > 0 ? goBack : handleBackToHardware}
                 onDeleted={handleHardwareDeleted}
+                backLabel={navHistory[navHistory.length - 1]?.backLabel ?? 'Terug naar hardware'}
               />
             )}
             {view === 'software'     && <SoftwareView teammates={teammates} />}
-            {view === 'phones'       && <TelefonieView teammates={teammates} />}
+            {view === 'phones'       && <TelefonieView teammates={teammates} onExpand={handleExpandPhone} />}
+            {view === 'phone-detail' && selectedPhone && (
+              <PhoneDetailFullView
+                initialPhone={selectedPhone}
+                teammates={teammates}
+                onBack={navHistory.length > 0 ? goBack : handleBackToPhones}
+                onDeleted={handlePhoneDeleted}
+                backLabel={navHistory[navHistory.length - 1]?.backLabel ?? 'Terug naar telefonie'}
+              />
+            )}
             {view === 'departments'  && <DepartmentsView />}
             {view === 'locations'    && <LocationsView />}
             {view === 'overviews'    && <OverviewView />}

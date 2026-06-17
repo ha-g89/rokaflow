@@ -73,24 +73,25 @@ function HardwareDetailPanel({ asset, teammates, onEdit, onDelete, onUnlink, onL
     <Card className="overflow-hidden">
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <div className="px-5 pt-4 pb-4 border-b border-slate-100">
-        {/* Knoppen rechts */}
-        <div className="flex items-center justify-end gap-2 mb-2">
-          <div className="flex items-center gap-1">
-            <button onClick={onEdit} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-500 hover:bg-slate-100 transition-colors">
-              <Pencil size={12} /> Wijzigen
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <h2 className="text-base font-bold text-slate-900 truncate mb-0.5">{asset.name}</h2>
+            <p className="text-sm text-slate-500 truncate">
+              {[asset.brand, HARDWARE_TYPE_LABEL[asset.type] ?? asset.type].filter(Boolean).join(' · ')}
+            </p>
+          </div>
+          <div className="flex items-center gap-1 flex-shrink-0">
+            <button onClick={onEdit} title="Wijzigen" className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors">
+              <Pencil size={13} />
             </button>
-            <button onClick={() => setConfirmDelete(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-red-500 hover:bg-red-50 transition-colors">
-              <Trash2 size={12} /> Verwijderen
+            <button onClick={() => setConfirmDelete(true)} title="Verwijderen" className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors">
+              <Trash2 size={13} />
             </button>
             <button onClick={onExpand} title="Volledig openen" className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors">
               <Maximize2 size={13} />
             </button>
           </div>
         </div>
-        <h2 className="text-base font-bold text-slate-900 truncate mb-0.5">{asset.name}</h2>
-        <p className="text-sm text-slate-500 truncate">
-          {[asset.brand, HARDWARE_TYPE_LABEL[asset.type] ?? asset.type].filter(Boolean).join(' · ')}
-        </p>
       </div>
 
       <CardContent className="p-5 space-y-4">
@@ -466,11 +467,12 @@ export function HardwareView({ teammates, onExpand }: { teammates: ClientUserLis
 
 // ── Full-screen detail view ───────────────────────────────────────────────────
 
-export function HardwareDetailFullView({ initialAsset, teammates, onBack, onDeleted }: {
+export function HardwareDetailFullView({ initialAsset, teammates, onBack, onDeleted, backLabel = 'Terug naar hardware' }: {
   initialAsset: HardwareAssetListItem
   teammates: ClientUserListItem[]
   onBack: () => void
   onDeleted: () => void
+  backLabel?: string
 }) {
   const [asset, setAsset]           = useState<HardwareAssetListItem>(initialAsset)
   const [locations, setLocations]   = useState<LocationListItem[]>([])
@@ -540,7 +542,7 @@ export function HardwareDetailFullView({ initialAsset, teammates, onBack, onDele
           className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-800 transition-colors"
         >
           <ArrowLeft size={15} />
-          Terug naar hardware
+          {backLabel}
         </button>
       </div>
 
