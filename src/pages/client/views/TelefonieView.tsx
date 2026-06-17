@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Phone as PhoneIcon, Layers, CreditCard, Wifi, Search, Plus, Pencil, Trash2, XCircle, StickyNote, History, Maximize2, ArrowLeft, User, Link2Off } from 'lucide-react'
+import { Phone as PhoneIcon, Layers, CreditCard, Wifi, Search, Plus, Pencil, Trash2, StickyNote, History, Maximize2, ArrowLeft, User, Link2Off, Unlink } from 'lucide-react'
 import api from '@/lib/axios'
 import { Card, CardContent } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { StatCard } from '@/components/portal/PortalUI'
 import { ItemHistoryBlock } from '@/components/portal/AuditHistory'
+import { Modal } from '@/components/ui/Modal'
 import { ConfirmDeleteModal } from '@/components/ui/ConfirmDeleteModal'
 import { PhoneModal } from '@/components/PhoneModal'
 import { PhoneSetupWizard } from '@/components/PhoneSetupWizard'
@@ -38,8 +39,10 @@ function PhonesTab({ teammates, onExpand }: { teammates: ClientUserListItem[]; o
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [historyKey, setHistoryKey] = useState(0)
   const [showWizard, setShowWizard]         = useState(false)
-  const [confirmUnlink, setConfirmUnlink]   = useState(false)
-  const [unlinking, setUnlinking]           = useState(false)
+  const [confirmUnlink, setConfirmUnlink]       = useState(false)
+  const [unlinking, setUnlinking]               = useState(false)
+  const [confirmUnlinkSim, setConfirmUnlinkSim] = useState(false)
+  const [unlinkingSim, setUnlinkingSim]         = useState(false)
 
   const fetchPhones = useCallback(async () => {
     try {
@@ -89,11 +92,18 @@ function PhonesTab({ teammates, onExpand }: { teammates: ClientUserListItem[]; o
     } finally { setUnlinking(false); setConfirmUnlink(false) }
   }
 
-  const handleUnlinkSim = async (phoneId: string) => {
-    const { data } = await api.delete<PhoneListItem>(`/portal/phones/${phoneId}/simcard`)
-    setPhones(prev => prev.map(p => p.id === phoneId ? data : p))
-    setSelected(data)
-    setHistoryKey(k => k + 1)
+  const handleUnlinkSim = async () => {
+    if (!selected) return
+    setUnlinkingSim(true)
+    try {
+      const { data } = await api.delete<PhoneListItem>(`/portal/phones/${selected.id}/simcard`)
+      setPhones(prev => prev.map(p => p.id === selected.id ? data : p))
+      setSelected(data)
+      setHistoryKey(k => k + 1)
+    } finally {
+      setUnlinkingSim(false)
+      setConfirmUnlinkSim(false)
+    }
   }
 
   return (
@@ -233,15 +243,30 @@ function PhonesTab({ teammates, onExpand }: { teammates: ClientUserListItem[]; o
                         </p>
                       </div>
                       <button
-                        onClick={() => handleUnlinkSim(selected.id)}
+                        onClick={() => setConfirmUnlinkSim(true)}
                         title="Simkaart ontkoppelen"
-                        className="flex-shrink-0 text-blue-400 hover:text-red-500 transition-colors"
+                        className="flex-shrink-0 p-1.5 rounded-lg text-blue-400 hover:text-orange-500 hover:bg-white transition-colors"
                       >
-                        <XCircle size={15} />
+                        <Link2Off size={14} />
                       </button>
                     </div>
                   </div>
                 )}
+                <Modal open={confirmUnlinkSim} onClose={() => setConfirmUnlinkSim(false)} title="Simkaart ontkoppelen" className="max-w-sm">
+                  <div className="flex flex-col items-center text-center mb-6">
+                    <div className="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center mb-3">
+                      <Unlink size={22} className="text-orange-500" />
+                    </div>
+                    <h3 className="text-base font-semibold text-slate-900 mb-1">{selected?.simCardNumber}</h3>
+                    <p className="text-sm text-slate-500">De simkaart wordt losgekoppeld van deze telefoon.</p>
+                  </div>
+                  <div className="flex gap-3">
+                    <Button type="button" variant="secondary" className="flex-1" onClick={() => setConfirmUnlinkSim(false)}>Annuleren</Button>
+                    <Button type="button" className="flex-1 bg-orange-500 hover:bg-orange-600 text-white" disabled={unlinkingSim} onClick={handleUnlinkSim}>
+                      {unlinkingSim ? 'Bezig…' : 'Ontkoppelen'}
+                    </Button>
+                  </div>
+                </Modal>
                 <ConfirmDeleteModal
                   open={confirmDelete}
                   onClose={() => setConfirmDelete(false)}
@@ -696,9 +721,11 @@ export function PhoneDetailFullView({ initialPhone, teammates, onBack, onDeleted
   const [phone, setPhone]               = useState<PhoneListItem>(initialPhone)
   const [showModal, setShowModal]       = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
-  const [confirmUnlink, setConfirmUnlink] = useState(false)
-  const [unlinking, setUnlinking]       = useState(false)
-  const [showLinking, setShowLinking]   = useState(false)
+  const [confirmUnlink, setConfirmUnlink]       = useState(false)
+  const [unlinking, setUnlinking]               = useState(false)
+  const [confirmUnlinkSim, setConfirmUnlinkSim] = useState(false)
+  const [unlinkingSim, setUnlinkingSim]         = useState(false)
+  const [showLinking, setShowLinking]           = useState(false)
   const [linkUserId, setLinkUserId]     = useState('')
   const [linking, setLinking]           = useState(false)
   const [historyKey, setHistoryKey]     = useState(0)
@@ -736,6 +763,15 @@ export function PhoneDetailFullView({ initialPhone, teammates, onBack, onDeleted
       })
       await refresh()
     } finally { setLinking(false); setShowLinking(false); setLinkUserId('') }
+  }
+
+  const handleUnlinkSim = async () => {
+    setUnlinkingSim(true)
+    try {
+      const { data } = await api.delete<PhoneListItem>(`/portal/phones/${phone.id}/simcard`)
+      setPhone(data)
+      setHistoryKey(k => k + 1)
+    } finally { setUnlinkingSim(false); setConfirmUnlinkSim(false) }
   }
 
   const handleDelete = async () => {
@@ -815,19 +851,35 @@ export function PhoneDetailFullView({ initialPhone, teammates, onBack, onDeleted
               </div>
             )}
           </div>
-          {phone.simCardNumber && (
-            <div className="mt-4 rounded-xl bg-blue-50 border border-blue-100 px-4 py-3">
-              <p className="text-xs text-blue-400 mb-0.5">Gekoppelde simkaart</p>
-              <p className="text-sm font-medium text-blue-700">
-                {phone.simCardNumber}{phone.simPhoneNumber ? ` · ${phone.simPhoneNumber}` : ''}
-              </p>
-            </div>
-          )}
         </div>
 
-        {/* Toewijzing */}
+        {/* Koppelingen */}
         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 h-full flex flex-col">
-          <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4">Toewijzing</h3>
+          <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4">Koppelingen</h3>
+
+          {/* Simkaart */}
+          {phone.simCardNumber && (
+            <div className="mb-3 rounded-xl bg-blue-50 border border-blue-100 px-4 py-3">
+              <div className="flex items-center justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="text-xs text-blue-400 mb-0.5">Gekoppelde simkaart</p>
+                  <p className="text-sm font-medium text-blue-700 truncate">
+                    {phone.simCardNumber}{phone.simPhoneNumber ? ` · ${phone.simPhoneNumber}` : ''}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setConfirmUnlinkSim(true)}
+                  title="Simkaart ontkoppelen"
+                  className="flex-shrink-0 p-1.5 rounded-lg text-blue-400 hover:text-orange-500 hover:bg-white transition-colors"
+                >
+                  <Link2Off size={14} />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Toewijzing aan medewerker */}
+          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Toegewezen aan</p>
           {phone.assignedToName ? (
             <div className="flex-1">
               <div className="rounded-xl bg-blue-50 border border-blue-100 px-4 py-3">
@@ -901,6 +953,21 @@ export function PhoneDetailFullView({ initialPhone, teammates, onBack, onDeleted
 
       <PhoneModal open={showModal} onClose={() => setShowModal(false)} onSuccess={handleSaved} teammates={teammates} phone={phone} />
       <ConfirmDeleteModal open={confirmDelete} onClose={() => setConfirmDelete(false)} onConfirm={handleDelete} itemName={`${phone.brand} ${phone.model}`} />
+      <Modal open={confirmUnlinkSim} onClose={() => setConfirmUnlinkSim(false)} title="Simkaart ontkoppelen" className="max-w-sm">
+        <div className="flex flex-col items-center text-center mb-6">
+          <div className="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center mb-3">
+            <Unlink size={22} className="text-orange-500" />
+          </div>
+          <h3 className="text-base font-semibold text-slate-900 mb-1">{phone.simCardNumber}</h3>
+          <p className="text-sm text-slate-500">De simkaart wordt losgekoppeld van deze telefoon.</p>
+        </div>
+        <div className="flex gap-3">
+          <Button type="button" variant="secondary" className="flex-1" onClick={() => setConfirmUnlinkSim(false)}>Annuleren</Button>
+          <Button type="button" className="flex-1 bg-orange-500 hover:bg-orange-600 text-white" disabled={unlinkingSim} onClick={handleUnlinkSim}>
+            {unlinkingSim ? 'Bezig…' : 'Ontkoppelen'}
+          </Button>
+        </div>
+      </Modal>
     </div>
   )
 }
