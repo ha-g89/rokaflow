@@ -36,7 +36,6 @@ export function Modal({ open, onClose, title, children, className }: ModalProps)
           'fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-200',
           visible ? 'opacity-100' : 'opacity-0'
         )}
-        onClick={onClose}
       />
       {/* Flex wrapper: centers on large screens, top-aligns + scrolls on small */}
       <div className="flex min-h-full items-center justify-center p-4">
