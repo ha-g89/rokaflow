@@ -85,6 +85,7 @@ export interface UserLicenseDto {
   assignedAt: string
   isActive: boolean
   expiresAt: string | null
+  isSoftwareLicense: boolean
 }
 
 export interface SoftwareAssignmentDto {

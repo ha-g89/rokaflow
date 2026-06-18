@@ -758,8 +758,8 @@ export function UserDetailPanel({ user, canEdit, departments = [], managers = []
 
       {/* ── Software + Licenties ── */}
       <div className="grid gap-4 xl:grid-cols-2">
-        <Section title="Software & toegang" icon={<ShieldCheck size={16} />}>
-          {user.software.length === 0 ? (
+        <Section title="Software" icon={<ShieldCheck size={16} />}>
+          {user.software.length === 0 && !user.licenses.some(l => l.isSoftwareLicense) ? (
             <p className="text-sm text-slate-400">Geen software gekoppeld.</p>
           ) : (
             <div className="space-y-3">
@@ -772,6 +772,15 @@ export function UserDetailPanel({ user, canEdit, departments = [], managers = []
                   <Badge tone={s.isActive ? 'good' : 'bad'}>{s.isActive ? 'Actief' : 'Inactief'}</Badge>
                 </div>
               ))}
+              {user.licenses.filter(l => l.isSoftwareLicense).map(l => (
+                <div key={l.userLicenseId} className="flex items-center justify-between rounded-xl border border-slate-100 bg-white p-4">
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-slate-800 truncate">{l.name}</p>
+                    <p className="text-xs text-slate-500">{l.vendor || '—'} • Toegewezen {fmt(l.assignedAt)}</p>
+                  </div>
+                  <Badge tone={l.isActive ? 'good' : 'bad'}>{l.isActive ? 'Actief' : 'Inactief'}</Badge>
+                </div>
+              ))}
             </div>
           )}
         </Section>
@@ -781,11 +790,11 @@ export function UserDetailPanel({ user, canEdit, departments = [], managers = []
             <Plus size={11} /> Toevoegen
           </button>
         }>
-          {user.licenses.length === 0 ? (
+          {user.licenses.filter(l => !l.isSoftwareLicense).length === 0 ? (
             <p className="text-sm text-slate-400">Geen licenties gekoppeld.</p>
           ) : (
             <div className="space-y-2">
-              {user.licenses.map(l => (
+              {user.licenses.filter(l => !l.isSoftwareLicense).map(l => (
                 <div key={l.userLicenseId} className="flex items-center justify-between rounded-xl border border-slate-100 bg-white p-4">
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-slate-800 truncate">{l.name}</p>
