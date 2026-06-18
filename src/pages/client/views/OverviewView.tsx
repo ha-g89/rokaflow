@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Users, Laptop, CreditCard, Shield, Phone as PhoneIcon, Activity, Download } from 'lucide-react'
 import api from '@/lib/axios'
+import { LoadingState } from '@/components/ui/LoadingState'
 
 interface PortalOverview {
   employeeTotal: number; employeeInService: number; employeeLeavePlanned: number; employeeStartPlanned: number
@@ -104,7 +105,7 @@ export function OverviewView() {
   if (loading) {
     return (
       <div className="h-full flex items-center justify-center">
-        <p className="text-sm text-slate-400">Laden…</p>
+        <LoadingState label="Overzicht laden…" size="lg" />
       </div>
     )
   }

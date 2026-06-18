@@ -12,6 +12,7 @@ import { PhoneSetupWizard } from '@/components/PhoneSetupWizard'
 import { SimCardModal } from '@/components/SimCardModal'
 import { SubscriptionModal } from '@/components/SubscriptionModal'
 import { NotesPanel } from '@/components/NotesPanel'
+import { LoadingState } from '@/components/ui/LoadingState'
 import type { PhoneListItem } from '@/types/phone'
 import { PHONE_STATUS_LABEL, PHONE_STATUS_TONE } from '@/types/phone'
 import type { SimCardListItem } from '@/types/simcard'
@@ -136,7 +137,7 @@ function PhonesTab({ teammates, onExpand }: { teammates: ClientUserListItem[]; o
           </div>
           <div className="flex-1 overflow-y-auto">
             {loading ? (
-              <div className="p-10 text-center text-sm text-slate-400">Laden…</div>
+              <div className="p-10 flex justify-center"><LoadingState label="Telefoons laden…" /></div>
             ) : filtered.length === 0 ? (
               <div className="p-10 text-center">
                 <PhoneIcon size={36} className="mx-auto mb-3 text-slate-200" />
@@ -383,7 +384,7 @@ function SimCardsTab({ teammates }: { teammates: ClientUserListItem[] }) {
         </div>
         <div className="flex-1 overflow-y-auto">
           {loading ? (
-            <div className="p-10 text-center text-sm text-slate-400">Laden…</div>
+            <div className="p-10 flex justify-center"><LoadingState label="SIM-kaarten laden…" /></div>
           ) : filtered.length === 0 ? (
             <div className="p-10 text-center">
               <CreditCard size={36} className="mx-auto mb-3 text-slate-200" />
@@ -573,7 +574,7 @@ function SubscriptionsTab() {
         </div>
         <div className="flex-1 overflow-y-auto">
           {loading ? (
-            <div className="p-10 text-center text-sm text-slate-400">Laden…</div>
+            <div className="p-10 flex justify-center"><LoadingState label="Abonnementen laden…" /></div>
           ) : filtered.length === 0 ? (
             <div className="p-10 text-center">
               <Layers size={36} className="mx-auto mb-3 text-slate-200" />

@@ -4,6 +4,7 @@ import api from '@/lib/axios'
 import { Button } from '@/components/ui/Button'
 import { StatCard } from '@/components/portal/PortalUI'
 import { LocationModal } from '@/components/LocationModal'
+import { LoadingState, LoadingSpinner } from '@/components/ui/LoadingState'
 import type { LocationListItem, LocationDetailResponse } from '@/types/location'
 import { STATUS_TONE, STATUS_LABEL } from '@/types/clientUser'
 import { HARDWARE_TYPE_LABEL, HARDWARE_STATUS_LABEL, HARDWARE_STATUS_TONE } from '@/types/hardware'
@@ -244,7 +245,7 @@ export function LocationsView() {
 
       <div className="flex items-center justify-between flex-shrink-0">
         <p className="text-sm text-slate-500 dark:text-slate-400">
-          {loading ? 'Laden…' : `${locations.length} locatie${locations.length !== 1 ? 's' : ''}`}
+          {loading ? <span className="inline-flex items-center gap-1.5"><LoadingSpinner size="xs" />Laden…</span> : `${locations.length} locatie${locations.length !== 1 ? 's' : ''}`}
         </p>
         <Button size="sm" onClick={() => { setEditTarget(null); setShowModal(true) }}>
           <Plus size={13} /> Locatie toevoegen
@@ -252,7 +253,7 @@ export function LocationsView() {
       </div>
 
       {loading ? (
-        <div className="flex-1 flex items-center justify-center text-sm text-slate-400">Laden…</div>
+        <div className="flex-1 flex items-center justify-center"><LoadingState label="Locaties laden…" /></div>
       ) : locations.length === 0 ? (
         <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center">
           <div className="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">

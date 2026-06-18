@@ -3,6 +3,7 @@ import { Users, Laptop, CreditCard, Phone as PhoneIcon, Shield, Activity, Histor
 import api from '@/lib/axios'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
+import { LoadingState } from '@/components/ui/LoadingState'
 import { StatCard } from '@/components/portal/PortalUI'
 import type { TenantHistoryItem, HistoryCategory } from '@/types/tenantHistory'
 
@@ -128,7 +129,7 @@ export function HistoryView() {
 
       <div className="flex-1 overflow-y-auto min-h-0">
         {loading ? (
-          <div className="p-10 text-center text-sm text-slate-400">Laden…</div>
+          <LoadingState />
         ) : grouped.length === 0 ? (
           <div className="p-10 text-center">
             <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">

@@ -10,6 +10,7 @@ import api from '@/lib/axios'
 import { Card, CardContent } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { StatCard } from '@/components/portal/PortalUI'
+import { LoadingState, LoadingSpinner } from '@/components/ui/LoadingState'
 import { HistoryBlock, softwareAuditLabel, softwareDescriptionFn } from '@/components/portal/AuditHistory'
 import { ConfirmDeleteModal } from '@/components/ui/ConfirmDeleteModal'
 import { NotesPanel } from '@/components/NotesPanel'
@@ -322,7 +323,7 @@ function SoftwareWizard({ editTarget, onClose, onSaved }: {
                 </div>
                 <div className="max-h-60 overflow-y-auto rounded-xl border border-slate-200 dark:border-slate-600 divide-y divide-slate-100 dark:divide-slate-700">
                   {loadingLicenses ? (
-                    <p className="text-sm text-slate-400 text-center p-4">Laden…</p>
+                    <div className="p-4 flex justify-center"><LoadingSpinner size="sm" /></div>
                   ) : filteredLicenses.length === 0 ? (
                     <p className="text-sm text-slate-400 text-center p-4">Geen licenties gevonden.</p>
                   ) : filteredLicenses.map(l => (
@@ -575,7 +576,7 @@ function SoftwareDetailPanel({ software, teammates, onEdit, onDelete, onUsersCha
               </div>
             )}
             {loadingUsers ? (
-              <p className="text-xs text-slate-400">Laden…</p>
+              <div className="flex items-center gap-2 text-xs text-slate-400"><LoadingSpinner size="xs" />Laden…</div>
             ) : licenseUsers.length === 0 ? (
               <p className="text-sm text-slate-400">Nog geen gebruikers toegewezen.</p>
             ) : (
@@ -712,7 +713,7 @@ function SoftwareCatalogTab({ teammates, tabBar }: { teammates: ClientUserListIt
           </div>
           <div className="flex-1 overflow-y-auto">
             {loading ? (
-              <div className="p-10 text-center text-sm text-slate-400">Laden…</div>
+              <div className="p-10 flex justify-center"><LoadingState label="Software laden…" /></div>
             ) : filtered.length === 0 ? (
               <div className="p-10 text-center">
                 <Shield size={36} className="mx-auto mb-3 text-slate-200" />

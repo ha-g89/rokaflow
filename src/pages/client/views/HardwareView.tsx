@@ -6,6 +6,7 @@ import {
 import api from '@/lib/axios'
 import { Card, CardContent } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
+import { LoadingState } from '@/components/ui/LoadingState'
 import { StatCard } from '@/components/portal/PortalUI'
 import { ItemHistoryBlock } from '@/components/portal/AuditHistory'
 import { ConfirmDeleteModal } from '@/components/ui/ConfirmDeleteModal'
@@ -394,7 +395,7 @@ export function HardwareView({ teammates, onExpand }: { teammates: ClientUserLis
           </div>
           <div className="flex-1 overflow-y-auto">
             {loading ? (
-              <div className="p-10 text-center text-sm text-slate-400">Laden…</div>
+              <LoadingState />
             ) : filtered.length === 0 ? (
               <div className="p-10 text-center">
                 <Laptop size={36} className="mx-auto mb-3 text-slate-200" />

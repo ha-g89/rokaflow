@@ -7,6 +7,7 @@ import {
 import api from '@/lib/axios'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
+import { LoadingState, SkeletonRow } from '@/components/ui/LoadingState'
 import { Avatar, StatCard } from '@/components/portal/PortalUI'
 import { UserDetailPanel } from '@/components/UserDetailPanel'
 import type { ClientUserListItem, ClientUserDetailResponse } from '@/types/clientUser'
@@ -232,7 +233,9 @@ export function EmployeeListView({ teammates, loading, search, currentUserId, on
         </div>
         <div className="flex-1 overflow-y-auto">
           {loading ? (
-            <div className="p-10 text-center text-sm text-slate-400">Laden…</div>
+            <div className="divide-y divide-slate-100">
+              {Array.from({ length: 6 }).map((_, i) => <SkeletonRow key={i} cols={6} />)}
+            </div>
           ) : filtered.length === 0 ? (
             <div className="p-10 text-center">
               <Users size={36} className="mx-auto mb-3 text-slate-200" />
@@ -344,8 +347,8 @@ export function EmployeeDetailView({ user, loading, onBack, onUserUpdated, onDel
       </div>
       <div className="flex-1 overflow-y-auto">
         {loading ? (
-          <Card className="h-40 flex items-center justify-center">
-            <p className="text-sm text-slate-400">Laden…</p>
+          <Card className="flex items-center justify-center py-16">
+            <LoadingState label="Medewerker laden…" />
           </Card>
         ) : !user ? null : (
           <UserDetailPanel

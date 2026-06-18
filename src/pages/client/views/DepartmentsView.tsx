@@ -4,6 +4,7 @@ import api from '@/lib/axios'
 import { Button } from '@/components/ui/Button'
 import { DepartmentModal } from '@/components/DepartmentModal'
 import type { DepartmentListItem, DepartmentDetailResponse } from '@/types/department'
+import { LoadingState, LoadingSpinner } from '@/components/ui/LoadingState'
 
 const USER_STATUS_LABEL: Record<string, string> = {
   InService: 'In dienst', LeavePlanned: 'Uitdienst gepland', Left: 'Uit dienst',
@@ -156,7 +157,7 @@ export function DepartmentsView() {
     <div className="h-full flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <p className="text-sm text-slate-500 dark:text-slate-400">
-          {loading ? 'Laden…' : `${departments.length} afdeling${departments.length !== 1 ? 'en' : ''}`}
+          {loading ? <span className="inline-flex items-center gap-1.5"><LoadingSpinner size="xs" />Laden…</span> : `${departments.length} afdeling${departments.length !== 1 ? 'en' : ''}`}
         </p>
         <Button size="sm" onClick={() => { setEditTarget(null); setShowModal(true) }}>
           <Plus size={14} /> Afdeling toevoegen
@@ -165,7 +166,7 @@ export function DepartmentsView() {
 
       {loading ? (
         <div className="flex-1 flex items-center justify-center">
-          <p className="text-sm text-slate-400">Laden…</p>
+          <LoadingState label="Afdelingen laden…" />
         </div>
       ) : departments.length === 0 ? (
         <div className="flex-1 flex items-center justify-center">
