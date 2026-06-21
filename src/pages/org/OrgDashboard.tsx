@@ -5,6 +5,7 @@ import {
   MoreVertical, Pencil, X, Mail, Ban, ShieldCheck, Calendar, ImagePlus,
   Moon, Sun, Settings, ChevronDown, ArrowLeftRight, XCircle,
 } from 'lucide-react'
+import { LoadingState } from '@/components/ui/LoadingState'
 import { useAuthStore } from '@/store/authStore'
 import { useThemeStore } from '@/store/themeStore'
 import { useNavigate } from 'react-router-dom'
@@ -616,7 +617,7 @@ export default function OrgDashboard() {
               </div>
               <div className="flex-1 overflow-y-auto">
                 {loadingClients
-                  ? <div className="p-4 text-center text-xs text-slate-400">Laden…</div>
+                  ? <LoadingState label="Clients laden…" size="sm" />
                   : filteredClients.length === 0
                     ? <div className="p-4 text-center text-xs text-slate-400">Geen clients.</div>
                     : <ul className="divide-y divide-slate-100">
@@ -702,7 +703,7 @@ export default function OrgDashboard() {
                     </div>
                     <div className="flex-1 overflow-y-auto">
                       {loadingUsers
-                        ? <div className="p-4 text-center text-xs text-slate-400">Laden…</div>
+                        ? <LoadingState label="Gebruikers laden…" size="sm" />
                         : filteredUsers.length === 0
                           ? <div className="p-4 text-center">
                               <User size={24} className="mx-auto mb-1 text-slate-200" />
@@ -741,8 +742,8 @@ export default function OrgDashboard() {
           {/* Col 3 — Portal user detail */}
           <div className="flex-1 overflow-y-auto min-w-0">
             {loadingDetail ? (
-              <Card className="h-40 flex items-center justify-center">
-                <Loader2 size={20} className="animate-spin text-slate-300" />
+              <Card className="flex items-center justify-center">
+                <LoadingState label="Gebruiker laden…" size="sm" />
               </Card>
             ) : !selectedUser ? (
               <Card className="h-40 flex items-center justify-center">
