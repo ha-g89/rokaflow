@@ -654,7 +654,7 @@ export default function RegisterPage() {
             <img src={logo} alt="" aria-hidden="true" />
             <span className="rfr-brand">RokaFlow</span>
             <p className="rfr-tagline">
-              Start in minuten.<br />Geen MSP vereist.
+              Start in minuten.
             </p>
           </div>
         </div>

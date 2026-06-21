@@ -1,4 +1,7 @@
 ﻿import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import InvitePage from '@/pages/InvitePage'
+import ForgotPasswordPage from '@/pages/ForgotPasswordPage'
+import ResetPasswordPage from '@/pages/ResetPasswordPage'
 import LoginPage from '@/pages/LoginPage'
 import LandingPage from '@/pages/LandingPage'
 import SuperUserLoginPage from '@/pages/SuperUserLoginPage'
@@ -44,6 +47,9 @@ export default function App() {
       <Routes>
         {/* Public */}
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/invite" element={<InvitePage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/superuser/login" element={<SuperUserLoginPage />} />
         <Route path="/transfer/approve" element={<TransferApprovePage />} />

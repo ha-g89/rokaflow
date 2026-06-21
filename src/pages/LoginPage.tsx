@@ -593,8 +593,7 @@ export default function LoginPage() {
                 </button>
 
                 <p className="rfl-footer">
-                  Platform beheerder?{' '}
-                  <a href="/superuser/login">Admin login →</a>
+                  <a href="/forgot-password">Wachtwoord vergeten?</a>
                 </p>
               </form>
             </div>

@@ -1,16 +1,17 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
+import { Mail } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import api from '@/lib/axios'
 
 const schema = z.object({
-  firstName: z.string().min(1, 'Voornaam is verplicht').max(100),
-  lastName: z.string().min(1, 'Achternaam is verplicht').max(100),
-  email: z.string().email('Geldig e-mailadres vereist'),
-  password: z.string().min(8, 'Minimaal 8 tekens'),
+  firstName:    z.string().min(1, 'Voornaam is verplicht').max(100),
+  tussenvoegsel: z.string().max(50).optional().default(''),
+  lastName:     z.string().min(1, 'Achternaam is verplicht').max(100),
+  email:        z.string().email('Geldig e-mailadres vereist'),
   departmentId: z.string().optional().default(''),
 })
 type FormValues = z.infer<typeof schema>
@@ -21,9 +22,7 @@ interface Props {
   onSuccess: () => void
   clientId?: string
   clientName: string
-  /** Override the POST endpoint (e.g. '/portal/users' for the client portal) */
   apiEndpoint?: string
-  /** If provided, shows a department dropdown instead of a free-text field */
   departments?: { id: string; name: string }[]
 }
 
@@ -46,11 +45,11 @@ export function AddUserModal({ open, onClose, onSuccess, clientId, clientName, a
     try {
       const endpoint = apiEndpoint ?? `/clients/${clientId}/users`
       await api.post(endpoint, {
-        firstName: values.firstName,
-        lastName: values.lastName,
-        email: values.email,
-        password: values.password,
-        departmentId: values.departmentId || null,
+        firstName:     values.firstName,
+        tussenvoegsel: values.tussenvoegsel || '',
+        lastName:      values.lastName,
+        email:         values.email,
+        departmentId:  values.departmentId || null,
       })
       reset()
       onSuccess()
@@ -64,6 +63,7 @@ export function AddUserModal({ open, onClose, onSuccess, clientId, clientName, a
   return (
     <Modal open={open} onClose={handleClose} title={`Gebruiker toevoegen aan ${clientName}`} className="max-w-lg">
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="block text-xs font-medium text-slate-600 mb-1">Voornaam *</label>
@@ -71,10 +71,15 @@ export function AddUserModal({ open, onClose, onSuccess, clientId, clientName, a
             {errors.firstName && <p className="mt-1 text-xs text-red-600">{errors.firstName.message}</p>}
           </div>
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Achternaam *</label>
-            <input {...register('lastName')} className={field} placeholder="de Vries" />
-            {errors.lastName && <p className="mt-1 text-xs text-red-600">{errors.lastName.message}</p>}
+            <label className="block text-xs font-medium text-slate-600 mb-1">Tussenvoegsel</label>
+            <input {...register('tussenvoegsel')} className={field} placeholder="van der" />
           </div>
+        </div>
+
+        <div>
+          <label className="block text-xs font-medium text-slate-600 mb-1">Achternaam *</label>
+          <input {...register('lastName')} className={field} placeholder="Berg" />
+          {errors.lastName && <p className="mt-1 text-xs text-red-600">{errors.lastName.message}</p>}
         </div>
 
         <div>
@@ -83,11 +88,11 @@ export function AddUserModal({ open, onClose, onSuccess, clientId, clientName, a
           {errors.email && <p className="mt-1 text-xs text-red-600">{errors.email.message}</p>}
         </div>
 
-        <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Wachtwoord *</label>
-          <input {...register('password')} type="password" className={field} placeholder="••••••••" />
-          {errors.password && <p className="mt-1 text-xs text-red-600">{errors.password.message}</p>}
-          <p className="mt-1 text-xs text-slate-400">Gebruiker logt in met deze gegevens.</p>
+        <div className="flex items-start gap-2 px-3 py-2.5 rounded-lg bg-blue-50 border border-blue-100">
+          <Mail size={13} className="text-blue-500 mt-0.5 flex-shrink-0" />
+          <p className="text-xs text-blue-700 leading-snug">
+            De gebruiker ontvangt een uitnodigingsmail om zelf een wachtwoord in te stellen.
+          </p>
         </div>
 
         {departments.length > 0 && (
@@ -114,7 +119,7 @@ export function AddUserModal({ open, onClose, onSuccess, clientId, clientName, a
             Annuleren
           </Button>
           <Button type="submit" className="flex-1" disabled={isSubmitting}>
-            {isSubmitting ? 'Aanmaken…' : 'Gebruiker toevoegen'}
+            {isSubmitting ? 'Toevoegen…' : 'Toevoegen & uitnodiging sturen'}
           </Button>
         </div>
       </form>
