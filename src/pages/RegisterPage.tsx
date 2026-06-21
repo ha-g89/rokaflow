@@ -11,6 +11,7 @@ import logo from '@/assets/RokaFlow_icon_dark_transparent.png'
 const schema = z.object({
   companyName:     z.string().min(1, 'Bedrijfsnaam is verplicht').max(200),
   firstName:       z.string().min(1, 'Voornaam is verplicht').max(100),
+  tussenvoegsel:   z.string().max(50).optional(),
   lastName:        z.string().min(1, 'Achternaam is verplicht').max(100),
   email:           z.string().email('Voer een geldig e-mailadres in'),
   password:        z.string().min(8, 'Minimaal 8 tekens'),
@@ -106,7 +107,7 @@ const CSS = `
 
   .rfr-card {
     width: 100%;
-    max-width: 400px;
+    max-width: 480px;
     background: rgba(8,12,28,0.85);
     border: 1px solid rgba(255,255,255,0.07);
     border-radius: 16px;
@@ -134,6 +135,13 @@ const CSS = `
   .rfr-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+
+  .rfr-row-3 {
+    display: grid;
+    grid-template-columns: 2fr 1fr 2fr;
     gap: 12px;
     margin-bottom: 18px;
   }
@@ -465,11 +473,12 @@ export default function RegisterPage() {
     setApiError(null)
     try {
       const { data } = await api.post<LoginResponse>('/auth/register', {
-        companyName: values.companyName,
-        firstName:   values.firstName,
-        lastName:    values.lastName,
-        email:       values.email,
-        password:    values.password,
+        companyName:   values.companyName,
+        firstName:     values.firstName,
+        tussenvoegsel: values.tussenvoegsel ?? '',
+        lastName:      values.lastName,
+        email:         values.email,
+        password:      values.password,
       }, {
         headers: { Authorization: undefined },
       })
@@ -556,8 +565,8 @@ export default function RegisterPage() {
                   </div>
                 </div>
 
-                {/* Voornaam + Achternaam */}
-                <div className="rfr-row">
+                {/* Voornaam + Tussenvoegsel + Achternaam */}
+                <div className="rfr-row-3">
                   <div className="rfr-field-inline">
                     <label className="rfr-label">Voornaam</label>
                     <input
@@ -568,9 +577,17 @@ export default function RegisterPage() {
                     {errors.firstName && <p className="rfr-err-msg">{errors.firstName.message}</p>}
                   </div>
                   <div className="rfr-field-inline">
+                    <label className="rfr-label">Tussen</label>
+                    <input
+                      placeholder="de"
+                      {...register('tussenvoegsel')}
+                      className="rfr-input"
+                    />
+                  </div>
+                  <div className="rfr-field-inline">
                     <label className="rfr-label">Achternaam</label>
                     <input
-                      placeholder="de Vries"
+                      placeholder="Vries"
                       {...register('lastName')}
                       className={`rfr-input${errors.lastName ? ' rfr-err' : ''}`}
                     />
