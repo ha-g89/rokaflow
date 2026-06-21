@@ -113,7 +113,7 @@ export function LicenseDetailPanel({ license, teammates, onEdit, onDelete, onAss
         </div>
 
         {/* Assign user */}
-        {seatsLeft != null && seatsLeft > 0 && assignableUsers.length > 0 && (
+        {(seatsLeft === null || seatsLeft > 0) && assignableUsers.length > 0 && (
           <div>
             <p className="text-xs font-medium text-slate-600 mb-1.5">Gebruiker toewijzen</p>
             <div className="flex gap-2">

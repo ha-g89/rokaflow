@@ -77,8 +77,7 @@ function SoftwareWizard({ editTarget, onClose, onSaved }: {
     },
   })
 
-  const isPaid     = form1.watch('isPaid')
-  const trackUsers = form1.watch('trackUsers')
+  const isPaid = form1.watch('isPaid')
 
   const handleStep1 = form1.handleSubmit(async (values) => {
     setApiError(null)
@@ -104,7 +103,7 @@ function SoftwareWizard({ editTarget, onClose, onSaved }: {
           publisher:  values.publisher.trim(),
           vendor:     values.vendor.trim() || null,
           isPaid:     false,
-          trackUsers: values.trackUsers,
+          trackUsers: true,
         })
         onSaved()
       } catch (err: unknown) {
@@ -224,7 +223,7 @@ function SoftwareWizard({ editTarget, onClose, onSaved }: {
                 <div>
                   <label className={labelCls}>Type</label>
                   <div className="grid grid-cols-2 gap-3 mt-1">
-                    <button type="button" onClick={() => { form1.setValue('isPaid', false); form1.setValue('trackUsers', false) }}
+                    <button type="button" onClick={() => { form1.setValue('isPaid', false); form1.setValue('trackUsers', true) }}
                       className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
                         !isPaid ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20' : 'border-slate-200 dark:border-slate-600 hover:border-slate-300'
                       }`}>
@@ -243,29 +242,6 @@ function SoftwareWizard({ editTarget, onClose, onSaved }: {
                   </div>
                 </div>
 
-                {!isPaid && (
-                  <button
-                    type="button"
-                    onClick={() => form1.setValue('trackUsers', !trackUsers)}
-                    className={`w-full flex items-center justify-between rounded-xl border-2 px-4 py-3 transition-all text-left ${
-                      trackUsers
-                        ? 'border-emerald-400 bg-emerald-50 dark:bg-emerald-900/20'
-                        : 'border-slate-200 dark:border-slate-600 hover:border-slate-300'
-                    }`}
-                  >
-                    <div>
-                      <p className={`text-sm font-medium ${trackUsers ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-700 dark:text-slate-300'}`}>
-                        Gebruikers bijhouden
-                      </p>
-                      <p className="text-xs text-slate-400 mt-0.5">
-                        {trackUsers ? 'Registreer wie deze software gebruikt' : 'Alleen registreren, geen licentiekosten'}
-                      </p>
-                    </div>
-                    <div className={`w-9 h-5 rounded-full flex-shrink-0 transition-colors relative ${trackUsers ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-600'}`}>
-                      <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${trackUsers ? 'translate-x-4' : 'translate-x-0.5'}`} />
-                    </div>
-                  </button>
-                )}
               </div>
             )}
 
