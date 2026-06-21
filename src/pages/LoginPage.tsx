@@ -23,23 +23,25 @@ const ROLE_HOME: Record<UserRole, string> = {
 }
 
 const CSS = `
-  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap');
 
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
-    --bg:        #030812;
-    --bg-r:      #050c1a;
-    --text:      #eef0f6;
-    --muted:     rgba(238,240,246,0.38);
+    --bg:        #ffffff;
+    --bg-alt:    #f8fafc;
+    --bg-panel:  #f0f4ff;
+    --text:      #0f172a;
+    --text-2:    #334155;
+    --muted:     #64748b;
     --accent:    #2563eb;
-    --accent-lt: #60a5fa;
-    --line-md:   rgba(238,240,246,0.11);
-    --field-bg:  rgba(238,240,246,0.05);
-    --field-bd:  rgba(238,240,246,0.10);
+    --accent-dk: #1d4ed8;
+    --line:      rgba(15,23,42,0.08);
+    --line-md:   rgba(15,23,42,0.12);
+    --field-bg:  #f8fafc;
+    --field-bd:  rgba(15,23,42,0.10);
   }
 
-  /* ── Layout ── */
   .rfl-wrap {
     display: flex;
     height: 100vh;
@@ -55,30 +57,29 @@ const CSS = `
     flex-shrink: 0;
     display: flex;
     flex-direction: column;
-    border-right: 1px solid var(--line-md);
-    position: relative;
+    border-right: 1px solid var(--line);
+    background: var(--bg-alt);
   }
 
   .rfl-topbar {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 28px 48px;
+    padding: 24px 48px;
     flex-shrink: 0;
-    animation: rflFadeIn 0.5s ease both;
+    animation: rflFadeIn 0.4s ease both;
   }
 
   .rfl-logo-sm {
-    height: 68px;
+    height: 52px;
     object-fit: contain;
-    opacity: 0.8;
+    filter: brightness(0) opacity(0.82);
     display: block;
   }
 
   .rfl-back {
-    font-size: 12px;
-    font-weight: 600;
-    letter-spacing: 0.025em;
+    font-size: 13px;
+    font-weight: 500;
     color: var(--muted);
     background: none;
     border: none;
@@ -87,18 +88,13 @@ const CSS = `
     display: flex;
     align-items: center;
     gap: 5px;
-    transition: color 0.2s;
+    transition: color 0.16s;
     padding: 0;
   }
   .rfl-back:hover { color: var(--text); }
-  .rfl-back .rfl-arr {
-    display: inline-block;
-    font-style: normal;
-    transition: transform 0.2s;
-  }
+  .rfl-back .rfl-arr { font-style: normal; transition: transform 0.16s; }
   .rfl-back:hover .rfl-arr { transform: translateX(-3px); }
 
-  /* Centered card area */
   .rfl-form-wrap {
     flex: 1;
     display: flex;
@@ -107,44 +103,41 @@ const CSS = `
     padding: 0 48px 48px;
   }
 
-  /* Card */
   .rfl-card {
     width: 100%;
-    max-width: 360px;
-    background: rgba(8,12,28,0.85);
-    border: 1px solid rgba(255,255,255,0.07);
+    max-width: 380px;
+    background: #ffffff;
+    border: 1px solid var(--line);
     border-radius: 16px;
-    padding: 36px 32px;
-    backdrop-filter: blur(20px);
-    box-shadow: 0 24px 56px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.05);
-    animation: rflSlideUp 0.5s cubic-bezier(0.16,1,0.3,1) 0.05s both;
+    padding: 36px 40px;
+    box-shadow: 0 1px 3px rgba(15,23,42,0.05), 0 8px 24px rgba(15,23,42,0.06);
+    animation: rflSlideUp 0.45s cubic-bezier(0.16,1,0.3,1) 0.05s both;
   }
 
   .rfl-heading {
-    font-family: 'Syne', sans-serif;
-    font-size: 26px;
-    font-weight: 700;
-    letter-spacing: -0.015em;
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-size: 30px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
     color: var(--text);
-    margin-bottom: 4px;
+    margin-bottom: 6px;
   }
 
   .rfl-sub {
-    font-size: 13px;
+    font-size: 14px;
     color: var(--muted);
     margin-bottom: 28px;
+    line-height: 1.55;
   }
 
-  /* Fields */
+  /* ── Fields ── */
   .rfl-field { margin-bottom: 18px; }
 
   .rfl-label {
     display: block;
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.09em;
-    text-transform: uppercase;
-    color: var(--muted);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-2);
     margin-bottom: 7px;
   }
 
@@ -154,27 +147,27 @@ const CSS = `
     width: 100%;
     padding: 11px 14px;
     background: var(--field-bg);
-    border: 1px solid var(--field-bd);
-    border-radius: 8px;
+    border: 1.5px solid var(--field-bd);
+    border-radius: 9px;
     color: var(--text);
     font-size: 14px;
     font-family: 'DM Sans', sans-serif;
     outline: none;
-    transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+    transition: border-color 0.18s, background 0.18s, box-shadow 0.18s;
     -webkit-appearance: none;
   }
-  .rfl-input::placeholder { color: rgba(238,240,246,0.20); }
+  .rfl-input::placeholder { color: rgba(15,23,42,0.28); }
   .rfl-input:focus {
-    border-color: rgba(37,99,235,0.6);
-    background: rgba(37,99,235,0.05);
+    border-color: var(--accent);
+    background: #ffffff;
     box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
   }
   .rfl-input.rfl-err {
-    border-color: rgba(239,68,68,0.45);
-    background: rgba(239,68,68,0.04);
+    border-color: #ef4444;
+    background: #fff5f5;
   }
   .rfl-input.rfl-err:focus {
-    border-color: rgba(239,68,68,0.65);
+    border-color: #ef4444;
     box-shadow: 0 0 0 3px rgba(239,68,68,0.10);
   }
 
@@ -186,33 +179,32 @@ const CSS = `
     background: none;
     border: none;
     cursor: pointer;
-    color: rgba(238,240,246,0.3);
+    color: var(--muted);
     display: flex;
     align-items: center;
     padding: 4px;
-    transition: color 0.2s;
+    transition: color 0.16s;
   }
-  .rfl-eye:hover { color: rgba(238,240,246,0.65); }
+  .rfl-eye:hover { color: var(--text); }
 
   .rfl-err-msg {
     margin-top: 5px;
     font-size: 12px;
-    color: #f87171;
+    color: #ef4444;
     font-weight: 500;
   }
 
-  /* API error */
   .rfl-api-err {
     padding: 10px 13px;
-    border-radius: 8px;
-    border: 1px solid rgba(239,68,68,0.18);
-    background: rgba(239,68,68,0.07);
+    border-radius: 9px;
+    border: 1.5px solid #fecaca;
+    background: #fef2f2;
     font-size: 13px;
-    color: #fca5a5;
+    color: #dc2626;
     margin-bottom: 18px;
   }
 
-  /* Submit button */
+  /* ── Submit ── */
   .rfl-submit {
     width: 100%;
     display: flex;
@@ -222,54 +214,23 @@ const CSS = `
     font-family: 'DM Sans', sans-serif;
     font-size: 14px;
     font-weight: 600;
-    letter-spacing: 0.02em;
-    color: var(--text);
-    background: transparent;
-    border: 1px solid rgba(37,99,235,0.45);
-    border-radius: 8px;
-    cursor: pointer;
-    position: relative;
-    overflow: hidden;
-    transition: border-color 0.35s, box-shadow 0.35s, opacity 0.2s;
-    margin-top: 6px;
-  }
-
-  /* Sweep fill */
-  .rfl-submit::before {
-    content: '';
-    position: absolute;
-    inset: 0;
+    color: #ffffff;
     background: var(--accent);
-    border-radius: 8px;
-    transform: translateX(-105%);
-    transition: transform 0.42s cubic-bezier(0.16,1,0.3,1);
-    z-index: 0;
+    border: none;
+    border-radius: 9px;
+    cursor: pointer;
+    transition: background 0.18s, box-shadow 0.18s, transform 0.12s, opacity 0.2s;
+    margin-top: 6px;
+    box-shadow: 0 1px 2px rgba(37,99,235,0.20);
   }
-  .rfl-submit:hover:not(:disabled)::before { transform: translateX(0); }
-
-  /* Shimmer pass */
-  .rfl-submit::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.13) 50%, transparent 70%);
-    transform: translateX(-120%);
-    z-index: 1;
-  }
-  .rfl-submit:hover:not(:disabled)::after {
-    transform: translateX(120%);
-    transition: transform 0.55s cubic-bezier(0.4,0,0.2,1) 0.34s;
-  }
-
   .rfl-submit:hover:not(:disabled) {
-    border-color: var(--accent);
-    box-shadow: 0 0 20px rgba(37,99,235,0.38), 0 0 48px rgba(37,99,235,0.13);
+    background: var(--accent-dk);
+    box-shadow: 0 6px 20px rgba(37,99,235,0.35);
+    transform: translateY(-1px);
   }
-  .rfl-submit:disabled { opacity: 0.45; cursor: not-allowed; }
+  .rfl-submit:disabled { opacity: 0.5; cursor: not-allowed; }
 
   .rfl-submit-inner {
-    position: relative;
-    z-index: 2;
     display: flex;
     align-items: center;
     gap: 8px;
@@ -277,22 +238,15 @@ const CSS = `
 
   .rfl-submit .rfl-btn-arr {
     font-style: normal;
-    display: inline-block;
-    opacity: 0;
-    transform: translateX(-6px);
-    transition: opacity 0.22s 0.12s, transform 0.3s cubic-bezier(0.16,1,0.3,1) 0.12s;
+    transition: transform 0.16s;
   }
-  .rfl-submit:hover:not(:disabled) .rfl-btn-arr {
-    opacity: 1;
-    transform: translateX(0);
-  }
+  .rfl-submit:hover:not(:disabled) .rfl-btn-arr { transform: translateX(3px); }
 
-  /* Spinner */
   @keyframes rflSpin { to { transform: rotate(360deg); } }
   .rfl-spin {
-    width: 13px; height: 13px;
-    border: 2px solid rgba(238,240,246,0.25);
-    border-top-color: var(--text);
+    width: 14px; height: 14px;
+    border: 2px solid rgba(255,255,255,0.35);
+    border-top-color: white;
     border-radius: 50%;
     animation: rflSpin 0.7s linear infinite;
     flex-shrink: 0;
@@ -301,17 +255,16 @@ const CSS = `
   .rfl-footer {
     margin-top: 20px;
     text-align: center;
-    font-size: 12px;
+    font-size: 13px;
     color: var(--muted);
-    opacity: 0.7;
   }
   .rfl-footer a {
-    color: var(--accent-lt);
+    color: var(--accent);
     text-decoration: none;
     font-weight: 600;
-    transition: color 0.2s;
+    transition: color 0.16s;
   }
-  .rfl-footer a:hover { color: #c4b5fd; }
+  .rfl-footer a:hover { color: var(--accent-dk); }
 
   /* ── Right panel ── */
   .rfl-right {
@@ -320,7 +273,9 @@ const CSS = `
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    background: var(--bg-r);
+    background: var(--bg-panel);
+    background-image: radial-gradient(rgba(37,99,235,0.12) 1px, transparent 1px);
+    background-size: 24px 24px;
     position: relative;
   }
 
@@ -328,37 +283,60 @@ const CSS = `
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 24px;
-    animation: rflFadeIn 1.2s ease 0.2s both;
+    gap: 20px;
+    animation: rflFadeIn 0.8s ease 0.2s both;
   }
 
-  .rfl-emblem img {
-    width: 280px;
-    opacity: 0.20;
-    filter: drop-shadow(0 0 48px rgba(139,92,246,0.30));
-    animation: rflFloat 8s ease-in-out 1.4s infinite;
-    display: block;
+  /* ── Logo mask animation ── */
+  .rfl-logo-wrap {
+    width: 160px;
+    height: 160px;
+    position: relative;
+    flex-shrink: 0;
+    animation: rflFloat 8s ease-in-out 1s infinite;
+  }
+  .rfl-logo-base {
+    position: absolute;
+    inset: 0;
+    background: rgba(15,23,42,0.18);
+  }
+  .rfl-logo-sweep {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      105deg,
+      transparent 15%,
+      rgba(37,99,235,0.55) 38%,
+      rgba(96,165,250,0.95) 50%,
+      rgba(37,99,235,0.55) 62%,
+      transparent 85%
+    );
+    transform: translateX(-200%);
+    animation: rflLogoSweep 4s cubic-bezier(0.4,0,0.2,1) 1.8s infinite;
+  }
+  @keyframes rflLogoSweep {
+    0%   { transform: translateX(-200%); }
+    100% { transform: translateX(300%); }
   }
 
   .rfl-brand {
-    font-family: 'Syne', sans-serif;
+    font-family: 'Bricolage Grotesque', sans-serif;
     font-size: 12px;
     font-weight: 700;
     letter-spacing: 0.18em;
     text-transform: uppercase;
-    color: rgba(238,240,246,0.20);
+    color: rgba(15,23,42,0.28);
   }
 
   .rfl-tagline {
-    font-size: 13px;
-    color: rgba(238,240,246,0.22);
-    letter-spacing: 0.01em;
+    font-size: 14px;
+    color: rgba(15,23,42,0.45);
     text-align: center;
-    max-width: 240px;
+    max-width: 220px;
     line-height: 1.65;
   }
 
-  /* ── Post-login loading screen ── */
+  /* ── Post-login loading screen (stays dark) ── */
   .rfl-loading-wrap {
     position: fixed;
     inset: 0;
@@ -371,104 +349,95 @@ const CSS = `
     animation: rflFadeIn 0.25s ease both;
     font-family: 'DM Sans', system-ui, sans-serif;
   }
-
   .rfl-loading-logo {
     width: 80px;
     opacity: 0.7;
     animation: rflLoadPulse 1.8s ease-in-out infinite;
     display: block;
   }
-
   .rfl-loading-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-    padding: 5px 13px;
-    border-radius: 20px;
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 5px 13px; border-radius: 20px;
     border: 1px solid rgba(238,240,246,0.08);
     background: rgba(238,240,246,0.04);
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.1em;
+    font-size: 11px; font-weight: 700; letter-spacing: 0.1em;
     text-transform: uppercase;
     color: var(--load-accent, #7c3aed);
     animation: rflFadeIn 0.5s ease 0.15s both;
   }
-
-  .rfl-loading-dot {
-    width: 5px;
-    height: 5px;
-    border-radius: 50%;
-    background: var(--load-accent, #7c3aed);
-    animation: rflDotPulse 1.4s ease-in-out infinite;
-    flex-shrink: 0;
-  }
-
   .rfl-loading-ring {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
+    width: 36px; height: 36px; border-radius: 50%;
     border: 2px solid rgba(238,240,246,0.07);
     border-top-color: var(--load-accent, #7c3aed);
     animation: rflSpin 0.75s linear infinite;
   }
-
   .rfl-loading-label {
-    font-size: 12px;
-    font-weight: 500;
+    font-size: 12px; font-weight: 500;
     color: rgba(238,240,246,0.30);
-    letter-spacing: 0.04em;
-    margin-top: -4px;
+    letter-spacing: 0.04em; margin-top: -4px;
   }
-
   @keyframes rflLoadPulse {
     0%, 100% { opacity: 0.7;  transform: scale(1);    }
     50%       { opacity: 0.9;  transform: scale(1.04); }
   }
 
-  @keyframes rflDotPulse {
-    0%, 100% { opacity: 0.35; }
-    50%       { opacity: 1;   }
-  }
-
-  /* ── Keyframes ── */
+  /* ── Animations ── */
   @keyframes rflSlideUp {
-    from { opacity: 0; transform: translateY(16px) scale(0.98); }
-    to   { opacity: 1; transform: translateY(0)    scale(1);    }
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
   }
   @keyframes rflFadeIn {
-    from { opacity: 0; }
-    to   { opacity: 1; }
+    from { opacity: 0; } to { opacity: 1; }
   }
   @keyframes rflFloat {
-    0%, 100% { transform: translateY(0px); }
-    50%       { transform: translateY(-14px); }
+    0%, 100% { transform: translateY(0); }
+    50%       { transform: translateY(-12px); }
   }
 
   /* ── Responsive ── */
   @media (max-width: 768px) {
-    .rfl-right  { display: none; }
-    .rfl-left   { width: 100%; border-right: none; }
-    .rfl-topbar { padding: 24px 24px; }
+    .rfl-right    { display: none; }
+    .rfl-left     { width: 100%; border-right: none; }
+    .rfl-topbar   { padding: 20px 24px; }
     .rfl-form-wrap { padding: 0 24px 40px; }
   }
+
+  /* ── Dark mode ── */
+  html.dark .rfl-wrap {
+    --bg: #030812; --bg-alt: #0d1117; --bg-panel: #0a0f1e;
+    --text: #eef0f6; --text-2: rgba(238,240,246,0.72); --muted: rgba(238,240,246,0.42);
+    --accent-dk: #3b82f6; --line: rgba(238,240,246,0.07); --line-md: rgba(238,240,246,0.11);
+    --field-bg: rgba(238,240,246,0.05); --field-bd: rgba(238,240,246,0.10);
+  }
+  html.dark .rfl-card {
+    background: rgba(8,12,28,0.95);
+    border-color: rgba(238,240,246,0.07);
+    box-shadow: 0 24px 56px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.04);
+  }
+  html.dark .rfl-logo-sm { filter: brightness(0) invert(1) opacity(0.72); }
+  html.dark .rfl-right {
+    background: #0a0f1e;
+    background-image: radial-gradient(rgba(37,99,235,0.18) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+  html.dark .rfl-logo-base { background: rgba(238,240,246,0.25); }
+  html.dark .rfl-wrap .rfl-input { background: var(--field-bg); border-color: var(--field-bd); color: var(--text); }
+  html.dark .rfl-wrap .rfl-input::placeholder { color: rgba(238,240,246,0.22); }
+  html.dark .rfl-wrap .rfl-input:focus { border-color: rgba(37,99,235,0.7); background: rgba(37,99,235,0.08); box-shadow: 0 0 0 3px rgba(37,99,235,0.15); }
+  html.dark .rfl-wrap .rfl-input.rfl-err { border-color: rgba(239,68,68,0.45); background: rgba(239,68,68,0.05); }
+  html.dark .rfl-api-err { background: rgba(239,68,68,0.08); border-color: rgba(239,68,68,0.2); color: #fca5a5; }
 `
 
 function LoadingScreen({ role }: { role: UserRole }) {
-  const isMsp   = role === 'msp_admin' || role === 'msp_member'
-  const accent  = isMsp ? '#1d4ed8' : '#2563eb'
-  const badge   = isMsp ? 'MSP Portaal' : 'Portaal'
-  const label   = isMsp ? 'MSP-omgeving laden…' : 'Portaal laden…'
+  const isMsp  = role === 'msp_admin' || role === 'msp_member'
+  const accent = isMsp ? '#1d4ed8' : '#2563eb'
+  const badge  = isMsp ? 'MSP Portaal' : 'Portaal'
+  const label  = isMsp ? 'MSP-omgeving laden…' : 'Portaal laden…'
 
   return (
-    <div
-      className="rfl-loading-wrap"
-      style={{ '--load-accent': accent } as React.CSSProperties}
-    >
+    <div className="rfl-loading-wrap" style={{ '--load-accent': accent } as React.CSSProperties}>
       <img src={logo} alt="" className="rfl-loading-logo" />
-      <div className="rfl-loading-badge">
-        {badge}
-      </div>
+      <div className="rfl-loading-badge">{badge}</div>
       <div className="rfl-loading-ring" />
       <p className="rfl-loading-label">{label}</p>
     </div>
@@ -476,9 +445,9 @@ function LoadingScreen({ role }: { role: UserRole }) {
 }
 
 export default function LoginPage() {
-  const [apiError, setApiError]       = useState<string | null>(null)
-  const [showPass, setShowPass]       = useState(false)
-  const [loadingRole, setLoadingRole] = useState<UserRole | null>(null)
+  const [apiError,     setApiError]     = useState<string | null>(null)
+  const [showPass,     setShowPass]     = useState(false)
+  const [loadingRole,  setLoadingRole]  = useState<UserRole | null>(null)
   const { login }  = useAuthStore()
   const navigate   = useNavigate()
   const location   = useLocation()
@@ -490,13 +459,10 @@ export default function LoginPage() {
     setApiError(null)
     try {
       const { data } = await api.post<LoginResponse>('/auth/login', values)
-
       login(data.accessToken, data.refreshToken, data.user)
-
       const home = ROLE_HOME[data.user.role]
       const from = (location.state as { from?: { pathname: string } })?.from?.pathname
       const dest = from?.startsWith(home) ? from : home
-
       setLoadingRole(data.user.role)
       setTimeout(() => navigate(dest, { replace: true }), 1400)
     } catch (err: unknown) {
@@ -567,12 +533,12 @@ export default function LoginPage() {
                       onClick={() => setShowPass(p => !p)}
                     >
                       {showPass ? (
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24" />
                           <line x1="1" y1="1" x2="23" y2="23" />
                         </svg>
                       ) : (
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
                           <circle cx="12" cy="12" r="3" />
                         </svg>
@@ -584,11 +550,10 @@ export default function LoginPage() {
 
                 <button type="submit" disabled={isSubmitting} className="rfl-submit">
                   <span className="rfl-submit-inner">
-                    {isSubmitting ? (
-                      <><div className="rfl-spin" /> Bezig…</>
-                    ) : (
-                      <>Inloggen <i className="rfl-btn-arr">→</i></>
-                    )}
+                    {isSubmitting
+                      ? <><div className="rfl-spin" /> Bezig…</>
+                      : <>Inloggen <i className="rfl-btn-arr">→</i></>
+                    }
                   </span>
                 </button>
 
@@ -600,10 +565,25 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* ── Right: logo ── */}
+        {/* ── Right: panel ── */}
         <div className="rfl-right">
           <div className="rfl-emblem">
-            <img src={logo} alt="" aria-hidden="true" />
+            <div
+              className="rfl-logo-wrap"
+              style={{
+                WebkitMaskImage: `url(${logo})`,
+                maskImage: `url(${logo})`,
+                WebkitMaskSize: 'contain',
+                maskSize: 'contain',
+                WebkitMaskRepeat: 'no-repeat',
+                maskRepeat: 'no-repeat',
+                WebkitMaskPosition: 'center',
+                maskPosition: 'center',
+              }}
+            >
+              <div className="rfl-logo-base" />
+              <div className="rfl-logo-sweep" />
+            </div>
             <span className="rfl-brand">RokaFlow</span>
             <p className="rfl-tagline">
               IT-beheer van onboarding<br />tot offboarding.

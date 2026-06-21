@@ -24,20 +24,23 @@ const schema = z.object({
 type FormValues = z.infer<typeof schema>
 
 const CSS = `
-  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap');
 
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
-    --bg:        #030812;
-    --bg-r:      #050c1a;
-    --text:      #eef0f6;
-    --muted:     rgba(238,240,246,0.38);
+    --bg:        #ffffff;
+    --bg-alt:    #f8fafc;
+    --bg-panel:  #f0f4ff;
+    --text:      #0f172a;
+    --text-2:    #334155;
+    --muted:     #64748b;
     --accent:    #2563eb;
-    --accent-lt: #60a5fa;
-    --line-md:   rgba(238,240,246,0.11);
-    --field-bg:  rgba(238,240,246,0.05);
-    --field-bd:  rgba(238,240,246,0.10);
+    --accent-dk: #1d4ed8;
+    --line:      rgba(15,23,42,0.08);
+    --line-md:   rgba(15,23,42,0.12);
+    --field-bg:  #f8fafc;
+    --field-bd:  rgba(15,23,42,0.10);
   }
 
   .rfr-wrap {
@@ -54,30 +57,30 @@ const CSS = `
     flex-shrink: 0;
     display: flex;
     flex-direction: column;
-    border-right: 1px solid var(--line-md);
+    border-right: 1px solid var(--line);
     overflow-y: auto;
+    background: var(--bg-alt);
   }
 
   .rfr-topbar {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 28px 48px;
+    padding: 24px 48px;
     flex-shrink: 0;
-    animation: rfrFadeIn 0.5s ease both;
+    animation: rfrFadeIn 0.4s ease both;
   }
 
   .rfr-logo-sm {
-    height: 68px;
+    height: 52px;
     object-fit: contain;
-    opacity: 0.8;
+    filter: brightness(0) opacity(0.82);
     display: block;
   }
 
   .rfr-back {
-    font-size: 12px;
-    font-weight: 600;
-    letter-spacing: 0.025em;
+    font-size: 13px;
+    font-weight: 500;
     color: var(--muted);
     background: none;
     border: none;
@@ -86,15 +89,11 @@ const CSS = `
     display: flex;
     align-items: center;
     gap: 5px;
-    transition: color 0.2s;
+    transition: color 0.16s;
     padding: 0;
   }
   .rfr-back:hover { color: var(--text); }
-  .rfr-back .rfr-arr {
-    display: inline-block;
-    font-style: normal;
-    transition: transform 0.2s;
-  }
+  .rfr-back .rfr-arr { font-style: normal; transition: transform 0.16s; }
   .rfr-back:hover .rfr-arr { transform: translateX(-3px); }
 
   .rfr-form-wrap {
@@ -108,35 +107,40 @@ const CSS = `
   .rfr-card {
     width: 100%;
     max-width: 480px;
-    background: rgba(8,12,28,0.85);
-    border: 1px solid rgba(255,255,255,0.07);
+    background: #ffffff;
+    border: 1px solid var(--line);
     border-radius: 16px;
-    padding: 36px 32px;
-    backdrop-filter: blur(20px);
-    box-shadow: 0 24px 56px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.05);
-    animation: rfrSlideUp 0.5s cubic-bezier(0.16,1,0.3,1) 0.05s both;
+    padding: 36px 40px;
+    box-shadow: 0 1px 3px rgba(15,23,42,0.05), 0 8px 24px rgba(15,23,42,0.06);
+    animation: rfrSlideUp 0.45s cubic-bezier(0.16,1,0.3,1) 0.05s both;
   }
 
   .rfr-heading {
-    font-family: 'Syne', sans-serif;
-    font-size: 24px;
-    font-weight: 700;
-    letter-spacing: -0.015em;
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-size: 30px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
     color: var(--text);
-    margin-bottom: 4px;
+    margin-bottom: 6px;
   }
 
   .rfr-sub {
-    font-size: 13px;
+    font-size: 14px;
     color: var(--muted);
     margin-bottom: 24px;
+    line-height: 1.55;
   }
 
-  .rfr-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-    margin-bottom: 18px;
+  .rfr-section-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 12px;
+    margin-top: 4px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--line);
   }
 
   .rfr-row-3 {
@@ -151,11 +155,9 @@ const CSS = `
 
   .rfr-label {
     display: block;
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.09em;
-    text-transform: uppercase;
-    color: var(--muted);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-2);
     margin-bottom: 7px;
   }
 
@@ -165,27 +167,27 @@ const CSS = `
     width: 100%;
     padding: 11px 14px;
     background: var(--field-bg);
-    border: 1px solid var(--field-bd);
-    border-radius: 8px;
+    border: 1.5px solid var(--field-bd);
+    border-radius: 9px;
     color: var(--text);
     font-size: 14px;
     font-family: 'DM Sans', sans-serif;
     outline: none;
-    transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+    transition: border-color 0.18s, background 0.18s, box-shadow 0.18s;
     -webkit-appearance: none;
   }
-  .rfr-input::placeholder { color: rgba(238,240,246,0.20); }
+  .rfr-input::placeholder { color: rgba(15,23,42,0.28); }
   .rfr-input:focus {
-    border-color: rgba(37,99,235,0.6);
-    background: rgba(37,99,235,0.05);
+    border-color: var(--accent);
+    background: #ffffff;
     box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
   }
   .rfr-input.rfr-err {
-    border-color: rgba(239,68,68,0.45);
-    background: rgba(239,68,68,0.04);
+    border-color: #ef4444;
+    background: #fff5f5;
   }
   .rfr-input.rfr-err:focus {
-    border-color: rgba(239,68,68,0.65);
+    border-color: #ef4444;
     box-shadow: 0 0 0 3px rgba(239,68,68,0.10);
   }
 
@@ -197,31 +199,71 @@ const CSS = `
     background: none;
     border: none;
     cursor: pointer;
-    color: rgba(238,240,246,0.3);
+    color: var(--muted);
     display: flex;
     align-items: center;
     padding: 4px;
-    transition: color 0.2s;
+    transition: color 0.16s;
   }
-  .rfr-eye:hover { color: rgba(238,240,246,0.65); }
+  .rfr-eye:hover { color: var(--text); }
 
   .rfr-err-msg {
     margin-top: 5px;
     font-size: 12px;
-    color: #f87171;
+    color: #ef4444;
     font-weight: 500;
   }
 
   .rfr-api-err {
     padding: 10px 13px;
-    border-radius: 8px;
-    border: 1px solid rgba(239,68,68,0.18);
-    background: rgba(239,68,68,0.07);
+    border-radius: 9px;
+    border: 1.5px solid #fecaca;
+    background: #fef2f2;
     font-size: 13px;
-    color: #fca5a5;
+    color: #dc2626;
     margin-bottom: 18px;
   }
 
+  /* ── Logo upload ── */
+  .rfr-logo-upload {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    background: var(--field-bg);
+    border: 1.5px dashed var(--field-bd);
+    border-radius: 9px;
+    cursor: pointer;
+    transition: border-color 0.18s, background 0.18s;
+  }
+  .rfr-logo-upload:hover {
+    border-color: var(--accent);
+    background: #eff6ff;
+  }
+  .rfr-logo-preview {
+    width: 36px; height: 36px;
+    border-radius: 6px;
+    object-fit: contain;
+    background: var(--line);
+    flex-shrink: 0;
+  }
+  .rfr-logo-placeholder {
+    width: 36px; height: 36px;
+    border-radius: 6px;
+    background: var(--line);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    color: var(--muted);
+  }
+  .rfr-logo-text { flex: 1; min-width: 0; }
+  .rfr-logo-text-main {
+    font-size: 13px; font-weight: 500;
+    color: var(--text-2);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .rfr-logo-text-sub { font-size: 11px; color: var(--muted); margin-top: 1px; }
+
+  /* ── Submit ── */
   .rfr-submit {
     width: 100%;
     display: flex;
@@ -231,71 +273,37 @@ const CSS = `
     font-family: 'DM Sans', sans-serif;
     font-size: 14px;
     font-weight: 600;
-    letter-spacing: 0.02em;
-    color: var(--text);
-    background: transparent;
-    border: 1px solid rgba(37,99,235,0.45);
-    border-radius: 8px;
-    cursor: pointer;
-    position: relative;
-    overflow: hidden;
-    transition: border-color 0.35s, box-shadow 0.35s, opacity 0.2s;
-    margin-top: 6px;
-  }
-  .rfr-submit::before {
-    content: '';
-    position: absolute;
-    inset: 0;
+    color: #ffffff;
     background: var(--accent);
-    border-radius: 8px;
-    transform: translateX(-105%);
-    transition: transform 0.42s cubic-bezier(0.16,1,0.3,1);
-    z-index: 0;
-  }
-  .rfr-submit:hover:not(:disabled)::before { transform: translateX(0); }
-  .rfr-submit::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.13) 50%, transparent 70%);
-    transform: translateX(-120%);
-    z-index: 1;
-  }
-  .rfr-submit:hover:not(:disabled)::after {
-    transform: translateX(120%);
-    transition: transform 0.55s cubic-bezier(0.4,0,0.2,1) 0.34s;
+    border: none;
+    border-radius: 9px;
+    cursor: pointer;
+    transition: background 0.18s, box-shadow 0.18s, transform 0.12s, opacity 0.2s;
+    margin-top: 6px;
+    box-shadow: 0 1px 2px rgba(37,99,235,0.20);
   }
   .rfr-submit:hover:not(:disabled) {
-    border-color: var(--accent);
-    box-shadow: 0 0 20px rgba(37,99,235,0.38), 0 0 48px rgba(37,99,235,0.13);
+    background: var(--accent-dk);
+    box-shadow: 0 6px 20px rgba(37,99,235,0.35);
+    transform: translateY(-1px);
   }
-  .rfr-submit:disabled { opacity: 0.45; cursor: not-allowed; }
+  .rfr-submit:disabled { opacity: 0.5; cursor: not-allowed; }
 
   .rfr-submit-inner {
-    position: relative;
-    z-index: 2;
-    display: flex;
-    align-items: center;
-    gap: 8px;
+    display: flex; align-items: center; gap: 8px;
   }
 
   .rfr-submit .rfr-btn-arr {
     font-style: normal;
-    display: inline-block;
-    opacity: 0;
-    transform: translateX(-6px);
-    transition: opacity 0.22s 0.12s, transform 0.3s cubic-bezier(0.16,1,0.3,1) 0.12s;
+    transition: transform 0.16s;
   }
-  .rfr-submit:hover:not(:disabled) .rfr-btn-arr {
-    opacity: 1;
-    transform: translateX(0);
-  }
+  .rfr-submit:hover:not(:disabled) .rfr-btn-arr { transform: translateX(3px); }
 
   @keyframes rfrSpin { to { transform: rotate(360deg); } }
   .rfr-spin {
-    width: 13px; height: 13px;
-    border: 2px solid rgba(238,240,246,0.25);
-    border-top-color: var(--text);
+    width: 14px; height: 14px;
+    border: 2px solid rgba(255,255,255,0.35);
+    border-top-color: white;
     border-radius: 50%;
     animation: rfrSpin 0.7s linear infinite;
     flex-shrink: 0;
@@ -304,67 +312,16 @@ const CSS = `
   .rfr-footer {
     margin-top: 20px;
     text-align: center;
-    font-size: 12px;
+    font-size: 13px;
     color: var(--muted);
-    opacity: 0.7;
   }
   .rfr-footer a {
-    color: var(--accent-lt);
+    color: var(--accent);
     text-decoration: none;
     font-weight: 600;
-    transition: color 0.2s;
+    transition: color 0.16s;
   }
-  .rfr-footer a:hover { color: #93c5fd; }
-
-  /* ── Logo upload ── */
-  .rfr-logo-upload {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 10px 12px;
-    background: var(--field-bg);
-    border: 1px dashed var(--field-bd);
-    border-radius: 8px;
-    cursor: pointer;
-    transition: border-color 0.2s, background 0.2s;
-  }
-  .rfr-logo-upload:hover {
-    border-color: rgba(37,99,235,0.4);
-    background: rgba(37,99,235,0.04);
-  }
-  .rfr-logo-preview {
-    width: 36px;
-    height: 36px;
-    border-radius: 6px;
-    object-fit: contain;
-    background: rgba(255,255,255,0.07);
-    flex-shrink: 0;
-  }
-  .rfr-logo-placeholder {
-    width: 36px;
-    height: 36px;
-    border-radius: 6px;
-    background: rgba(255,255,255,0.05);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    color: rgba(238,240,246,0.25);
-  }
-  .rfr-logo-text { flex: 1; min-width: 0; }
-  .rfr-logo-text-main {
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--text);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .rfr-logo-text-sub {
-    font-size: 11px;
-    color: var(--muted);
-    margin-top: 1px;
-  }
+  .rfr-footer a:hover { color: var(--accent-dk); }
 
   /* ── Right panel ── */
   .rfr-right {
@@ -373,7 +330,9 @@ const CSS = `
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    background: var(--bg-r);
+    background: var(--bg-panel);
+    background-image: radial-gradient(rgba(37,99,235,0.12) 1px, transparent 1px);
+    background-size: 24px 24px;
     position: relative;
   }
 
@@ -381,75 +340,138 @@ const CSS = `
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 24px;
-    animation: rfrFadeIn 1.2s ease 0.2s both;
+    gap: 20px;
+    animation: rfrFadeIn 0.8s ease 0.2s both;
   }
 
-  .rfr-emblem img {
-    width: 280px;
-    opacity: 0.20;
-    filter: drop-shadow(0 0 48px rgba(37,99,235,0.30));
-    animation: rfrFloat 8s ease-in-out 1.4s infinite;
-    display: block;
+  /* ── Logo mask animation ── */
+  .rfr-logo-wrap {
+    width: 160px;
+    height: 160px;
+    position: relative;
+    flex-shrink: 0;
+    animation: rfrFloat 8s ease-in-out 1s infinite;
+  }
+  .rfr-logo-base {
+    position: absolute;
+    inset: 0;
+    background: rgba(15,23,42,0.18);
+  }
+  .rfr-logo-sweep {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      105deg,
+      transparent 15%,
+      rgba(37,99,235,0.55) 38%,
+      rgba(96,165,250,0.95) 50%,
+      rgba(37,99,235,0.55) 62%,
+      transparent 85%
+    );
+    transform: translateX(-200%);
+    animation: rfrLogoSweep 4s cubic-bezier(0.4,0,0.2,1) 1.8s infinite;
+  }
+  @keyframes rfrLogoSweep {
+    0%   { transform: translateX(-200%); }
+    100% { transform: translateX(300%); }
   }
 
   .rfr-brand {
-    font-family: 'Syne', sans-serif;
+    font-family: 'Bricolage Grotesque', sans-serif;
     font-size: 12px;
     font-weight: 700;
     letter-spacing: 0.18em;
     text-transform: uppercase;
-    color: rgba(238,240,246,0.20);
+    color: rgba(15,23,42,0.28);
   }
 
   .rfr-tagline {
-    font-size: 13px;
-    color: rgba(238,240,246,0.22);
-    letter-spacing: 0.01em;
+    font-size: 14px;
+    color: rgba(15,23,42,0.45);
     text-align: center;
-    max-width: 240px;
+    max-width: 220px;
     line-height: 1.65;
   }
 
-  @keyframes rfrSlideUp {
-    from { opacity: 0; transform: translateY(16px) scale(0.98); }
-    to   { opacity: 1; transform: translateY(0)    scale(1); }
+  .rfr-trust {
+    margin-top: 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: center;
   }
-  @keyframes rfrFadeIn {
-    from { opacity: 0; }
-    to   { opacity: 1; }
-  }
-  @keyframes rfrFloat {
-    0%, 100% { transform: translateY(0px); }
-    50%       { transform: translateY(-14px); }
+  .rfr-trust-item {
+    font-size: 12px;
+    color: rgba(15,23,42,0.38);
+    font-weight: 500;
   }
 
-  @media (max-width: 768px) {
+  /* ── Animations ── */
+  @keyframes rfrSlideUp {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes rfrFadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes rfrFloat {
+    0%, 100% { transform: translateY(0); }
+    50%       { transform: translateY(-12px); }
+  }
+
+  /* ── Responsive ── */
+  @media (max-width: 900px) {
     .rfr-right    { display: none; }
     .rfr-left     { width: 100%; border-right: none; }
-    .rfr-topbar   { padding: 24px; }
+    .rfr-topbar   { padding: 20px 24px; }
     .rfr-form-wrap { padding: 0 24px 40px; }
   }
+
+  /* ── Dark mode ── */
+  html.dark .rfr-wrap {
+    --bg: #030812; --bg-alt: #0d1117; --bg-panel: #0a0f1e;
+    --text: #eef0f6; --text-2: rgba(238,240,246,0.72); --muted: rgba(238,240,246,0.42);
+    --accent-dk: #3b82f6; --line: rgba(238,240,246,0.07); --line-md: rgba(238,240,246,0.11);
+    --field-bg: rgba(238,240,246,0.05); --field-bd: rgba(238,240,246,0.10);
+  }
+  html.dark .rfr-card {
+    background: rgba(8,12,28,0.95);
+    border-color: rgba(238,240,246,0.07);
+    box-shadow: 0 24px 56px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.04);
+  }
+  html.dark .rfr-logo-sm { filter: brightness(0) invert(1) opacity(0.72); }
+  html.dark .rfr-right {
+    background: #0a0f1e;
+    background-image: radial-gradient(rgba(37,99,235,0.18) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+  html.dark .rfr-logo-base { background: rgba(238,240,246,0.25); }
+  html.dark .rfr-wrap .rfr-input { background: var(--field-bg); border-color: var(--field-bd); color: var(--text); }
+  html.dark .rfr-wrap .rfr-input::placeholder { color: rgba(238,240,246,0.22); }
+  html.dark .rfr-wrap .rfr-input:focus { border-color: rgba(37,99,235,0.7); background: rgba(37,99,235,0.08); box-shadow: 0 0 0 3px rgba(37,99,235,0.15); }
+  html.dark .rfr-wrap .rfr-input.rfr-err { border-color: rgba(239,68,68,0.45); background: rgba(239,68,68,0.05); }
+  html.dark .rfr-api-err { background: rgba(239,68,68,0.08); border-color: rgba(239,68,68,0.2); color: #fca5a5; }
+  html.dark .rfr-logo-upload { background: rgba(238,240,246,0.04); border-color: rgba(238,240,246,0.12); }
+  html.dark .rfr-logo-upload:hover { background: rgba(37,99,235,0.1); border-color: rgba(37,99,235,0.35); }
+  html.dark .rfr-section-label { border-bottom-color: rgba(238,240,246,0.08); }
 `
 
 const EyeIcon = ({ open }: { open: boolean }) => open ? (
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24" />
     <line x1="1" y1="1" x2="23" y2="23" />
   </svg>
 ) : (
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
     <circle cx="12" cy="12" r="3" />
   </svg>
 )
 
 export default function RegisterPage() {
-  const [apiError,     setApiError]     = useState<string | null>(null)
-  const [showPass,     setShowPass]     = useState(false)
-  const [showConfirm,  setShowConfirm]  = useState(false)
-  const [logoFile,     setLogoFile]     = useState<File | null>(null)
-  const [logoPreview,  setLogoPreview]  = useState<string | null>(null)
+  const [apiError,    setApiError]    = useState<string | null>(null)
+  const [showPass,    setShowPass]    = useState(false)
+  const [showConfirm, setShowConfirm] = useState(false)
+  const [logoFile,    setLogoFile]    = useState<File | null>(null)
+  const [logoPreview, setLogoPreview] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { login }  = useAuthStore()
   const navigate   = useNavigate()
@@ -524,7 +546,9 @@ export default function RegisterPage() {
               <form onSubmit={handleSubmit(onSubmit)} noValidate>
                 {apiError && <div className="rfr-api-err">{apiError}</div>}
 
-                {/* Bedrijfsnaam */}
+                {/* Bedrijf */}
+                <p className="rfr-section-label">Organisatie</p>
+
                 <div className="rfr-field">
                   <label className="rfr-label">Bedrijfsnaam</label>
                   <input
@@ -536,9 +560,11 @@ export default function RegisterPage() {
                   {errors.companyName && <p className="rfr-err-msg">{errors.companyName.message}</p>}
                 </div>
 
-                {/* Logo upload */}
                 <div className="rfr-field">
-                  <label className="rfr-label">Bedrijfslogo <span style={{ opacity: 0.5, fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(optioneel)</span></label>
+                  <label className="rfr-label">
+                    Bedrijfslogo{' '}
+                    <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0, color: 'var(--muted)', fontSize: 11 }}>(optioneel)</span>
+                  </label>
                   <input
                     ref={fileInputRef}
                     type="file"
@@ -564,6 +590,9 @@ export default function RegisterPage() {
                     </div>
                   </div>
                 </div>
+
+                {/* Persoon */}
+                <p className="rfr-section-label">Uw gegevens</p>
 
                 {/* Voornaam + Tussenvoegsel + Achternaam */}
                 <div className="rfr-row-3">
@@ -595,7 +624,6 @@ export default function RegisterPage() {
                   </div>
                 </div>
 
-                {/* E-mail */}
                 <div className="rfr-field">
                   <label className="rfr-label">E-mailadres</label>
                   <input
@@ -608,7 +636,6 @@ export default function RegisterPage() {
                   {errors.email && <p className="rfr-err-msg">{errors.email.message}</p>}
                 </div>
 
-                {/* Wachtwoord */}
                 <div className="rfr-field">
                   <label className="rfr-label">Wachtwoord</label>
                   <div className="rfr-input-wrap">
@@ -627,7 +654,6 @@ export default function RegisterPage() {
                   {errors.password && <p className="rfr-err-msg">{errors.password.message}</p>}
                 </div>
 
-                {/* Wachtwoord bevestigen */}
                 <div className="rfr-field">
                   <label className="rfr-label">Wachtwoord bevestigen</label>
                   <div className="rfr-input-wrap">
@@ -648,11 +674,10 @@ export default function RegisterPage() {
 
                 <button type="submit" disabled={isSubmitting} className="rfr-submit">
                   <span className="rfr-submit-inner">
-                    {isSubmitting ? (
-                      <><div className="rfr-spin" /> Bezig…</>
-                    ) : (
-                      <>Account aanmaken <i className="rfr-btn-arr">→</i></>
-                    )}
+                    {isSubmitting
+                      ? <><div className="rfr-spin" /> Bezig…</>
+                      : <>Account aanmaken <i className="rfr-btn-arr">→</i></>
+                    }
                   </span>
                 </button>
 
@@ -665,14 +690,34 @@ export default function RegisterPage() {
           </div>
         </div>
 
-        {/* ── Right: logo ── */}
+        {/* ── Right: panel ── */}
         <div className="rfr-right">
           <div className="rfr-emblem">
-            <img src={logo} alt="" aria-hidden="true" />
+            <div
+              className="rfr-logo-wrap"
+              style={{
+                WebkitMaskImage: `url(${logo})`,
+                maskImage: `url(${logo})`,
+                WebkitMaskSize: 'contain',
+                maskSize: 'contain',
+                WebkitMaskRepeat: 'no-repeat',
+                maskRepeat: 'no-repeat',
+                WebkitMaskPosition: 'center',
+                maskPosition: 'center',
+              }}
+            >
+              <div className="rfr-logo-base" />
+              <div className="rfr-logo-sweep" />
+            </div>
             <span className="rfr-brand">RokaFlow</span>
             <p className="rfr-tagline">
-              Start in minuten.
+              Start in minuten met uw organisatie.
             </p>
+            <div className="rfr-trust">
+              <div className="rfr-trust-item">Veilig &amp; versleuteld</div>
+              <div className="rfr-trust-item">Direct operationeel</div>
+              <div className="rfr-trust-item">30 dagen gratis</div>
+            </div>
           </div>
         </div>
 

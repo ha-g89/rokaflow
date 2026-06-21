@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/store/authStore'
+import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import logo from '@/assets/RokaFlow_icon_dark_transparent.png'
 
 const ROLE_HOME: Record<string, string> = {
@@ -693,6 +694,16 @@ const CSS = `
   .rf-footer-link em { font-style: normal; transition: transform 0.16s; }
   .rf-footer-link:hover em { transform: translateX(3px); }
 
+  /* ── Theme toggle ─────────────────────────────────────────────── */
+  .rf-theme-toggle {
+    display: flex; align-items: center; justify-content: center;
+    width: 32px; height: 32px; background: none;
+    border: 1px solid var(--line-md); border-radius: 8px;
+    cursor: pointer; color: var(--muted); padding: 0; flex-shrink: 0;
+    transition: color 0.16s, border-color 0.16s, background 0.16s;
+  }
+  .rf-theme-toggle:hover { color: var(--text); border-color: var(--accent); background: var(--accent-dim); }
+
   /* ── Shared animations ──────────────────────────────────────── */
   @keyframes rfReveal {
     from { opacity: 0; transform: translateY(24px); }
@@ -701,6 +712,41 @@ const CSS = `
   @keyframes rfFade {
     from { opacity: 0; } to { opacity: 1; }
   }
+
+  /* ── Dark mode — light sections ─────────────────────────────── */
+  html.dark .rf-nav { background: rgba(5,9,20,0.92); border-bottom-color: rgba(238,240,246,0.06); }
+  html.dark .rf-nav-logo { filter: brightness(0) invert(1) opacity(0.82); }
+  html.dark .rf-nav-link { color: rgba(238,240,246,0.5); }
+  html.dark .rf-nav-link:hover { color: rgba(238,240,246,0.9); }
+  html.dark .rf-nav-sep { background: rgba(238,240,246,0.1); }
+  html.dark .rf-theme-toggle { color: rgba(238,240,246,0.45); border-color: rgba(238,240,246,0.12); }
+  html.dark .rf-theme-toggle:hover { color: rgba(238,240,246,0.9); border-color: rgba(37,99,235,0.5); background: rgba(37,99,235,0.1); }
+  html.dark .rf-land { background: #0d1117; color: #eef0f6; }
+  html.dark .rf-hero-left { background: #0d1117; }
+  html.dark .rf-hero::after {
+    background: #0a0f1e;
+    background-image: radial-gradient(rgba(37,99,235,0.18) 1px, transparent 1px), linear-gradient(#0a0f1e, #0a0f1e);
+    background-size: 24px 24px, auto;
+  }
+  html.dark .rf-hero-right { background: #0a0f1e; }
+  html.dark .rf-headline { color: #eef0f6; }
+  html.dark .rf-l3 { color: #60a5fa; }
+  html.dark .rf-eyebrow { color: #60a5fa; }
+  html.dark .rf-sub { color: rgba(238,240,246,0.5); }
+  html.dark .rf-notice { color: rgba(238,240,246,0.35); }
+  html.dark .rf-trust-item { color: rgba(238,240,246,0.4); }
+  html.dark .rf-trust-icon { background: rgba(238,240,246,0.06); }
+  html.dark .rf-trust { border-top-color: rgba(238,240,246,0.07); }
+  html.dark .rf-btn-ghost { color: rgba(238,240,246,0.6); background: rgba(238,240,246,0.04); border-color: rgba(238,240,246,0.14); }
+  html.dark .rf-btn-ghost:hover { color: #60a5fa; background: rgba(37,99,235,0.12); border-color: rgba(37,99,235,0.3); }
+  html.dark .rf-strip { background: #060d1a; border-top-color: rgba(238,240,246,0.05); }
+  html.dark .rf-strip-item { color: rgba(238,240,246,0.3); border-right-color: rgba(238,240,246,0.05); }
+  html.dark .rf-strip-item:hover { color: #60a5fa; background: rgba(37,99,235,0.08); }
+  html.dark .rf-footer { background: #060d1a; border-top-color: rgba(238,240,246,0.05); }
+  html.dark .rf-footer-logo { filter: brightness(0) invert(1) opacity(0.22); }
+  html.dark .rf-footer-copy { color: rgba(238,240,246,0.32); }
+  html.dark .rf-footer-link { color: rgba(238,240,246,0.35); }
+  html.dark .rf-footer-link:hover { color: #60a5fa; }
 
   /* ── Responsive ─────────────────────────────────────────────── */
   @media (max-width: 1060px) {
@@ -772,6 +818,7 @@ export default function LandingPage() {
                 Gratis starten <em>→</em>
               </button>
             )}
+            <ThemeToggle className="rf-theme-toggle" />
           </div>
         </nav>
 
