@@ -3,9 +3,10 @@ import {
   Briefcase, Users, Plus, LogOut,
   Building2, Search, ExternalLink, Loader2,
   MoreVertical, Pencil, X, ImagePlus,
-  Moon, Sun, Settings, ChevronDown, ArrowLeftRight, XCircle,
+  Moon, Sun, Settings, ChevronDown, ArrowLeftRight,
 } from 'lucide-react'
 import { ClientDetailPanel } from './ClientDetailPanel'
+import { TransfersView } from './views/TransfersView'
 import { LoadingState } from '@/components/ui/LoadingState'
 import { useAuthStore } from '@/store/authStore'
 import { useThemeStore } from '@/store/themeStore'
@@ -20,7 +21,6 @@ import { TakeoverClientModal } from '@/components/TakeoverClientModal'
 import type { ClientListItem } from '@/types/client'
 import type { ClientUserListItem, ClientUserDetailResponse } from '@/types/clientUser'
 import type { MspTransferRequestDto } from '@/types/mspTransfer'
-import { TRANSFER_STATUS_LABEL, TRANSFER_STATUS_TONE } from '@/types/mspTransfer'
 import type { MyPlanDto } from '@/types/platformPlan'
 
 // ── small components ──────────────────────────────────────────────────────────
@@ -41,8 +41,8 @@ function StatCard({ icon, label, value, color }: {
   )
 }
 
-function NavItem({ icon, label, active, onClick }: {
-  icon: React.ReactNode; label: string; active: boolean; onClick: () => void
+function NavItem({ icon, label, active, onClick, badge }: {
+  icon: React.ReactNode; label: string; active: boolean; onClick: () => void; badge?: number
 }) {
   return (
     <button
@@ -52,17 +52,25 @@ function NavItem({ icon, label, active, onClick }: {
       }`}
     >
       <span className="flex-shrink-0">{icon}</span>
-      <span className="truncate">{label}</span>
+      <span className="truncate flex-1">{label}</span>
+      {badge != null && badge > 0 && (
+        <span className="ml-auto text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500 text-white font-bold flex-shrink-0 leading-none">
+          {badge}
+        </span>
+      )}
     </button>
   )
 }
 
 // ── main component ────────────────────────────────────────────────────────────
 
+type Section = 'clients' | 'transfers'
+
 export default function OrgDashboard() {
   const { user, logout, switchToClient } = useAuthStore()
   const { darkMode, toggleDarkMode } = useThemeStore()
   const navigate = useNavigate()
+  const [activeSection, setActiveSection]   = useState<Section>('clients')
   const [clients, setClients]               = useState<ClientListItem[]>([])
   const [selectedClient, setSelectedClient] = useState<ClientListItem | null>(null)
   const [clientUsers, setClientUsers]       = useState<ClientUserListItem[]>([])
@@ -234,7 +242,9 @@ export default function OrgDashboard() {
           <p className="text-xs text-slate-500 mt-0.5">MSP Portal</p>
         </div>
         <nav className="flex-1 px-2 py-3 overflow-y-auto space-y-1">
-          <NavItem icon={<Users size={14} />} label="Clients" active={true} onClick={() => {}} />
+          <NavItem icon={<Users size={14} />} label="Clients" active={activeSection === 'clients'} onClick={() => setActiveSection('clients')} />
+          <NavItem icon={<ArrowLeftRight size={14} />} label="Overdrachten" active={activeSection === 'transfers'} onClick={() => setActiveSection('transfers')}
+            badge={transfers.filter(t => t.status === 'Pending').length} />
         </nav>
         <div className="px-2 pb-3 flex-shrink-0 border-t border-slate-800 pt-2 space-y-1">
           <NavItem icon={<Settings size={14} />} label="Instellingen" active={false} onClick={() => navigate('/org/settings')} />
@@ -246,7 +256,9 @@ export default function OrgDashboard() {
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top bar */}
         <div className="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-6 flex items-center justify-between flex-shrink-0">
-          <h1 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Clients</h1>
+          <h1 className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+            {activeSection === 'clients' ? 'Clients' : 'Overdrachten'}
+          </h1>
           {/* User avatar + dropdown */}
           <div className="relative" ref={userMenuRef}>
           <button
@@ -313,6 +325,16 @@ export default function OrgDashboard() {
         {/* Scrollable content */}
         <div className="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-5 bg-slate-200 dark:bg-slate-900">
 
+        {activeSection === 'transfers' ? (
+          <TransfersView
+            transfers={transfers}
+            cancellingId={cancellingId}
+            onCancel={handleCancelTransfer}
+            onRefresh={fetchTransfers}
+            onNewTransfer={() => setShowTakeover(true)}
+          />
+        ) : (<>
+
         {/* Stats */}
         <div className="grid grid-cols-3 gap-4">
           <StatCard icon={<Briefcase size={18} className="text-blue-600" />} label="Totaal clients" value={clients.length} color="bg-blue-50" />
@@ -320,44 +342,6 @@ export default function OrgDashboard() {
           <StatCard icon={<Users size={18} className="text-blue-600" />} label="Totaal gebruikers" value={totalUsers} color="bg-blue-50" />
         </div>
 
-        {/* Transfer requests panel */}
-        {transfers.length > 0 && (
-          <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
-            <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-700 flex items-center gap-2">
-              <ArrowLeftRight size={14} className="text-slate-400" />
-              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">MSP Overdrachten</span>
-              <span className="ml-auto text-xs text-slate-400">{transfers.length}</span>
-            </div>
-            <div className="divide-y divide-slate-100 dark:divide-slate-700">
-              {transfers.map(t => (
-                <div key={t.id} className="flex items-center gap-3 px-4 py-2.5">
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs font-semibold text-slate-800 dark:text-slate-100 truncate">{t.tenantName}</p>
-                    <p className="text-xs text-slate-400 truncate">
-                      {t.fromMspName ? `Van ${t.fromMspName} → ` : ''}{t.toMspName}
-                    </p>
-                  </div>
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${TRANSFER_STATUS_TONE[t.status]}`}>
-                    {TRANSFER_STATUS_LABEL[t.status]}
-                  </span>
-                  {t.status === 'Pending' && (
-                    <button
-                      onClick={() => handleCancelTransfer(t.id)}
-                      disabled={cancellingId === t.id}
-                      title="Annuleren"
-                      className="p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20 text-slate-400 hover:text-red-500 transition-colors disabled:opacity-50 flex-shrink-0"
-                    >
-                      {cancellingId === t.id
-                        ? <Loader2 size={13} className="animate-spin" />
-                        : <XCircle size={13} />
-                      }
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
 
         {/* Two-column layout: client list + detail panel */}
         <div className="flex gap-4 flex-1 min-h-0" style={{ minHeight: '560px' }}>
@@ -476,6 +460,7 @@ export default function OrgDashboard() {
 
         </div>
 
+        </>)}
       </div>
 
       {/* ── Modals ── */}
