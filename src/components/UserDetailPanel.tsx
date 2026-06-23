@@ -657,7 +657,9 @@ export function UserDetailPanel({ user, canEdit, departments = [], managers = []
             <div className="rounded-xl bg-slate-50 p-3">
               <p className="text-xs text-slate-400">Actieve software</p>
               <p className="mt-0.5 text-sm font-semibold text-slate-800 truncate">
-                {user.software.find(s => s.isActive)?.name || '—'}
+                {user.software.find(s => s.isActive)?.name
+                  || user.licenses.find(l => l.isSoftwareLicense && l.isActive)?.name
+                  || '—'}
               </p>
             </div>
             <div className="rounded-xl bg-slate-50 p-3">
@@ -757,49 +759,68 @@ export function UserDetailPanel({ user, canEdit, departments = [], managers = []
       </div>
 
       {/* ── Software + Licenties ── */}
-      <div className="grid gap-4 xl:grid-cols-2">
-        <Section title="Software" icon={<ShieldCheck size={16} />}>
-          {user.software.length === 0 ? (
-            <p className="text-sm text-slate-400">Geen software gekoppeld.</p>
-          ) : (
-            <div className="space-y-3">
-              {user.software.map(s => (
-                <div key={s.id} className="flex items-center justify-between rounded-xl border border-slate-100 bg-white p-4">
-                  <div>
-                    <p className="text-sm font-semibold text-slate-800">{s.name}</p>
-                    <p className="text-xs text-slate-500">{s.account} • vanaf {fmt(s.issuedAt)}</p>
-                  </div>
-                  <Badge tone={s.isActive ? 'good' : 'bad'}>{s.isActive ? 'Actief' : 'Inactief'}</Badge>
+      {/* softwareLicenses = licenses that were assigned via the software catalog (isSoftwareLicense) */}
+      {/* pureeLicenses    = standalone licenses not linked to any software catalog entry */}
+      {(() => {
+        const softwareLicenses = user.licenses.filter(l => l.isSoftwareLicense)
+        const pureLicenses     = user.licenses.filter(l => !l.isSoftwareLicense)
+        const allSoftware      = [
+          ...user.software.map(s => ({ key: s.id, name: s.name, sub: `${s.account ? s.account + ' • ' : ''}vanaf ${fmt(s.issuedAt)}`, active: s.isActive, tag: null as string | null })),
+          ...softwareLicenses.map(l => ({ key: l.userLicenseId, name: l.name, sub: `${l.vendor || 'Freeware'} • toegewezen ${fmt(l.assignedAt)}`, active: l.isActive, tag: LICENSE_TYPE_LABEL[l.type] ?? l.type })),
+        ]
+        return (
+          <div className="grid gap-4 xl:grid-cols-2">
+            <Section title="Software" icon={<ShieldCheck size={16} />}>
+              {allSoftware.length === 0 ? (
+                <p className="text-sm text-slate-400">Geen software gekoppeld.</p>
+              ) : (
+                <div className="space-y-3">
+                  {allSoftware.map(s => (
+                    <div key={s.key} className="flex items-center justify-between rounded-xl border border-slate-100 bg-white p-4">
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-slate-800 truncate">{s.name}</p>
+                        <p className="text-xs text-slate-500">{s.sub}</p>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+                        {s.tag && (
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${LICENSE_TYPE_TONE[s.tag] ?? 'bg-slate-100 text-slate-600'}`}>
+                            {s.tag}
+                          </span>
+                        )}
+                        <Badge tone={s.active ? 'good' : 'bad'}>{s.active ? 'Actief' : 'Inactief'}</Badge>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          )}
-        </Section>
+              )}
+            </Section>
 
-        <Section title="Licenties" icon={<KeyRound size={16} />} action={
-          <button onClick={() => setShowLicenseModal(true)} className="inline-flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 px-2 py-1 rounded-lg transition-colors">
-            <Plus size={11} /> Toevoegen
-          </button>
-        }>
-          {user.licenses.length === 0 ? (
-            <p className="text-sm text-slate-400">Geen licenties gekoppeld.</p>
-          ) : (
-            <div className="space-y-2">
-              {user.licenses.map(l => (
-                <div key={l.userLicenseId} className="flex items-center justify-between rounded-xl border border-slate-100 bg-white p-4">
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold text-slate-800 truncate">{l.name}</p>
-                    <p className="text-xs text-slate-500">{l.vendor || '—'} • Toegewezen {fmt(l.assignedAt)}</p>
-                  </div>
-                  <span className={`ml-2 flex-shrink-0 text-xs px-2 py-0.5 rounded-full font-medium ${LICENSE_TYPE_TONE[l.type] ?? 'bg-slate-100 text-slate-600'}`}>
-                    {LICENSE_TYPE_LABEL[l.type] ?? l.type}
-                  </span>
+            <Section title="Licenties" icon={<KeyRound size={16} />} action={
+              <button onClick={() => setShowLicenseModal(true)} className="inline-flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 px-2 py-1 rounded-lg transition-colors">
+                <Plus size={11} /> Toevoegen
+              </button>
+            }>
+              {pureLicenses.length === 0 ? (
+                <p className="text-sm text-slate-400">Geen licenties gekoppeld.</p>
+              ) : (
+                <div className="space-y-2">
+                  {pureLicenses.map(l => (
+                    <div key={l.userLicenseId} className="flex items-center justify-between rounded-xl border border-slate-100 bg-white p-4">
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-slate-800 truncate">{l.name}</p>
+                        <p className="text-xs text-slate-500">{l.vendor || '—'} • Toegewezen {fmt(l.assignedAt)}</p>
+                      </div>
+                      <span className={`ml-2 flex-shrink-0 text-xs px-2 py-0.5 rounded-full font-medium ${LICENSE_TYPE_TONE[l.type] ?? 'bg-slate-100 text-slate-600'}`}>
+                        {LICENSE_TYPE_LABEL[l.type] ?? l.type}
+                      </span>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          )}
-        </Section>
-      </div>
+              )}
+            </Section>
+          </div>
+        )
+      })()}
 
       {/* ── Checklists ── */}
       <div className="grid gap-4 xl:grid-cols-2">
