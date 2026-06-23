@@ -13,7 +13,7 @@ const CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap');
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
-    --rpr-bg:        #f0f4ff;
+    --rpr-bg:        #ffffff;
     --rpr-text:      #0f172a;
     --rpr-text-2:    #334155;
     --rpr-muted:     #64748b;
@@ -46,7 +46,7 @@ const CSS = `
   @keyframes rprFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
   .rpr-card {
     width: 100%; max-width: 400px;
-    background: #ffffff; border: 1px solid var(--rpr-line);
+    background: #ffffff; border: none;
     border-radius: 16px; padding: 36px 40px;
     box-shadow: 0 1px 3px rgba(15,23,42,0.05), 0 8px 24px rgba(15,23,42,0.08);
     animation: rprSlide 0.45s cubic-bezier(0.16,1,0.3,1) 0.05s both;

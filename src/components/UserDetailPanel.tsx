@@ -4,6 +4,7 @@ import {
   LogOut, ShieldCheck, ClipboardList, Mail,
   Briefcase, Calendar, User, RotateCcw, Smartphone, Phone,
   Users, FileText, Pencil, Trash2, X, MapPin, Plus, Layers, StickyNote, Unlink,
+  Search, Loader2,
 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/Card'
 import { Modal } from '@/components/ui/Modal'
@@ -22,6 +23,7 @@ import { PhoneSetupWizard } from '@/components/PhoneSetupWizard'
 import { LicenseModal } from '@/components/LicenseModal'
 import api from '@/lib/axios'
 import { NotesPanel } from '@/components/NotesPanel'
+import type { SoftwareListItem } from '@/types/software'
 
 interface AuditLogEntry {
   id: string
@@ -118,6 +120,153 @@ const CONTRACT_OPTIONS = [
 ]
 const STATUS_TO_INT: Record<string, string> = { InService: '0', LeavePlanned: '1', Left: '2', StartPlanned: '0' }
 const CONTRACT_TO_INT: Record<string, string> = { Vast: '0', Tijdelijk: '1', Stagiair: '2', Extern: '3' }
+
+// ── AddSoftwareModal ──────────────────────────────────────────────────────────
+
+function AddSoftwareModal({ userId, softwarePath, alreadyAssignedIds, onClose, onAssigned }: {
+  userId: string
+  softwarePath: string
+  alreadyAssignedIds: Set<string>
+  onClose: () => void
+  onAssigned: () => void
+}) {
+  const [catalog, setCatalog]     = useState<SoftwareListItem[]>([])
+  const [loading, setLoading]     = useState(true)
+  const [search, setSearch]       = useState('')
+  const [assigning, setAssigning] = useState<string | null>(null)
+  const [error, setError]         = useState<string | null>(null)
+  const overlayRef                = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    api.get<SoftwareListItem[]>(softwarePath)
+      .then(r => setCatalog(r.data))
+      .catch(() => setError('Kon softwarelijst niet laden.'))
+      .finally(() => setLoading(false))
+  }, [softwarePath])
+
+  const available = catalog
+    .filter(s => s.licenseId && !alreadyAssignedIds.has(s.licenseId))
+    .filter(s => s.name.toLowerCase().includes(search.toLowerCase()) ||
+                 s.publisher.toLowerCase().includes(search.toLowerCase()))
+
+  const handleAssign = async (s: SoftwareListItem) => {
+    if (!s.licenseId) return
+    setAssigning(s.licenseId)
+    setError(null)
+    try {
+      await api.post(`/portal/licenses/${s.licenseId}/assign`, { userId })
+      onAssigned()
+      onClose()
+    } catch {
+      setError('Toewijzen mislukt. Probeer het opnieuw.')
+      setAssigning(null)
+    }
+  }
+
+  return (
+    <div
+      ref={overlayRef}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+      onMouseDown={e => { if (e.target === overlayRef.current) onClose() }}
+    >
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-md flex flex-col max-h-[80vh]">
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-slate-100 dark:border-slate-700 flex-shrink-0">
+          <div>
+            <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">Software toevoegen</h2>
+            <p className="text-xs text-slate-400 mt-0.5">Kies software uit de catalogus om toe te wijzen</p>
+          </div>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
+            <X size={18} />
+          </button>
+        </div>
+
+        {/* Search */}
+        <div className="px-5 py-3 border-b border-slate-100 dark:border-slate-700 flex-shrink-0">
+          <div className="relative">
+            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Zoek op naam of uitgever…"
+              autoFocus
+              className="w-full pl-8 pr-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:border-blue-400 dark:focus:border-blue-500"
+            />
+          </div>
+        </div>
+
+        {/* List */}
+        <div className="flex-1 overflow-y-auto">
+          {loading ? (
+            <div className="flex items-center justify-center py-12 gap-2 text-slate-400">
+              <Loader2 size={18} className="animate-spin" />
+              <span className="text-sm">Laden…</span>
+            </div>
+          ) : available.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 gap-2 text-center px-6">
+              <ShieldCheck size={28} className="text-slate-200 dark:text-slate-700" />
+              <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
+                {catalog.length === 0
+                  ? 'Geen software in de catalogus.'
+                  : search
+                    ? 'Geen resultaten voor deze zoekopdracht.'
+                    : 'Alle software is al gekoppeld aan deze medewerker.'}
+              </p>
+            </div>
+          ) : (
+            <ul className="divide-y divide-slate-100 dark:divide-slate-700/50">
+              {available.map(s => {
+                const isAssigning = assigning === s.licenseId
+                const isFull = !!(s.maxUsers && s.maxUsers > 0 && (s.assignedUsers ?? 0) >= s.maxUsers)
+                return (
+                  <li key={s.id} className="flex items-center gap-3 px-5 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/40 transition-colors">
+                    <div className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-700 flex items-center justify-center flex-shrink-0">
+                      <ShieldCheck size={16} className="text-slate-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 truncate">{s.name}</p>
+                      <p className="text-xs text-slate-400 truncate">{s.publisher}{s.vendor ? ` · ${s.vendor}` : ''}</p>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                        s.isPaid
+                          ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
+                          : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
+                      }`}>
+                        {s.isPaid ? 'Betaald' : 'Gratis'}
+                      </span>
+                      {isFull ? (
+                        <span className="text-xs text-red-500 font-medium">Vol</span>
+                      ) : (
+                        <button
+                          onClick={() => handleAssign(s)}
+                          disabled={!!assigning}
+                          className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-blue-600 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                        >
+                          {isAssigning ? <Loader2 size={12} className="animate-spin" /> : <Plus size={12} />}
+                          Toevoegen
+                        </button>
+                      )}
+                    </div>
+                  </li>
+                )
+              })}
+            </ul>
+          )}
+        </div>
+
+        {/* Error */}
+        {error && (
+          <div className="px-5 py-3 border-t border-slate-100 dark:border-slate-700 flex-shrink-0">
+            <p className="text-xs text-red-600 dark:text-red-400">{error}</p>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ── EditUserModal ─────────────────────────────────────────────────────────────
 
 function EditUserModal({ user, departments, managers, locations, onClose, onSaved }: {
   user: ClientUserDetailResponse
@@ -380,6 +529,8 @@ interface Props {
   checklistBasePath: string
   /** path to fetch audit history, e.g. "/portal/history/User/{uid}" */
   historyPath?: string
+  /** path to fetch software catalog, e.g. "/portal/software" */
+  softwarePath?: string
   onChecklistToggle?: (entryId: string, checked: boolean) => void
   onUserUpdated?: () => void
   onDelete?: () => void
@@ -387,7 +538,7 @@ interface Props {
   onPhoneClick?: (phone: PhoneListItem) => void
 }
 
-export function UserDetailPanel({ user, canEdit, departments = [], managers = [], locations = [], teammates = [], checklistBasePath, historyPath, onChecklistToggle, onUserUpdated, onDelete, onHardwareClick, onPhoneClick }: Props) {
+export function UserDetailPanel({ user, canEdit, departments = [], managers = [], locations = [], teammates = [], checklistBasePath, historyPath, softwarePath, onChecklistToggle, onUserUpdated, onDelete, onHardwareClick, onPhoneClick }: Props) {
   const status = user.status as UserStatus
   const statusTone = status === 'InService' ? 'good' : status === 'StartPlanned' ? 'info' : status === 'LeavePlanned' ? 'warn' : 'bad'
 
@@ -397,6 +548,7 @@ export function UserDetailPanel({ user, canEdit, departments = [], managers = []
   const [showHardwareModal, setShowHardwareModal] = useState(false)
   const [showPhoneWizard, setShowPhoneWizard] = useState(false)
   const [showLicenseModal, setShowLicenseModal] = useState(false)
+  const [showSoftwareModal, setShowSoftwareModal] = useState(false)
   const [activeTab, setActiveTab] = useState<'notes' | 'history'>('notes')
   const [confirmUnlink, setConfirmUnlink] = useState<{ name: string; onConfirm: () => Promise<void> } | null>(null)
   const [unlinking, setUnlinking] = useState(false)
@@ -551,6 +703,16 @@ export function UserDetailPanel({ user, canEdit, departments = [], managers = []
         teammates={teammates}
         lockedUser={lockedUser}
       />
+
+      {showSoftwareModal && softwarePath && (
+        <AddSoftwareModal
+          userId={user.id}
+          softwarePath={softwarePath}
+          alreadyAssignedIds={new Set(user.licenses.filter(l => l.isSoftwareLicense).map(l => l.licenseId))}
+          onClose={() => setShowSoftwareModal(false)}
+          onAssigned={() => { setShowSoftwareModal(false); onUserUpdated?.() }}
+        />
+      )}
 
       <Modal
         open={!!confirmUnlink}
@@ -770,7 +932,13 @@ export function UserDetailPanel({ user, canEdit, departments = [], managers = []
         ]
         return (
           <div className="grid gap-4 xl:grid-cols-2">
-            <Section title="Software" icon={<ShieldCheck size={16} />}>
+            <Section title="Software" icon={<ShieldCheck size={16} />} action={
+              softwarePath ? (
+                <button onClick={() => setShowSoftwareModal(true)} className="inline-flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 px-2 py-1 rounded-lg transition-colors">
+                  <Plus size={11} /> Toevoegen
+                </button>
+              ) : undefined
+            }>
               {allSoftware.length === 0 ? (
                 <p className="text-sm text-slate-400">Geen software gekoppeld.</p>
               ) : (

@@ -360,6 +360,7 @@ export function EmployeeDetailView({ user, loading, onBack, onUserUpdated, onDel
             teammates={teammates}
             checklistBasePath={`/portal/users/${user.id}`}
             historyPath={`/portal/history/User/${user.id}`}
+            softwarePath="/portal/software"
             onUserUpdated={onUserUpdated}
             onDelete={onDelete ? () => onDelete(user.id, `${user.firstName} ${user.lastName}`) : undefined}
             onHardwareClick={onHardwareClick}
