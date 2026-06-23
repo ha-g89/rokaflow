@@ -1,10 +1,11 @@
-﻿import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import {
   Briefcase, Users, Plus, LogOut,
-  Building2, Search, UserPlus, User, ExternalLink, Loader2,
-  MoreVertical, Pencil, X, Mail, Ban, ShieldCheck, Calendar, ImagePlus,
+  Building2, Search, ExternalLink, Loader2,
+  MoreVertical, Pencil, X, ImagePlus,
   Moon, Sun, Settings, ChevronDown, ArrowLeftRight, XCircle,
 } from 'lucide-react'
+import { ClientDetailPanel } from './ClientDetailPanel'
 import { LoadingState } from '@/components/ui/LoadingState'
 import { useAuthStore } from '@/store/authStore'
 import { useThemeStore } from '@/store/themeStore'
@@ -20,13 +21,7 @@ import type { ClientListItem } from '@/types/client'
 import type { ClientUserListItem, ClientUserDetailResponse } from '@/types/clientUser'
 import type { MspTransferRequestDto } from '@/types/mspTransfer'
 import { TRANSFER_STATUS_LABEL, TRANSFER_STATUS_TONE } from '@/types/mspTransfer'
-
-// ── helpers ───────────────────────────────────────────────────────────────────
-
-function fmt(d: string | null | undefined) {
-  if (!d) return '—'
-  return new Date(d).toLocaleDateString('nl-NL', { day: '2-digit', month: '2-digit', year: 'numeric' })
-}
+import type { MyPlanDto } from '@/types/platformPlan'
 
 // ── small components ──────────────────────────────────────────────────────────
 
@@ -46,28 +41,6 @@ function StatCard({ icon, label, value, color }: {
   )
 }
 
-function Avatar({ first, last, size = 8 }: { first: string; last: string; size?: number }) {
-  const s = `w-${size} h-${size}`
-  return (
-    <div className={`${s} rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-xs font-bold flex-shrink-0`}>
-      {(first[0] ?? '').toUpperCase()}{(last[0] ?? '').toUpperCase()}
-    </div>
-  )
-}
-
-function ActiveBadge({ isActive }: { isActive: boolean }) {
-  return (
-    <span className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-0.5 rounded-full font-medium ${
-      isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
-    }`}>
-      <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${isActive ? 'bg-emerald-500' : 'bg-red-500'}`} />
-      {isActive ? 'Actief' : 'Inactief'}
-    </span>
-  )
-}
-
-// ── Sidebar helpers ───────────────────────────────────────────────────────────
-
 function NavItem({ icon, label, active, onClick }: {
   icon: React.ReactNode; label: string; active: boolean; onClick: () => void
 }) {
@@ -84,210 +57,16 @@ function NavItem({ icon, label, active, onClick }: {
   )
 }
 
-// ── OrgEditUserModal ──────────────────────────────────────────────────────────
-
-function OrgEditUserModal({ user, clientId, onClose, onSaved }: {
-  user: ClientUserDetailResponse
-  clientId: string
-  onClose: () => void
-  onSaved: () => void
-}) {
-  const [firstName, setFirstName] = useState(user.firstName)
-  const [lastName, setLastName]   = useState(user.lastName)
-  const [email, setEmail]         = useState(user.email)
-  const [saving, setSaving]       = useState(false)
-  const [error, setError]         = useState<string | null>(null)
-  const overlayRef                = useRef<HTMLDivElement>(null)
-
-  const field = 'w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-sm text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-700 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900 transition-colors'
-
-  const handleSave = async () => {
-    if (!firstName.trim() || !lastName.trim()) { setError('Voor- en achternaam zijn verplicht.'); return }
-    setSaving(true); setError(null)
-    try {
-      await api.put(`/clients/${clientId}/users/${user.id}`, {
-        firstName: firstName.trim(),
-        lastName: lastName.trim(),
-        email: email.trim() || null,
-      })
-      onSaved()
-      onClose()
-    } catch {
-      setError('Opslaan mislukt. Probeer het opnieuw.')
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  return (
-    <div
-      ref={overlayRef}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
-      onMouseDown={e => { if (e.target === overlayRef.current) onClose() }}
-    >
-      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-sm">
-        <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-slate-100 dark:border-slate-700">
-          <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">Gebruiker wijzigen</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
-            <X size={18} />
-          </button>
-        </div>
-        <div className="p-5 space-y-4">
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">Voornaam *</label>
-              <input value={firstName} onChange={e => setFirstName(e.target.value)} className={field} autoFocus />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">Achternaam *</label>
-              <input value={lastName} onChange={e => setLastName(e.target.value)} className={field} />
-            </div>
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">E-mailadres</label>
-            <input type="email" value={email} onChange={e => setEmail(e.target.value)} className={field} placeholder="jan@bedrijf.nl" />
-          </div>
-          {error && <p className="text-xs text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg px-3 py-2">{error}</p>}
-        </div>
-        <div className="flex gap-3 px-5 pb-5">
-          <button
-            onClick={onClose}
-            className="flex-1 px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-600 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
-          >
-            Annuleren
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="flex-1 px-4 py-2 rounded-xl bg-blue-600 text-sm font-medium text-white hover:bg-blue-700 transition-colors disabled:opacity-60"
-          >
-            {saving ? 'Opslaan…' : 'Opslaan'}
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// ── OrgPortalUserPanel ────────────────────────────────────────────────────────
-
-function OrgPortalUserPanel({ user, clientId, onUserUpdated }: {
-  user: ClientUserDetailResponse
-  clientId: string
-  onUserUpdated: () => void
-}) {
-  const [blocking, setBlocking]   = useState(false)
-  const [editOpen, setEditOpen]   = useState(false)
-
-  const toggleActive = async () => {
-    setBlocking(true)
-    try {
-      await api.put(`/clients/${clientId}/users/${user.id}/active`, { isActive: !user.isActive })
-      onUserUpdated()
-    } finally {
-      setBlocking(false)
-    }
-  }
-
-  return (
-    <>
-      {editOpen && (
-        <OrgEditUserModal
-          user={user}
-          clientId={clientId}
-          onClose={() => setEditOpen(false)}
-          onSaved={onUserUpdated}
-        />
-      )}
-
-      <Card className="rounded-2xl shadow-sm">
-        <CardContent className="p-6">
-
-          {/* Avatar + naam + email + badge */}
-          <div className="flex items-start gap-4">
-            <div className="w-16 h-16 rounded-2xl bg-blue-100 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 flex items-center justify-center font-bold text-2xl flex-shrink-0 select-none">
-              {(user.firstName[0] ?? '').toUpperCase()}{(user.lastName[0] ?? '').toUpperCase()}
-            </div>
-            <div className="flex-1 min-w-0">
-              <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 leading-tight truncate">
-                {user.firstName} {user.lastName}
-              </h2>
-              <p className="text-sm text-slate-500 dark:text-slate-400 truncate mt-0.5">{user.email}</p>
-              <div className="mt-2">
-                <ActiveBadge isActive={user.isActive} />
-              </div>
-            </div>
-          </div>
-
-          {/* Info blok */}
-          <div className="mt-5 rounded-xl bg-slate-50 dark:bg-slate-700/40 divide-y divide-slate-100 dark:divide-slate-700">
-            <div className="flex items-center gap-3 px-4 py-3">
-              <Mail size={14} className="text-slate-400 flex-shrink-0" />
-              <span className="text-xs text-slate-400 w-20 flex-shrink-0">E-mail</span>
-              <span className="text-xs font-medium text-slate-700 dark:text-slate-200 truncate">{user.email || '—'}</span>
-            </div>
-            {(user.departmentName || user.department) && (
-              <div className="flex items-center gap-3 px-4 py-3">
-                <Briefcase size={14} className="text-slate-400 flex-shrink-0" />
-                <span className="text-xs text-slate-400 w-20 flex-shrink-0">Afdeling</span>
-                <span className="text-xs font-medium text-slate-700 dark:text-slate-200 truncate">{user.departmentName || user.department}</span>
-              </div>
-            )}
-            <div className="flex items-center gap-3 px-4 py-3">
-              <Calendar size={14} className="text-slate-400 flex-shrink-0" />
-              <span className="text-xs text-slate-400 w-20 flex-shrink-0">Aangemaakt</span>
-              <span className="text-xs font-medium text-slate-700 dark:text-slate-200">{fmt(user.createdAt)}</span>
-            </div>
-          </div>
-
-          {/* Actie knoppen */}
-          <div className="mt-5 flex gap-3">
-            <button
-              onClick={() => setEditOpen(true)}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 hover:border-slate-300 transition-colors"
-            >
-              <Pencil size={14} />
-              Wijzigen
-            </button>
-            <button
-              onClick={toggleActive}
-              disabled={blocking}
-              className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-medium transition-colors disabled:opacity-60 ${
-                user.isActive
-                  ? 'border-red-200 text-red-600 hover:bg-red-50'
-                  : 'border-emerald-200 text-emerald-600 hover:bg-emerald-50'
-              }`}
-            >
-              {blocking
-                ? <Loader2 size={14} className="animate-spin" />
-                : user.isActive
-                  ? <Ban size={14} />
-                  : <ShieldCheck size={14} />
-              }
-              {user.isActive ? 'Blokkeren' : 'Deblokkeren'}
-            </button>
-          </div>
-
-        </CardContent>
-      </Card>
-    </>
-  )
-}
-
 // ── main component ────────────────────────────────────────────────────────────
-
-type View = 'clients' | 'users' | 'detail'
 
 export default function OrgDashboard() {
   const { user, logout, switchToClient } = useAuthStore()
   const { darkMode, toggleDarkMode } = useThemeStore()
   const navigate = useNavigate()
-
   const [clients, setClients]               = useState<ClientListItem[]>([])
   const [selectedClient, setSelectedClient] = useState<ClientListItem | null>(null)
   const [clientUsers, setClientUsers]       = useState<ClientUserListItem[]>([])
   const [selectedUser, setSelectedUser]     = useState<ClientUserDetailResponse | null>(null)
-  const [view, setView]                     = useState<View>('clients')
   const [loadingClients, setLoadingClients] = useState(true)
   const [loadingUsers, setLoadingUsers]     = useState(false)
   const [loadingDetail, setLoadingDetail]   = useState(false)
@@ -297,7 +76,6 @@ export default function OrgDashboard() {
   const [transfers, setTransfers]           = useState<MspTransferRequestDto[]>([])
   const [cancellingId, setCancellingId]     = useState<string | null>(null)
   const [clientSearch, setClientSearch]     = useState('')
-  const [userSearch, setUserSearch]         = useState('')
   const [switchingClientId, setSwitchingClientId] = useState<string | null>(null)
   const [openMenuId, setOpenMenuId]         = useState<string | null>(null)
   const [editClient, setEditClient]         = useState<ClientListItem | null>(null)
@@ -306,6 +84,7 @@ export default function OrgDashboard() {
   const [editLogoFile, setEditLogoFile]     = useState<File | null>(null)
   const [editLogoPreview, setEditLogoPreview] = useState<string | null>(null)
   const [editLogoDeleted, setEditLogoDeleted] = useState(false)
+  const [clientPlan, setClientPlan]         = useState<MyPlanDto | null>(null)
   const editLogoInputRef                    = useRef<HTMLInputElement>(null)
   const [showUserMenu, setShowUserMenu]     = useState(false)
   const userMenuRef                         = useRef<HTMLDivElement>(null)
@@ -365,13 +144,13 @@ export default function OrgDashboard() {
   const handleSelectClient = (client: ClientListItem) => {
     setSelectedClient(client)
     setSelectedUser(null)
-    setView('users')
     fetchUsers(client.id)
+    setClientPlan(null)
+    api.get<MyPlanDto>(`/clients/${client.id}/plan`).then(r => setClientPlan(r.data)).catch(() => {})
   }
 
   const handleSelectUser = (userId: string) => {
     if (!selectedClient) return
-    setView('detail')
     fetchUserDetail(selectedClient.id, userId)
   }
 
@@ -442,12 +221,6 @@ export default function OrgDashboard() {
   const filteredClients = clients.filter(c =>
     c.name.toLowerCase().includes(clientSearch.toLowerCase()))
 
-  // alleen portal users tonen (niet de employee-only records)
-  const portalUsers = clientUsers.filter(u => u.isPortalUser)
-  const filteredUsers = portalUsers.filter(u =>
-    `${u.firstName} ${u.lastName} ${u.email}`
-      .toLowerCase().includes(userSearch.toLowerCase()))
-
   const totalUsers    = clients.reduce((s, c) => s + c.userCount, 0)
   const activeClients = clients.filter(c => c.isActive).length
 
@@ -488,8 +261,6 @@ export default function OrgDashboard() {
 
           {showUserMenu && (
             <div className="absolute right-0 top-12 z-50 w-60 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
-
-              {/* User info header */}
               <div className="px-4 py-4 bg-slate-50 dark:bg-slate-700/50 border-b border-slate-100 dark:border-slate-700">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-blue-600 text-white text-base font-bold flex items-center justify-center flex-shrink-0 select-none">
@@ -503,7 +274,6 @@ export default function OrgDashboard() {
               </div>
 
               <div className="py-1">
-                {/* Settings */}
                 <button
                   onClick={() => { setShowUserMenu(false); navigate('/org/settings') }}
                   className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
@@ -511,8 +281,6 @@ export default function OrgDashboard() {
                   <Settings size={15} className="text-slate-400 flex-shrink-0" />
                   Instellingen
                 </button>
-
-                {/* Theme toggle */}
                 <button
                   onClick={toggleDarkMode}
                   className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
@@ -529,7 +297,6 @@ export default function OrgDashboard() {
               </div>
 
               <div className="border-t border-slate-100 dark:border-slate-700 py-1">
-                {/* Logout */}
                 <button
                   onClick={() => { setShowUserMenu(false); handleLogout() }}
                   className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
@@ -545,6 +312,7 @@ export default function OrgDashboard() {
 
         {/* Scrollable content */}
         <div className="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-5 bg-slate-200 dark:bg-slate-900">
+
         {/* Stats */}
         <div className="grid grid-cols-3 gap-4">
           <StatCard icon={<Briefcase size={18} className="text-blue-600" />} label="Totaal clients" value={clients.length} color="bg-blue-50" />
@@ -591,10 +359,10 @@ export default function OrgDashboard() {
           </div>
         )}
 
-        {/* Three-column layout */}
+        {/* Two-column layout: client list + detail panel */}
         <div className="flex gap-4 flex-1 min-h-0" style={{ minHeight: '560px' }}>
 
-          {/* Col 1 — Clients */}
+          {/* Col 1 — Client list */}
           <div className="w-60 flex-shrink-0 flex flex-col gap-2">
             <div className="flex items-center gap-1.5">
               <div className="relative flex-1">
@@ -678,90 +446,39 @@ export default function OrgDashboard() {
             </Card>
           </div>
 
-          {/* Col 2 — Portal users */}
-          <div className="w-64 flex-shrink-0 flex flex-col gap-2">
-            {!selectedClient
-              ? <Card className="flex-1 flex items-center justify-center">
-                  <p className="text-xs text-slate-400">Selecteer een client</p>
-                </Card>
-              : <>
-                  <div className="flex items-center gap-1.5">
-                    <div className="relative flex-1">
-                      <Search size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400" />
-                      <input value={userSearch} onChange={e => setUserSearch(e.target.value)}
-                        placeholder="Zoek gebruiker…"
-                        className="w-full pl-7 pr-2 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:border-blue-400 dark:focus:border-blue-500" />
-                    </div>
-                    <Button size="sm" onClick={() => setShowAddUser(true)} title="Gebruiker toevoegen">
-                      <UserPlus size={13} />
-                    </Button>
-                  </div>
-                  <Card className="flex-1 overflow-hidden flex flex-col">
-                    <div className="px-3 py-2 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
-                      <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider truncate">{selectedClient.name}</span>
-                      <span className="text-xs text-slate-400 flex-shrink-0 ml-1">{filteredUsers.length}</span>
-                    </div>
-                    <div className="flex-1 overflow-y-auto">
-                      {loadingUsers
-                        ? <LoadingState label="Gebruikers laden…" size="sm" />
-                        : filteredUsers.length === 0
-                          ? <div className="p-4 text-center">
-                              <User size={24} className="mx-auto mb-1 text-slate-200" />
-                              <p className="text-xs text-slate-400">Geen portalgebruikers.</p>
-                              <button onClick={() => setShowAddUser(true)} className="mt-1 text-xs text-blue-500 hover:underline">Toevoegen</button>
-                            </div>
-                          : <ul className="divide-y divide-slate-100">
-                              {filteredUsers.map(u => (
-                                <li key={u.id}>
-                                  <button
-                                    onClick={() => handleSelectUser(u.id)}
-                                    className={`w-full text-left px-3 py-2.5 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors ${
-                                      selectedUser?.id === u.id ? 'bg-blue-50 dark:bg-blue-950/40 border-l-2 border-blue-500' : ''}`}
-                                  >
-                                    <div className="flex items-center gap-2">
-                                      <Avatar first={u.firstName} last={u.lastName} size={7} />
-                                      <div className="min-w-0 flex-1">
-                                        <p className="text-xs font-semibold text-slate-800 dark:text-slate-100 truncate">
-                                          {u.firstName} {u.lastName}
-                                        </p>
-                                        <p className="text-xs text-slate-400 truncate">{u.email}</p>
-                                      </div>
-                                      <ActiveBadge isActive={u.isActive} />
-                                    </div>
-                                  </button>
-                                </li>
-                              ))}
-                            </ul>
-                      }
-                    </div>
-                  </Card>
-                </>
-            }
-          </div>
-
-          {/* Col 3 — Portal user detail */}
-          <div className="flex-1 overflow-y-auto min-w-0">
-            {loadingDetail ? (
-              <Card className="flex items-center justify-center">
-                <LoadingState label="Gebruiker laden…" size="sm" />
-              </Card>
-            ) : !selectedUser ? (
-              <Card className="h-40 flex items-center justify-center">
-                <p className="text-xs text-slate-400">Selecteer een gebruiker</p>
+          {/* Col 2 — Client detail panel */}
+          <div className="flex-1 min-w-0 flex flex-col">
+            {!selectedClient ? (
+              <Card className="flex-1 flex items-center justify-center">
+                <div className="text-center">
+                  <Building2 size={32} className="mx-auto mb-2 text-slate-200 dark:text-slate-700" />
+                  <p className="text-xs text-slate-400">Selecteer een client om details te bekijken</p>
+                </div>
               </Card>
             ) : (
-              <OrgPortalUserPanel
-                user={selectedUser}
-                clientId={selectedClient!.id}
+              <ClientDetailPanel
+                key={selectedClient.id}
+                client={selectedClient}
+                plan={clientPlan}
+                users={clientUsers}
+                loadingUsers={loadingUsers}
+                selectedUser={selectedUser}
+                loadingDetail={loadingDetail}
+                switchingClientId={switchingClientId}
+                onSelectUser={handleSelectUser}
+                onAddUser={() => setShowAddUser(true)}
                 onUserUpdated={handleUserUpdated}
+                onSwitchToClient={handleSwitchToClient}
+                onEditClient={() => { setEditClient(selectedClient); setEditName(selectedClient.name) }}
               />
             )}
           </div>
 
         </div>
+
       </div>
 
-      {/* Modals */}
+      {/* ── Modals ── */}
       <AddClientModal
         open={showAddClient}
         onClose={() => setShowAddClient(false)}
@@ -797,8 +514,6 @@ export default function OrgDashboard() {
               </button>
             </div>
             <div className="p-5 space-y-4">
-
-              {/* Logo */}
               <div>
                 <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-2">Logo</label>
                 <div className="flex items-center gap-3">
@@ -838,8 +553,6 @@ export default function OrgDashboard() {
                   onChange={handleEditClientFileChange}
                 />
               </div>
-
-              {/* Name */}
               <div>
                 <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">Naam *</label>
                 <input

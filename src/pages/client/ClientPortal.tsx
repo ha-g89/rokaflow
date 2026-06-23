@@ -11,6 +11,7 @@ import { useNavigate } from 'react-router-dom'
 import api from '@/lib/axios'
 import { AddUserModal } from '@/components/AddUserModal'
 import { AddEmployeeModal } from '@/components/AddEmployeeModal'
+import { PlanBanner } from '@/components/PlanBanner'
 import { SectionLabel, NavItem, PlaceholderView } from '@/components/portal/PortalUI'
 import { OverviewView } from './views/OverviewView'
 import { HistoryView } from './views/HistoryView'
@@ -25,6 +26,7 @@ import { ProcessesView } from './views/ProcessesView'
 import type { ClientUserListItem, ClientUserDetailResponse } from '@/types/clientUser'
 import type { LocationListItem } from '@/types/location'
 import type { DepartmentListItem } from '@/types/department'
+import type { MyPlanDto } from '@/types/platformPlan'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -79,6 +81,8 @@ export default function ClientPortal() {
   const [managers, setManagers]             = useState<{ id: string; fullName: string }[]>([])
   const [locationOptions, setLocationOptions] = useState<LocationListItem[]>([])
 
+  const [plan, setPlan] = useState<MyPlanDto | null>(null)
+
   // ── User menu + MSP ───────────────────────────────────────────────────────
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [mspStatus, setMspStatus]       = useState<{
@@ -107,6 +111,7 @@ export default function ClientPortal() {
 
   useEffect(() => {
     if (!isMspMode) fetchMspStatus()
+    api.get<MyPlanDto>('/portal/my-plan').then(r => setPlan(r.data)).catch(() => {})
   }, [fetchMspStatus, isMspMode])
 
   useEffect(() => {
@@ -224,6 +229,9 @@ export default function ClientPortal() {
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-slate-100 dark:bg-slate-950">
 
+      {/* ── Plan banner ─────────────────────────────────────────────────── */}
+      <PlanBanner plan={plan} />
+
       {/* ── Top bar ─────────────────────────────────────────────────────── */}
       <div className="flex flex-shrink-0 h-16">
         <div className="w-56 bg-slate-900 dark:bg-slate-950 px-4 flex flex-col justify-center flex-shrink-0 border-b border-slate-800">
@@ -255,6 +263,17 @@ export default function ClientPortal() {
                     <div className="min-w-0">
                       <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">{tenantName}</p>
                       <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{user?.email}</p>
+                      {plan && (
+                        <div className="flex items-center gap-1 mt-1">
+                          <Shield size={11} className="text-slate-400 flex-shrink-0" />
+                          <span className="text-xs text-slate-400">
+                            {plan.status === 'Trial'       && 'Trial'}
+                            {plan.status === 'GracePeriod' && 'Grace period'}
+                            {plan.status === 'Active'      && (plan.planName ?? 'Actief')}
+                            {plan.status === 'Blocked'     && 'Geblokkeerd'}
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
