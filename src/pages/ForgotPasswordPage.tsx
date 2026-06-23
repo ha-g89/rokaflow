@@ -24,8 +24,6 @@ const CSS = `
     min-height: 100vh; display: flex; flex-direction: column;
     align-items: center; justify-content: center;
     background: var(--rfp-bg);
-    background-image: radial-gradient(rgba(37,99,235,0.12) 1px, transparent 1px);
-    background-size: 24px 24px;
     font-family: 'DM Sans', system-ui, sans-serif;
     color: var(--rfp-text); padding: 40px 20px;
   }
@@ -115,7 +113,6 @@ const CSS = `
     --rfp-muted: rgba(238,240,246,0.42); --rfp-accent-dk: #3b82f6;
     --rfp-line: rgba(238,240,246,0.07); --rfp-field-bg: rgba(238,240,246,0.05); --rfp-field-bd: rgba(238,240,246,0.10);
     background-color: #030812;
-    background-image: radial-gradient(rgba(37,99,235,0.18) 1px, transparent 1px);
   }
   html.dark .rfp-card { background: rgba(8,12,28,0.95); border-color: rgba(238,240,246,0.07); box-shadow: 0 24px 56px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.04); }
   html.dark .rfp-logo-base { background: rgba(238,240,246,0.25); }

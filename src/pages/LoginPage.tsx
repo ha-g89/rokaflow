@@ -274,8 +274,6 @@ const CSS = `
     align-items: center;
     justify-content: center;
     background: var(--bg-panel);
-    background-image: radial-gradient(rgba(37,99,235,0.12) 1px, transparent 1px);
-    background-size: 24px 24px;
     position: relative;
   }
 
@@ -417,8 +415,6 @@ const CSS = `
   html.dark .rfl-logo-sm { filter: brightness(0) invert(1) opacity(0.72); }
   html.dark .rfl-right {
     background: #0a0f1e;
-    background-image: radial-gradient(rgba(37,99,235,0.18) 1px, transparent 1px);
-    background-size: 24px 24px;
   }
   html.dark .rfl-logo-base { background: rgba(238,240,246,0.25); }
   html.dark .rfl-wrap .rfl-input { background: var(--field-bg); border-color: var(--field-bd); color: var(--text); }
@@ -426,6 +422,8 @@ const CSS = `
   html.dark .rfl-wrap .rfl-input:focus { border-color: rgba(37,99,235,0.7); background: rgba(37,99,235,0.08); box-shadow: 0 0 0 3px rgba(37,99,235,0.15); }
   html.dark .rfl-wrap .rfl-input.rfl-err { border-color: rgba(239,68,68,0.45); background: rgba(239,68,68,0.05); }
   html.dark .rfl-api-err { background: rgba(239,68,68,0.08); border-color: rgba(239,68,68,0.2); color: #fca5a5; }
+  html.dark .rfl-brand { color: rgba(238,240,246,0.28); }
+  html.dark .rfl-tagline { color: rgba(238,240,246,0.45); }
 `
 
 function LoadingScreen({ role }: { role: UserRole }) {

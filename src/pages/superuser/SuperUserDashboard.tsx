@@ -1,8 +1,9 @@
 ﻿import { useEffect, useState, useCallback, useRef } from 'react'
 import {
   Building2, Users, Plus, LogOut, Shield,
-  Briefcase, Search, Moon, Sun, Upload, Trash2,
+  Briefcase, Search, Moon, Sun, Upload, Trash2, CreditCard,
 } from 'lucide-react'
+import { SubscriptionsView } from './views/SubscriptionsView'
 import { useAuthStore } from '@/store/authStore'
 import { useThemeStore } from '@/store/themeStore'
 import { useNavigate } from 'react-router-dom'
@@ -164,6 +165,8 @@ export default function SuperUserDashboard() {
   const { darkMode, toggleDarkMode } = useThemeStore()
   const navigate = useNavigate()
 
+  const [activeSection, setActiveSection] = useState<'organisations' | 'subscriptions'>('organisations')
+
   const [orgs, setOrgs]                               = useState<OrganisationListItem[]>([])
   const [allClients, setAllClients]                   = useState<ClientListItem[]>([])
   const [detail, setDetail]                           = useState<OrganisationDetailResponse | null>(null)
@@ -269,8 +272,26 @@ export default function SuperUserDashboard() {
             <p className="text-[10px] text-slate-400 leading-tight">Beheerpaneel</p>
           </div>
           <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1" />
+          {/* Nav tabs */}
+          <nav className="flex items-center gap-1">
+            {([
+              ['organisations', Building2, 'Organisaties'],
+              ['subscriptions', CreditCard, 'Abonnementen'],
+            ] as const).map(([key, Icon, label]) => (
+              <button key={key} onClick={() => setActiveSection(key)}
+                className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
+                  activeSection === key
+                    ? 'bg-blue-600 text-white'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
+                }`}>
+                <Icon size={11} />
+                {label}
+              </button>
+            ))}
+          </nav>
+          <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1" />
           {/* Inline stats */}
-          {[
+          {activeSection === 'organisations' && [
             { label: "MSP's",   value: mspOrgs.length,    color: 'text-blue-600' },
             { label: 'Clients', value: allClients.length,  color: '' },
             { label: 'Actief',  value: activeOrgs,         color: 'text-emerald-600' },
@@ -297,8 +318,11 @@ export default function SuperUserDashboard() {
         </div>
       </header>
 
-      {/* ── Body: three columns ── */}
-      <div className="flex flex-1 overflow-hidden">
+      {/* ── Body ── */}
+      {activeSection === 'subscriptions' && <SubscriptionsView />}
+
+      {/* ── Three columns (organisations) ── */}
+      <div className={`flex flex-1 overflow-hidden ${activeSection !== 'organisations' ? 'hidden' : ''}`}>
 
         {/* Col 1 — MSP's */}
         <div className="w-52 flex-shrink-0 flex flex-col bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800">

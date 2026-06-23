@@ -331,8 +331,6 @@ const CSS = `
     align-items: center;
     justify-content: center;
     background: var(--bg-panel);
-    background-image: radial-gradient(rgba(37,99,235,0.12) 1px, transparent 1px);
-    background-size: 24px 24px;
     position: relative;
   }
 
@@ -440,8 +438,6 @@ const CSS = `
   html.dark .rfr-logo-sm { filter: brightness(0) invert(1) opacity(0.72); }
   html.dark .rfr-right {
     background: #0a0f1e;
-    background-image: radial-gradient(rgba(37,99,235,0.18) 1px, transparent 1px);
-    background-size: 24px 24px;
   }
   html.dark .rfr-logo-base { background: rgba(238,240,246,0.25); }
   html.dark .rfr-wrap .rfr-input { background: var(--field-bg); border-color: var(--field-bd); color: var(--text); }
@@ -452,6 +448,8 @@ const CSS = `
   html.dark .rfr-logo-upload { background: rgba(238,240,246,0.04); border-color: rgba(238,240,246,0.12); }
   html.dark .rfr-logo-upload:hover { background: rgba(37,99,235,0.1); border-color: rgba(37,99,235,0.35); }
   html.dark .rfr-section-label { border-bottom-color: rgba(238,240,246,0.08); }
+  html.dark .rfr-brand { color: rgba(238,240,246,0.28); }
+  html.dark .rfr-tagline { color: rgba(238,240,246,0.45); }
 `
 
 const EyeIcon = ({ open }: { open: boolean }) => open ? (

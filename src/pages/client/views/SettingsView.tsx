@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Moon, Sun, Shield, CheckCircle2, ArrowLeftCircle,
   AlertTriangle, UserPlus, ArrowLeftRight, Copy,
+  Package, Users, CreditCard, Zap, Lock,
 } from 'lucide-react'
 import api from '@/lib/axios'
 import { useThemeStore } from '@/store/themeStore'
@@ -9,6 +10,7 @@ import { Card, CardContent } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Avatar } from '@/components/portal/PortalUI'
 import type { ClientUserListItem } from '@/types/clientUser'
+import type { MyPlanDto } from '@/types/platformPlan'
 
 interface MspStatus {
   hasMspAccount: boolean
@@ -29,8 +31,43 @@ interface Props {
   mspSwitching: boolean
 }
 
+function UsageBar({ used, max, label, icon }: { used: number; max: number | null; label: string; icon: React.ReactNode }) {
+  const unlimited = max === 0 || max === null
+  const pct = unlimited ? 0 : Math.min(100, Math.round((used / max!) * 100))
+  const warning = !unlimited && pct >= 80
+  const full    = !unlimited && pct >= 100
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-1">
+        <div className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400">
+          {icon}
+          {label}
+        </div>
+        <span className={`text-xs font-semibold ${full ? 'text-red-600' : warning ? 'text-amber-600' : 'text-slate-500 dark:text-slate-400'}`}>
+          {used}{unlimited ? '' : ` / ${max}`}
+          {unlimited && <span className="font-normal text-slate-400"> (onbeperkt)</span>}
+        </span>
+      </div>
+      {!unlimited && (
+        <div className="h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+          <div
+            className={`h-full rounded-full transition-all ${full ? 'bg-red-500' : warning ? 'bg-amber-400' : 'bg-blue-500'}`}
+            style={{ width: `${pct}%` }}
+          />
+        </div>
+      )}
+    </div>
+  )
+}
+
 export function SettingsView({ teammates, tenantName, onAddUser, mspStatus, onMspStatusRefresh, onSwitchToMsp, mspSwitching }: Props) {
   const { darkMode, toggleDarkMode } = useThemeStore()
+
+  const [plan, setPlan] = useState<MyPlanDto | null>(null)
+
+  useEffect(() => {
+    api.get<MyPlanDto>('/portal/my-plan').then(r => setPlan(r.data)).catch(() => {})
+  }, [])
 
   const [upgradeLoading, setUpgradeLoading]   = useState(false)
   const [upgradeError, setUpgradeError]       = useState<string | null>(null)
@@ -64,6 +101,95 @@ export function SettingsView({ teammates, tenantName, onAddUser, mspStatus, onMs
             </p>
           </div>
         </div>
+      )}
+
+      {/* Abonnement */}
+      {plan && (
+        <Card>
+          <CardContent className="p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <CreditCard size={15} className="text-slate-400" />
+              <h2 className="text-sm font-bold text-slate-800 dark:text-slate-100">Abonnement</h2>
+            </div>
+
+            {mspStatus?.hasMspManager ? (
+              /* MSP beheert dit account — toon alleen status, geen bewerkbare details */
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0">
+                  <Shield size={15} className="text-blue-500" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-slate-800 dark:text-slate-100">
+                    Beheerd door{' '}
+                    <span className="font-semibold text-blue-600 dark:text-blue-400">
+                      {mspStatus.mspManagerName ?? 'uw MSP'}
+                    </span>
+                  </p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    Uw abonnement wordt beheerd door uw MSP-partner.
+                    Neem contact met hen op voor wijzigingen.
+                  </p>
+                  {plan.planName && (
+                    <span className="inline-flex mt-2 text-xs px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 font-medium">
+                      {plan.planName}
+                    </span>
+                  )}
+                  {plan.status === 'Trial' && (
+                    <span className="inline-flex mt-2 ml-1.5 text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 font-medium">
+                      Trial
+                    </span>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <>
+                {/* Status header */}
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    {plan.status === 'Trial' && <Zap size={14} className="text-blue-500" />}
+                    {plan.status === 'GracePeriod' && <AlertTriangle size={14} className="text-amber-500" />}
+                    {plan.status === 'Active' && <CheckCircle2 size={14} className="text-emerald-500" />}
+                    {plan.status === 'Blocked' && <Lock size={14} className="text-red-500" />}
+                    <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+                      {plan.status === 'Trial' && 'Gratis proefperiode'}
+                      {plan.status === 'GracePeriod' && 'Grace period'}
+                      {plan.status === 'Active' && (plan.planName ?? 'Actief abonnement')}
+                      {plan.status === 'Blocked' && 'Account geblokkeerd'}
+                    </span>
+                  </div>
+                  {plan.planName && plan.status === 'Active' && (
+                    <span className="text-xs px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 font-medium">
+                      {plan.planName}
+                    </span>
+                  )}
+                  {plan.status === 'Trial' && plan.trialEndsAt && (() => {
+                    const days = Math.ceil((new Date(plan.trialEndsAt).getTime() - Date.now()) / 86400000)
+                    return (
+                      <span className={`text-xs px-2.5 py-0.5 rounded-full font-medium ${days <= 7 ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'}`}>
+                        {days > 0 ? `${days} dag${days !== 1 ? 'en' : ''} resterend` : 'Verlopen'}
+                      </span>
+                    )
+                  })()}
+                </div>
+
+                {/* Usage bars */}
+                <div className="space-y-3">
+                  <UsageBar used={plan.usedAssets}      max={plan.maxAssets ?? null}      label="Assets"             icon={<Package size={11} />} />
+                  <UsageBar used={plan.usedEmployees}   max={plan.maxEmployees ?? null}   label="Medewerkers"        icon={<Users size={11} />} />
+                  <UsageBar used={plan.usedPortalUsers} max={plan.maxPortalUsers ?? null} label="Portaalgebruikers"  icon={<Shield size={11} />} />
+                </div>
+
+                {(plan.status === 'Trial' || plan.status === 'GracePeriod') && (
+                  <p className="mt-4 text-xs text-slate-400">
+                    Neem contact op met{' '}
+                    <a href="mailto:support@rokaflow.nl" className="text-blue-600 hover:underline">support@rokaflow.nl</a>
+                    {' '}om een abonnement te activeren.
+                  </p>
+                )}
+              </>
+            )}
+          </CardContent>
+        </Card>
       )}
 
       {/* Weergave */}

@@ -1,0 +1,41 @@
+export type TenantPlanStatus = 'Trial' | 'GracePeriod' | 'Active' | 'Blocked'
+
+export interface PlatformPlanDto {
+  id: string
+  name: string
+  maxAssets: number
+  maxEmployees: number
+  maxPortalUsers: number
+  directRate: number | null
+  mspDiscountPct: number
+  sortOrder: number
+  isActive: boolean
+  tenantCount: number
+}
+
+export interface TenantPlanDto {
+  tenantId: string
+  tenantName: string
+  planId: string | null
+  planName: string | null
+  status: TenantPlanStatus
+  trialEndsAt: string | null
+  graceEndsAt: string | null
+  activatedAt: string | null
+  createdAt: string
+}
+
+export interface MyPlanDto {
+  planId: string | null
+  planName: string | null
+  status: TenantPlanStatus
+  trialEndsAt: string | null
+  graceEndsAt: string | null
+  activatedAt: string | null
+  maxAssets: number | null
+  maxEmployees: number | null
+  maxPortalUsers: number | null
+  usedAssets: number
+  usedEmployees: number
+  usedPortalUsers: number
+}
