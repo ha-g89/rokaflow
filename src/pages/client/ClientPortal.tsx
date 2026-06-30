@@ -7,7 +7,7 @@ import {
 } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { useThemeStore } from '@/store/themeStore'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import api from '@/lib/axios'
 import { AddUserModal } from '@/components/AddUserModal'
 import { AddEmployeeModal } from '@/components/AddEmployeeModal'
@@ -22,6 +22,9 @@ import { TelefonieView, PhoneDetailFullView } from './views/TelefonieView'
 import { DepartmentsView } from './views/DepartmentsView'
 import { LocationsView } from './views/LocationsView'
 import { EmployeeListView, EmployeeDetailView, DeleteEmployeeModal } from './views/EmployeesView'
+import { NotificationBell } from '@/components/NotificationBell'
+import { NotificationDropdown } from '@/components/NotificationDropdown'
+import type { NotificationDto } from '@/types/notification'
 import { ProcessesView } from './views/ProcessesView'
 import type { ClientUserListItem, ClientUserDetailResponse } from '@/types/clientUser'
 import type { LocationListItem } from '@/types/location'
@@ -91,6 +94,9 @@ export default function ClientPortal() {
   } | null>(null)
   const [mspSwitching, setMspSwitching] = useState(false)
   const userMenuRef = useRef<HTMLDivElement>(null)
+  const notificationMenuRef = useRef<HTMLDivElement>(null)
+  const [showNotifications, setShowNotifications] = useState(false)
+  const [searchParams, setSearchParams] = useSearchParams()
 
   const fetchMspStatus = useCallback(async () => {
     try {
@@ -118,6 +124,8 @@ export default function ClientPortal() {
     const handler = (e: MouseEvent) => {
       if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node))
         setShowUserMenu(false)
+      if (notificationMenuRef.current && !notificationMenuRef.current.contains(e.target as Node))
+        setShowNotifications(false)
     }
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
@@ -203,6 +211,51 @@ export default function ClientPortal() {
   const handlePhoneDeleted     = () => { setView('phones'); setSelectedPhone(null); setNavHistory([]) }
   const handlePhoneFromEmployee = (phone: import('@/types/phone').PhoneListItem) => { setSelectedPhone(phone); pushAndNavigate('phone-detail', 'Terug naar medewerker') }
 
+  const openNotificationTarget = async (entityType: string, entityId: string) => {
+    switch (entityType) {
+      case 'User':
+        handleSelectEmployee(entityId)
+        break
+      case 'HardwareAsset': {
+        const { data } = await api.get<import('@/types/hardware').HardwareAssetListItem[]>('/portal/hardware')
+        const asset = data.find(a => a.id === entityId)
+        if (asset) handleExpandHardware(asset)
+        break
+      }
+      case 'Phone': {
+        const { data } = await api.get<import('@/types/phone').PhoneListItem[]>('/portal/phones')
+        const phone = data.find(p => p.id === entityId)
+        if (phone) handleExpandPhone(phone)
+        break
+      }
+      case 'License':
+        handleNavClick('contracts')
+        break
+      case 'Subscription':
+        handleNavClick('phones')
+        break
+    }
+  }
+
+  const handleNotificationClick = async (n: NotificationDto) => {
+    setShowNotifications(false)
+    try {
+      await api.put(`/portal/notifications/${n.id}/read`)
+    } catch {
+      // niet blokkerend — navigatie gaat sowieso door
+    }
+    await openNotificationTarget(n.entityType, n.entityId)
+  }
+
+  useEffect(() => {
+    const target = searchParams.get('openEntity')
+    if (!target) return
+    const [entityType, entityId] = target.split(':')
+    if (entityType && entityId) openNotificationTarget(entityType, entityId)
+    setSearchParams({}, { replace: true })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const handleEmployeeDeleted = () => {
     setDeleteTarget(null)
     setView('employees')
@@ -239,6 +292,20 @@ export default function ClientPortal() {
         </div>
         <div className="flex-1 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-6 flex items-center justify-between">
           <h1 className="text-sm font-semibold text-slate-800 dark:text-slate-100">{VIEW_TITLES[view]}</h1>
+
+          <div className="relative" ref={notificationMenuRef}>
+            <NotificationBell
+              countEndpoint="/portal/notifications/count"
+              onClick={() => setShowNotifications(v => !v)}
+            />
+            {showNotifications && (
+              <NotificationDropdown
+                listEndpoint="/portal/notifications"
+                readAllEndpoint="/portal/notifications/read-all"
+                onItemClick={handleNotificationClick}
+              />
+            )}
+          </div>
 
           {/* Account dropdown */}
           <div className="relative" ref={userMenuRef}>
