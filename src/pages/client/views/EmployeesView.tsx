@@ -346,11 +346,9 @@ export function EmployeeDetailView({ user, loading, onBack, onUserUpdated, onDel
         </button>
       </div>
       <div className="flex-1 overflow-y-auto">
-        {loading ? (
-          <Card className="flex items-center justify-center py-16">
-            <LoadingState label="Medewerker laden…" />
-          </Card>
-        ) : !user ? null : (
+        {!user ? (
+          loading ? <Card className="flex items-center justify-center py-16"><LoadingState label="Medewerker laden…" /></Card> : null
+        ) : (
           <UserDetailPanel
             user={user}
             canEdit

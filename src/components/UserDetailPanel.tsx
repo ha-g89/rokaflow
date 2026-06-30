@@ -9,7 +9,7 @@ import {
 import { Card, CardContent } from '@/components/ui/Card'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
-import type { ClientUserDetailResponse, ClientUserListItem, UserStatus } from '@/types/clientUser'
+import type { ClientUserDetailResponse, ClientUserListItem, UserStatus, SoftwareAssignmentDto, UserLicenseDto } from '@/types/clientUser'
 import { STATUS_LABEL } from '@/types/clientUser'
 import { HARDWARE_STATUS_LABEL, HARDWARE_STATUS_TONE, HARDWARE_TYPE_LABEL } from '@/types/hardware'
 import type { HardwareAssetListItem } from '@/types/hardware'
@@ -550,7 +550,7 @@ export function UserDetailPanel({ user, canEdit, departments = [], managers = []
   const [showLicenseModal, setShowLicenseModal] = useState(false)
   const [showSoftwareModal, setShowSoftwareModal] = useState(false)
   const [activeTab, setActiveTab] = useState<'notes' | 'history'>('notes')
-  const [confirmUnlink, setConfirmUnlink] = useState<{ name: string; onConfirm: () => Promise<void> } | null>(null)
+  const [confirmUnlink, setConfirmUnlink] = useState<{ name: string; subtitle?: string; onConfirm: () => Promise<void> } | null>(null)
   const [unlinking, setUnlinking] = useState(false)
 
   // Local checklist state for optimistic updates
@@ -635,6 +635,28 @@ export function UserDetailPanel({ user, canEdit, departments = [], managers = []
           assignedToUserId: null, issuedAt: h.issuedAt ?? null,
           returnedAt: new Date().toISOString(), status: 0,
         })
+        onUserUpdated?.()
+      },
+    })
+  }
+
+  const openUnlinkSoftwareAssignment = (s: SoftwareAssignmentDto) => {
+    setConfirmUnlink({
+      name: s.name,
+      subtitle: 'De softwarekoppeling wordt verwijderd.',
+      onConfirm: async () => {
+        await api.delete(`/portal/software/${s.id}`)
+        onUserUpdated?.()
+      },
+    })
+  }
+
+  const openUnlinkLicense = (l: UserLicenseDto) => {
+    setConfirmUnlink({
+      name: l.name,
+      subtitle: 'De licentie wordt ontkoppeld van de medewerker.',
+      onConfirm: async () => {
+        await api.delete(`/portal/licenses/${l.licenseId}/users/${user.id}`)
         onUserUpdated?.()
       },
     })
@@ -729,7 +751,7 @@ export function UserDetailPanel({ user, canEdit, departments = [], managers = []
               <span className="font-semibold">"{confirmUnlink?.name}"</span>{' '}
               wilt ontkoppelen van deze medewerker?
             </p>
-            <p className="text-xs text-slate-400 mt-1">Het apparaat komt terug op voorraad.</p>
+            <p className="text-xs text-slate-400 mt-1">{confirmUnlink?.subtitle ?? 'Het apparaat komt terug op voorraad.'}</p>
           </div>
         </div>
         <div className="flex gap-2 mt-6">
@@ -927,8 +949,8 @@ export function UserDetailPanel({ user, canEdit, departments = [], managers = []
         const softwareLicenses = user.licenses.filter(l => l.isSoftwareLicense)
         const pureLicenses     = user.licenses.filter(l => !l.isSoftwareLicense)
         const allSoftware      = [
-          ...user.software.map(s => ({ key: s.id, name: s.name, sub: `${s.account ? s.account + ' • ' : ''}vanaf ${fmt(s.issuedAt)}`, active: s.isActive, tag: null as string | null })),
-          ...softwareLicenses.map(l => ({ key: l.userLicenseId, name: l.name, sub: `${l.vendor || 'Freeware'} • toegewezen ${fmt(l.assignedAt)}`, active: l.isActive, tag: LICENSE_TYPE_LABEL[l.type] ?? l.type })),
+          ...user.software.map(s => ({ key: s.id, name: s.name, sub: `${s.account ? s.account + ' • ' : ''}vanaf ${fmt(s.issuedAt)}`, active: s.isActive, tag: null as string | null, onUnlink: () => openUnlinkSoftwareAssignment(s) })),
+          ...softwareLicenses.map(l => ({ key: l.userLicenseId, name: l.name, sub: `${l.vendor || 'Freeware'} • toegewezen ${fmt(l.assignedAt)}`, active: l.isActive, tag: LICENSE_TYPE_LABEL[l.type] ?? l.type, onUnlink: () => openUnlinkLicense(l) })),
         ]
         return (
           <div className="grid gap-4 xl:grid-cols-2">
@@ -944,18 +966,22 @@ export function UserDetailPanel({ user, canEdit, departments = [], managers = []
               ) : (
                 <div className="space-y-3">
                   {allSoftware.map(s => (
-                    <div key={s.key} className="flex items-center justify-between rounded-xl border border-slate-100 bg-white p-4">
-                      <div className="min-w-0">
-                        <p className="text-sm font-semibold text-slate-800 truncate">{s.name}</p>
-                        <p className="text-xs text-slate-500">{s.sub}</p>
+                    <div key={s.key} className="rounded-xl border border-slate-100 bg-white p-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-slate-800 truncate">{s.name}</p>
+                          <p className="text-xs text-slate-500">{s.sub}</p>
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          {s.tag && (
+                            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${LICENSE_TYPE_TONE[s.tag] ?? 'bg-slate-100 text-slate-600'}`}>
+                              {s.tag}
+                            </span>
+                          )}
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-                        {s.tag && (
-                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${LICENSE_TYPE_TONE[s.tag] ?? 'bg-slate-100 text-slate-600'}`}>
-                            {s.tag}
-                          </span>
-                        )}
-                        <Badge tone={s.active ? 'good' : 'bad'}>{s.active ? 'Actief' : 'Inactief'}</Badge>
+                      <div className="mt-2 flex justify-end">
+                        <button onClick={s.onUnlink} className="text-xs font-medium text-slate-400 hover:text-red-500 transition-colors">Ontkoppelen</button>
                       </div>
                     </div>
                   ))}
@@ -973,14 +999,19 @@ export function UserDetailPanel({ user, canEdit, departments = [], managers = []
               ) : (
                 <div className="space-y-2">
                   {pureLicenses.map(l => (
-                    <div key={l.userLicenseId} className="flex items-center justify-between rounded-xl border border-slate-100 bg-white p-4">
-                      <div className="min-w-0">
-                        <p className="text-sm font-semibold text-slate-800 truncate">{l.name}</p>
-                        <p className="text-xs text-slate-500">{l.vendor || '—'} • Toegewezen {fmt(l.assignedAt)}</p>
+                    <div key={l.userLicenseId} className="rounded-xl border border-slate-100 bg-white p-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-slate-800 truncate">{l.name}</p>
+                          <p className="text-xs text-slate-500">{l.vendor || '—'} • Toegewezen {fmt(l.assignedAt)}</p>
+                        </div>
+                        <span className={`flex-shrink-0 text-xs px-2 py-0.5 rounded-full font-medium ${LICENSE_TYPE_TONE[l.type] ?? 'bg-slate-100 text-slate-600'}`}>
+                          {LICENSE_TYPE_LABEL[l.type] ?? l.type}
+                        </span>
                       </div>
-                      <span className={`ml-2 flex-shrink-0 text-xs px-2 py-0.5 rounded-full font-medium ${LICENSE_TYPE_TONE[l.type] ?? 'bg-slate-100 text-slate-600'}`}>
-                        {LICENSE_TYPE_LABEL[l.type] ?? l.type}
-                      </span>
+                      <div className="mt-2 flex justify-end">
+                        <button onClick={() => openUnlinkLicense(l)} className="text-xs font-medium text-slate-400 hover:text-red-500 transition-colors">Ontkoppelen</button>
+                      </div>
                     </div>
                   ))}
                 </div>

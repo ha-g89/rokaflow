@@ -155,7 +155,6 @@ export default function ClientPortal() {
 
   const fetchUserDetail = useCallback(async (userId: string) => {
     setLoadingDetail(true)
-    setSelectedUser(null)
     try {
       const { data } = await api.get<ClientUserDetailResponse>(`/portal/users/${userId}`)
       setSelectedUser(data)
