@@ -30,7 +30,7 @@ export function NotificationBell({ countEndpoint, onClick }: NotificationBellPro
     <button
       onClick={onClick}
       title="Notificaties"
-      className="relative p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+      className="relative w-8 h-8 flex items-center justify-center rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
     >
       <Bell size={16} className="text-slate-500 dark:text-slate-400" />
       {unread > 0 && (
