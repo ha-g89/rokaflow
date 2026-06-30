@@ -212,28 +212,32 @@ export default function ClientPortal() {
   const handlePhoneFromEmployee = (phone: import('@/types/phone').PhoneListItem) => { setSelectedPhone(phone); pushAndNavigate('phone-detail', 'Terug naar medewerker') }
 
   const openNotificationTarget = async (entityType: string, entityId: string) => {
-    switch (entityType) {
-      case 'User':
-        handleSelectEmployee(entityId)
-        break
-      case 'HardwareAsset': {
-        const { data } = await api.get<import('@/types/hardware').HardwareAssetListItem[]>('/portal/hardware')
-        const asset = data.find(a => a.id === entityId)
-        if (asset) handleExpandHardware(asset)
-        break
+    try {
+      switch (entityType) {
+        case 'User':
+          handleSelectEmployee(entityId)
+          break
+        case 'HardwareAsset': {
+          const { data } = await api.get<import('@/types/hardware').HardwareAssetListItem[]>('/portal/hardware')
+          const asset = data.find(a => a.id === entityId)
+          if (asset) handleExpandHardware(asset)
+          break
+        }
+        case 'Phone': {
+          const { data } = await api.get<import('@/types/phone').PhoneListItem[]>('/portal/phones')
+          const phone = data.find(p => p.id === entityId)
+          if (phone) handleExpandPhone(phone)
+          break
+        }
+        case 'License':
+          handleNavClick('contracts')
+          break
+        case 'Subscription':
+          handleNavClick('phones')
+          break
       }
-      case 'Phone': {
-        const { data } = await api.get<import('@/types/phone').PhoneListItem[]>('/portal/phones')
-        const phone = data.find(p => p.id === entityId)
-        if (phone) handleExpandPhone(phone)
-        break
-      }
-      case 'License':
-        handleNavClick('contracts')
-        break
-      case 'Subscription':
-        handleNavClick('phones')
-        break
+    } catch {
+      // non-critical — gebruiker blijft op de huidige view staan
     }
   }
 
