@@ -1,9 +1,10 @@
 ﻿import { useEffect, useState, useCallback, useRef } from 'react'
 import {
   Building2, Users, Plus, LogOut, Shield,
-  Briefcase, Search, Moon, Sun, Upload, Trash2, CreditCard,
+  Briefcase, Search, Moon, Sun, Upload, Trash2, CreditCard, Bell,
 } from 'lucide-react'
 import { SubscriptionsView } from './views/SubscriptionsView'
+import { NotificationsView } from './views/NotificationsView'
 import { useAuthStore } from '@/store/authStore'
 import { useThemeStore } from '@/store/themeStore'
 import { useNavigate } from 'react-router-dom'
@@ -165,7 +166,7 @@ export default function SuperUserDashboard() {
   const { darkMode, toggleDarkMode } = useThemeStore()
   const navigate = useNavigate()
 
-  const [activeSection, setActiveSection] = useState<'organisations' | 'subscriptions'>('organisations')
+  const [activeSection, setActiveSection] = useState<'organisations' | 'subscriptions' | 'notifications'>('organisations')
 
   const [orgs, setOrgs]                               = useState<OrganisationListItem[]>([])
   const [allClients, setAllClients]                   = useState<ClientListItem[]>([])
@@ -277,6 +278,7 @@ export default function SuperUserDashboard() {
             {([
               ['organisations', Building2, 'Organisaties'],
               ['subscriptions', CreditCard, 'Abonnementen'],
+              ['notifications', Bell, 'Notificaties'],
             ] as const).map(([key, Icon, label]) => (
               <button key={key} onClick={() => setActiveSection(key)}
                 className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
@@ -320,6 +322,7 @@ export default function SuperUserDashboard() {
 
       {/* ── Body ── */}
       {activeSection === 'subscriptions' && <SubscriptionsView />}
+      {activeSection === 'notifications' && <NotificationsView />}
 
       {/* ── Three columns (organisations) ── */}
       <div className={`flex flex-1 overflow-hidden ${activeSection !== 'organisations' ? 'hidden' : ''}`}>
