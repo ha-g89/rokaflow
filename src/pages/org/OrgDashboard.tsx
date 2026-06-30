@@ -262,6 +262,7 @@ export default function OrgDashboard() {
           <h1 className="text-sm font-semibold text-slate-800 dark:text-slate-100">
             {activeSection === 'clients' ? 'Clients' : activeSection === 'transfers' ? 'Overdrachten' : 'Berichtencentrum'}
           </h1>
+          <div className="flex items-center gap-1">
           <NotificationBell
             countEndpoint="/msp/notifications/count"
             onClick={() => setActiveSection('notifications')}
@@ -326,6 +327,7 @@ export default function OrgDashboard() {
               </div>
             </div>
           )}
+          </div>
           </div>
         </div>
 

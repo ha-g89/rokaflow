@@ -297,6 +297,7 @@ export default function ClientPortal() {
         <div className="flex-1 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-6 flex items-center justify-between">
           <h1 className="text-sm font-semibold text-slate-800 dark:text-slate-100">{VIEW_TITLES[view]}</h1>
 
+          <div className="flex items-center gap-1">
           <div className="relative" ref={notificationMenuRef}>
             <NotificationBell
               countEndpoint="/portal/notifications/count"
@@ -390,6 +391,7 @@ export default function ClientPortal() {
                 </div>
               </div>
             )}
+          </div>
           </div>
         </div>
       </div>
