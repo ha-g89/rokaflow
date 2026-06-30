@@ -28,8 +28,12 @@ export function NotificationDropdown({ listEndpoint, readAllEndpoint, onItemClic
   }, [listEndpoint])
 
   const handleMarkAllRead = async () => {
-    await api.put(readAllEndpoint)
-    setItems(prev => prev.map(n => ({ ...n, isRead: true })))
+    try {
+      await api.put(readAllEndpoint)
+      setItems(prev => prev.map(n => ({ ...n, isRead: true })))
+    } catch {
+      // niet kritiek — volgende fetch/poll herstelt de staat indien nodig
+    }
   }
 
   return (
