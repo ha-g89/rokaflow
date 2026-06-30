@@ -3,10 +3,12 @@ import {
   Briefcase, Users, Plus, LogOut,
   Building2, Search, ExternalLink, Loader2,
   MoreVertical, Pencil, X, ImagePlus,
-  Moon, Sun, Settings, ChevronDown, ArrowLeftRight,
+  Moon, Sun, Settings, ChevronDown, ArrowLeftRight, Bell,
 } from 'lucide-react'
 import { ClientDetailPanel } from './ClientDetailPanel'
 import { TransfersView } from './views/TransfersView'
+import { NotificationCenterView } from './views/NotificationCenterView'
+import { NotificationBell } from '@/components/NotificationBell'
 import { LoadingState } from '@/components/ui/LoadingState'
 import { useAuthStore } from '@/store/authStore'
 import { useThemeStore } from '@/store/themeStore'
@@ -64,7 +66,7 @@ function NavItem({ icon, label, active, onClick, badge }: {
 
 // ── main component ────────────────────────────────────────────────────────────
 
-type Section = 'clients' | 'transfers'
+type Section = 'clients' | 'transfers' | 'notifications'
 
 export default function OrgDashboard() {
   const { user, logout, switchToClient } = useAuthStore()
@@ -245,6 +247,7 @@ export default function OrgDashboard() {
           <NavItem icon={<Users size={14} />} label="Clients" active={activeSection === 'clients'} onClick={() => setActiveSection('clients')} />
           <NavItem icon={<ArrowLeftRight size={14} />} label="Overdrachten" active={activeSection === 'transfers'} onClick={() => setActiveSection('transfers')}
             badge={transfers.filter(t => t.status === 'Pending').length} />
+          <NavItem icon={<Bell size={14} />} label="Berichtencentrum" active={activeSection === 'notifications'} onClick={() => setActiveSection('notifications')} />
         </nav>
         <div className="px-2 pb-3 flex-shrink-0 border-t border-slate-800 pt-2 space-y-1">
           <NavItem icon={<Settings size={14} />} label="Instellingen" active={false} onClick={() => navigate('/org/settings')} />
@@ -257,8 +260,12 @@ export default function OrgDashboard() {
         {/* Top bar */}
         <div className="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-6 flex items-center justify-between flex-shrink-0">
           <h1 className="text-sm font-semibold text-slate-800 dark:text-slate-100">
-            {activeSection === 'clients' ? 'Clients' : 'Overdrachten'}
+            {activeSection === 'clients' ? 'Clients' : activeSection === 'transfers' ? 'Overdrachten' : 'Berichtencentrum'}
           </h1>
+          <NotificationBell
+            countEndpoint="/msp/notifications/count"
+            onClick={() => setActiveSection('notifications')}
+          />
           {/* User avatar + dropdown */}
           <div className="relative" ref={userMenuRef}>
           <button
@@ -333,6 +340,8 @@ export default function OrgDashboard() {
             onRefresh={fetchTransfers}
             onNewTransfer={() => setShowTakeover(true)}
           />
+        ) : activeSection === 'notifications' ? (
+          <NotificationCenterView />
         ) : (<>
 
         {/* Stats */}
