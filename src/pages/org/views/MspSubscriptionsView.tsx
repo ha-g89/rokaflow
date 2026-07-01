@@ -61,7 +61,7 @@ function EditRow({ row, plans, onSave, onCancel }: EditRowProps) {
   const [saving,      setSaving]      = useState(false)
   const [error,       setError]       = useState<string | null>(null)
 
-  const sel = 'text-xs rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 px-2 py-1.5 focus:outline-none focus:border-blue-500'
+  const sel = 'text-xs rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900/60 dark:shadow-[inset_0_1px_3px_0_rgba(0,0,0,0.4)] text-slate-900 dark:text-slate-100 px-2 py-1.5 focus:outline-none focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-500/25'
   const inp = `${sel} w-32`
 
   const handleSave = async () => {

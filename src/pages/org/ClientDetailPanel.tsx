@@ -44,7 +44,7 @@ function EditUserModal({ user, clientId, onClose, onSaved }: {
   const [error,     setError]     = useState<string | null>(null)
   const overlayRef                = useRef<HTMLDivElement>(null)
 
-  const field = 'w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-sm text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-700 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900 transition-colors'
+  const field = 'w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-sm text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-900/60 dark:shadow-[inset_0_1px_3px_0_rgba(0,0,0,0.4)] focus:outline-none focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-500/25 transition-colors'
 
   const handleSave = async () => {
     if (!firstName.trim() || !lastName.trim()) { setError('Voor- en achternaam zijn verplicht.'); return }
@@ -355,7 +355,7 @@ function GebruikersTab({ client, users, loadingUsers, selectedUser, loadingDetai
           <div className="relative flex-1">
             <Search size={11} className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400" />
             <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Zoeken…"
-              className="w-full pl-6 pr-2 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:border-blue-400" />
+              className="w-full pl-6 pr-2 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900/60 dark:shadow-[inset_0_1px_3px_0_rgba(0,0,0,0.4)] text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-blue-400 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-500/25" />
           </div>
           <button onClick={onAddUser} title="Toevoegen"
             className="p-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-colors flex-shrink-0">

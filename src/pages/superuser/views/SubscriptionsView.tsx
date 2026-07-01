@@ -88,7 +88,7 @@ function PlanRow({ plan, onSaved }: { plan: PlatformPlanDto; onSaved: (p: Platfo
         <td key={f} className="px-4 py-2 text-center">
           <input type="number" min={0} value={form[f]}
             onChange={e => setForm(p => ({ ...p, [f]: Number(e.target.value) }))}
-            className="w-20 text-center text-sm px-2 py-1 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            className="w-20 text-center text-sm px-2 py-1 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900/60 dark:shadow-[inset_0_1px_3px_0_rgba(0,0,0,0.4)] text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-500/25 focus:border-blue-500 dark:focus:border-blue-400" />
         </td>
       ))}
       <td className="px-4 py-2">
@@ -96,12 +96,12 @@ function PlanRow({ plan, onSaved }: { plan: PlatformPlanDto; onSaved: (p: Platfo
           <input type="number" min={0} step={0.01} placeholder="0.00"
             value={form.directRate}
             onChange={e => setForm(p => ({ ...p, directRate: e.target.value }))}
-            className="w-20 text-center text-sm px-2 py-1 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            className="w-20 text-center text-sm px-2 py-1 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900/60 dark:shadow-[inset_0_1px_3px_0_rgba(0,0,0,0.4)] text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-500/25 focus:border-blue-500 dark:focus:border-blue-400" />
           <span className="text-xs text-slate-400">/</span>
           <input type="number" min={0} max={100} step={1}
             value={form.mspDiscountPct}
             onChange={e => setForm(p => ({ ...p, mspDiscountPct: Number(e.target.value) }))}
-            className="w-14 text-center text-sm px-2 py-1 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            className="w-14 text-center text-sm px-2 py-1 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900/60 dark:shadow-[inset_0_1px_3px_0_rgba(0,0,0,0.4)] text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-500/25 focus:border-blue-500 dark:focus:border-blue-400" />
           <span className="text-xs text-slate-400">%</span>
           {mspRate && <span className="text-xs text-slate-500 ml-1">→ €{mspRate}</span>}
         </div>
@@ -204,7 +204,7 @@ function TenantRow({
       <td className="px-4 py-2">
         <select value={form.planId}
           onChange={e => setForm(p => ({ ...p, planId: e.target.value }))}
-          className="text-sm px-2 py-1 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 w-full">
+          className="text-sm px-2 py-1 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900/60 dark:shadow-[inset_0_1px_3px_0_rgba(0,0,0,0.4)] text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-500/25 focus:border-blue-500 dark:focus:border-blue-400 w-full">
           <option value="">— Geen plan —</option>
           {plans.map(pl => <option key={pl.id} value={pl.id}>{pl.name}</option>)}
         </select>
@@ -212,7 +212,7 @@ function TenantRow({
       <td className="px-4 py-2">
         <select value={form.status}
           onChange={e => setForm(p => ({ ...p, status: e.target.value as TenantPlanStatus }))}
-          className="text-sm px-2 py-1 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 w-full">
+          className="text-sm px-2 py-1 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900/60 dark:shadow-[inset_0_1px_3px_0_rgba(0,0,0,0.4)] text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-500/25 focus:border-blue-500 dark:focus:border-blue-400 w-full">
           <option value="Trial">Trial</option>
           <option value="GracePeriod">Grace Period</option>
           <option value="Active">Actief</option>
@@ -225,13 +225,13 @@ function TenantRow({
             <span className="w-12">Trial:</span>
             <input type="date" value={form.trialEndsAt}
               onChange={e => setForm(p => ({ ...p, trialEndsAt: e.target.value }))}
-              className="text-xs px-1.5 py-0.5 rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none" />
+              className="text-xs px-1.5 py-0.5 rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900/60 dark:shadow-[inset_0_1px_3px_0_rgba(0,0,0,0.4)] text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-500/25 focus:border-blue-500 dark:focus:border-blue-400" />
           </div>
           <div className="flex items-center gap-1 text-xs text-slate-500">
             <span className="w-12">Grace:</span>
             <input type="date" value={form.graceEndsAt}
               onChange={e => setForm(p => ({ ...p, graceEndsAt: e.target.value }))}
-              className="text-xs px-1.5 py-0.5 rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none" />
+              className="text-xs px-1.5 py-0.5 rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900/60 dark:shadow-[inset_0_1px_3px_0_rgba(0,0,0,0.4)] text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-500/25 focus:border-blue-500 dark:focus:border-blue-400" />
           </div>
         </div>
       </td>
@@ -371,11 +371,11 @@ export function SubscriptionsView() {
                   placeholder="Zoeken…"
                   value={tenantSearch}
                   onChange={e => setTenantSearch(e.target.value)}
-                  className="text-sm px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 w-48"
+                  className="text-sm px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900/60 dark:shadow-[inset_0_1px_3px_0_rgba(0,0,0,0.4)] text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-500/25 focus:border-blue-500 dark:focus:border-blue-400 w-48"
                 />
                 <select value={statusFilter}
                   onChange={e => setStatusFilter(e.target.value as TenantPlanStatus | 'all')}
-                  className="text-sm px-2 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  className="text-sm px-2 py-1.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900/60 dark:shadow-[inset_0_1px_3px_0_rgba(0,0,0,0.4)] text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-500/25 focus:border-blue-500 dark:focus:border-blue-400">
                   <option value="all">Alle statussen</option>
                   <option value="Trial">Trial</option>
                   <option value="GracePeriod">Grace Period</option>

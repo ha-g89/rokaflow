@@ -58,7 +58,7 @@ function TypeRow({ item, onSaved }: { item: NotificationTypeDto; onSaved: (t: No
         <select
           value={form.priority}
           onChange={e => setForm(p => ({ ...p, priority: e.target.value as NotificationPriority }))}
-          className="text-sm px-2 py-1 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="text-sm px-2 py-1 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900/60 dark:shadow-[inset_0_1px_3px_0_rgba(0,0,0,0.4)] text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-500/25 focus:border-blue-500 dark:focus:border-blue-400"
         >
           {PRIORITY_OPTIONS.map(p => <option key={p} value={p}>{p}</option>)}
         </select>

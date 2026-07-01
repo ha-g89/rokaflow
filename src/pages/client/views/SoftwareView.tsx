@@ -168,7 +168,7 @@ function SoftwareWizard({ editTarget, onClose, onSaved }: {
     `${l.name} ${l.vendor}`.toLowerCase().includes(licenseSearch.toLowerCase())
   )
 
-  const inputCls = 'w-full px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-blue-400'
+  const inputCls = 'w-full px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900/60 dark:shadow-[inset_0_1px_3px_0_rgba(0,0,0,0.4)] text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-blue-400 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-500/25'
   const labelCls = 'block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1'
 
   return (
@@ -294,7 +294,7 @@ function SoftwareWizard({ editTarget, onClose, onSaved }: {
                     value={licenseSearch}
                     onChange={e => setLicenseSearch(e.target.value)}
                     placeholder="Zoek licentie…"
-                    className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-blue-400"
+                    className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900/60 dark:shadow-[inset_0_1px_3px_0_rgba(0,0,0,0.4)] text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-blue-400 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-500/25"
                   />
                 </div>
                 <div className="max-h-60 overflow-y-auto rounded-xl border border-slate-200 dark:border-slate-600 divide-y divide-slate-100 dark:divide-slate-700">
@@ -535,7 +535,7 @@ function SoftwareDetailPanel({ software, teammates, onEdit, onDelete, onUsersCha
                 <select
                   value={assignUserId}
                   onChange={e => setAssignUserId(e.target.value)}
-                  className="flex-1 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 text-sm bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-blue-400"
+                  className="flex-1 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 text-sm bg-white dark:bg-slate-900/60 dark:shadow-[inset_0_1px_3px_0_rgba(0,0,0,0.4)] text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-blue-400 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-500/25"
                 >
                   <option value="">— Selecteer medewerker —</option>
                   {assignableUsers.map(u => (
@@ -670,7 +670,7 @@ function SoftwareCatalogTab({ teammates, tabBar }: { teammates: ClientUserListIt
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Zoek software…"
-              className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:border-blue-400"
+              className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900/60 dark:shadow-[inset_0_1px_3px_0_rgba(0,0,0,0.4)] dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-blue-400 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-500/25"
             />
           </div>
           <Button size="sm" onClick={() => { setEditTarget(null); setShowModal(true) }}>

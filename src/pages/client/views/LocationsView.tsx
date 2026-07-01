@@ -136,7 +136,7 @@ export function LocationsView() {
                     value={memberSearch}
                     onChange={e => setMemberSearch(e.target.value)}
                     placeholder="Zoeken op naam, e-mail, functie…"
-                    className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-300 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-400"
+                    className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900/60 dark:shadow-[inset_0_1px_3px_0_rgba(0,0,0,0.4)] text-slate-700 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-400 dark:focus:ring-blue-500/25 focus:border-blue-400 dark:focus:border-blue-400"
                   />
                 </div>
                 {filteredMembers.length === 0 ? (
@@ -181,7 +181,7 @@ export function LocationsView() {
                     value={hwSearch}
                     onChange={e => setHwSearch(e.target.value)}
                     placeholder="Zoeken op naam, merk, type, serienummer…"
-                    className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-300 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-400"
+                    className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900/60 dark:shadow-[inset_0_1px_3px_0_rgba(0,0,0,0.4)] text-slate-700 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-400 dark:focus:ring-blue-500/25 focus:border-blue-400 dark:focus:border-blue-400"
                   />
                 </div>
                 {filteredHardware.length === 0 ? (

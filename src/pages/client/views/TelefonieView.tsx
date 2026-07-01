@@ -117,7 +117,7 @@ function PhonesTab({ teammates, onExpand }: { teammates: ClientUserListItem[]; o
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Zoek telefoons…"
-              className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-200 bg-white focus:outline-none focus:border-blue-400"
+              className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900/60 dark:shadow-[inset_0_1px_3px_0_rgba(0,0,0,0.4)] dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-blue-400 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-500/25"
             />
           </div>
           <Button size="sm" onClick={() => { setEditTarget(null); setShowModal(true) }}>
@@ -368,7 +368,7 @@ function SimCardsTab({ teammates }: { teammates: ClientUserListItem[] }) {
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Zoek simkaarten…"
-            className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-200 bg-white focus:outline-none focus:border-blue-400"
+            className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900/60 dark:shadow-[inset_0_1px_3px_0_rgba(0,0,0,0.4)] dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-blue-400 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-500/25"
           />
         </div>
         <Button size="sm" onClick={() => { setEditTarget(null); setShowModal(true) }}>
@@ -559,7 +559,7 @@ function SubscriptionsTab() {
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Zoek abonnementen…"
-            className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-200 bg-white focus:outline-none focus:border-blue-400"
+            className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900/60 dark:shadow-[inset_0_1px_3px_0_rgba(0,0,0,0.4)] dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-blue-400 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-500/25"
           />
         </div>
         <Button size="sm" onClick={() => { setEditTarget(null); setShowModal(true) }}>
@@ -916,7 +916,7 @@ export function PhoneDetailFullView({ initialPhone, teammates, onBack, onDeleted
             </div>
           ) : showLinking ? (
             <div className="flex flex-col gap-3 flex-1">
-              <select value={linkUserId} onChange={e => setLinkUserId(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:border-blue-400">
+              <select value={linkUserId} onChange={e => setLinkUserId(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900/60 dark:shadow-[inset_0_1px_3px_0_rgba(0,0,0,0.4)] dark:text-slate-100 text-sm focus:outline-none focus:border-blue-400 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-500/25">
                 <option value="">— Selecteer medewerker —</option>
                 {teammates.map(t => <option key={t.id} value={t.id}>{t.firstName} {t.lastName}</option>)}
               </select>

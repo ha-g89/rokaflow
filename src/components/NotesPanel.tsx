@@ -96,7 +96,7 @@ export function NotesPanel({ entityType, entityId, canEdit = true }: Props) {
             onChange={e => setContent(e.target.value)}
             placeholder="Schrijf een notitie…"
             rows={3}
-            className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:border-blue-400 dark:focus:border-blue-500 resize-none"
+            className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900/60 dark:shadow-[inset_0_1px_3px_0_rgba(0,0,0,0.4)] text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-blue-400 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-500/25 resize-none"
             onKeyDown={e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) handleAdd() }}
           />
           <div className="flex justify-end">
@@ -135,7 +135,7 @@ export function NotesPanel({ entityType, entityId, canEdit = true }: Props) {
                       onChange={e => setEditContent(e.target.value)}
                       rows={3}
                       autoFocus
-                      className="w-full px-2 py-1.5 text-sm rounded-lg border border-blue-400 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none resize-none"
+                      className="w-full px-2 py-1.5 text-sm rounded-lg border border-blue-400 dark:border-blue-500 bg-white dark:bg-slate-900/60 dark:shadow-[inset_0_1px_3px_0_rgba(0,0,0,0.4)] text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-500/25 resize-none"
                       onKeyDown={e => {
                         if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) handleUpdate(note.id)
                         if (e.key === 'Escape') cancelEdit()
