@@ -1,15 +1,20 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Bell } from 'lucide-react'
 import api from '@/lib/axios'
 import type { UnreadCountDto } from '@/types/notification'
 
 interface NotificationBellProps {
   countEndpoint: string
+  /** Als meegegeven: wordt eenmalig bij mount aangeroepen (vóór de eerste telling), niet bij elke poll. */
+  checkEndpoint?: string
   onClick: () => void
 }
 
-export function NotificationBell({ countEndpoint, onClick }: NotificationBellProps) {
+export function NotificationBell({ countEndpoint, checkEndpoint, onClick }: NotificationBellProps) {
   const [unread, setUnread] = useState(0)
+  // Voorkomt dat de check-aanroep dubbel vuurt onder React StrictMode (dat elke effect in
+  // development 2x uitvoert) — de ref overleeft die dubbele mount/cleanup-cyclus.
+  const hasCheckedRef = useRef(false)
 
   useEffect(() => {
     let cancelled = false
@@ -21,10 +26,21 @@ export function NotificationBell({ countEndpoint, onClick }: NotificationBellPro
         // stil falen, volgende poll probeert opnieuw
       }
     }
-    fetchCount()
+    const init = async () => {
+      if (checkEndpoint && !hasCheckedRef.current) {
+        hasCheckedRef.current = true
+        try {
+          await api.post(checkEndpoint)
+        } catch {
+          // niet kritiek — de telling hieronder gebeurt sowieso
+        }
+      }
+      await fetchCount()
+    }
+    init()
     const timer = setInterval(fetchCount, 60000)
     return () => { cancelled = true; clearInterval(timer) }
-  }, [countEndpoint])
+  }, [countEndpoint, checkEndpoint])
 
   return (
     <button

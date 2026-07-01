@@ -265,6 +265,7 @@ export default function OrgDashboard() {
           <div className="flex items-center gap-1">
           <NotificationBell
             countEndpoint="/msp/notifications/count"
+            checkEndpoint="/msp/notifications/check"
             onClick={() => setActiveSection('notifications')}
           />
           {/* User avatar + dropdown */}

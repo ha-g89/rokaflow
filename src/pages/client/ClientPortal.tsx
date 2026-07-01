@@ -301,6 +301,7 @@ export default function ClientPortal() {
           <div className="relative" ref={notificationMenuRef}>
             <NotificationBell
               countEndpoint="/portal/notifications/count"
+              checkEndpoint="/portal/notifications/check"
               onClick={() => setShowNotifications(v => !v)}
             />
             {showNotifications && (
