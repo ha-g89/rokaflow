@@ -198,6 +198,12 @@ export default function ClientPortal() {
     setNavHistory(h => h.slice(0, -1))
     setView(entry.view)
     setSelectedHardwareAsset(null)
+    // selectedUser leeft op dit niveau en overleeft de mount/unmount-cyclus van het
+    // kind-scherm (bv. hardware-detail) waar je vandaan terugkomt — zonder deze refetch
+    // toont het medewerkerscherm nog de data van vóór het ontkoppelen/wijzigen.
+    if (entry.view === 'employee-detail' && selectedUser) {
+      fetchUserDetail(selectedUser.id)
+    }
   }
 
   const handleExpandHardware   = (asset: import('@/types/hardware').HardwareAssetListItem) => { setSelectedHardwareAsset(asset); pushAndNavigate('hardware-detail', 'Terug naar hardware') }
