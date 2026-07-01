@@ -462,18 +462,14 @@ function SoftwareDetailPanel({ software, teammates, onEdit, onDelete, onUsersCha
           </span>
         </div>
 
-        <div className="space-y-2">
-          {software.vendor && (
-            <div className="rounded-xl bg-slate-50 dark:bg-slate-700/50 p-3">
-              <p className="text-xs text-slate-400 mb-0.5">Leverancier</p>
+        {software.vendor && (
+          <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+            <div>
+              <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">Leverancier</p>
               <p className="text-sm font-medium text-slate-800 dark:text-slate-200">{software.vendor}</p>
             </div>
-          )}
-          <div className="rounded-xl bg-slate-50 dark:bg-slate-700/50 p-3">
-            <p className="text-xs text-slate-400 mb-0.5">Toegevoegd op</p>
-            <p className="text-sm font-medium text-slate-800 dark:text-slate-200">{fmt(software.createdAt)}</p>
           </div>
-        </div>
+        )}
 
         {(software.isPaid || software.licenseId) && (
           <div>
@@ -611,6 +607,8 @@ function SoftwareDetailPanel({ software, teammates, onEdit, onDelete, onUsersCha
             <HistoryBlock entityType="Software" entityId={software.id} labelFn={softwareAuditLabel} descriptionFn={softwareDescriptionFn} />
           )}
         </div>
+
+        <p className="text-[11px] text-slate-400 dark:text-slate-500">Aangemaakt op {fmt(software.createdAt)}</p>
       </CardContent>
     </Card>
   )

@@ -279,6 +279,7 @@ function PhonesTab({ teammates, onExpand }: { teammates: ClientUserListItem[]; o
                   url={`/portal/phones/${selected.id}/history`}
                   subtitle={`${selected.brand} ${selected.model}`}
                 />
+                <p className="text-[11px] text-slate-400 mt-3">Aangemaakt op {fmt(selected.createdAt)}</p>
               </CardContent>
             </Card>
           ) : (
@@ -469,6 +470,7 @@ function SimCardsTab({ teammates }: { teammates: ClientUserListItem[] }) {
                 url={`/portal/simcards/${selected.id}/history`}
                 subtitle={selected.kaartNummer}
               />
+              <p className="text-[11px] text-slate-400 mt-3">Aangemaakt op {fmt(selected.createdAt)}</p>
             </CardContent>
           </Card>
         ) : (
@@ -683,6 +685,7 @@ function SubscriptionsTab() {
                   />
                 )}
               </div>
+              <p className="text-[11px] text-slate-400 mt-3">Aangemaakt op {fmt(selected.createdAt)}</p>
             </CardContent>
           </Card>
         ) : (
@@ -950,6 +953,7 @@ export function PhoneDetailFullView({ initialPhone, teammates, onBack, onDeleted
         {activeTab === 'history' && (
           <ItemHistoryBlock key={`${phone.id}-${historyKey}`} url={`/portal/phones/${phone.id}/history`} subtitle={`${phone.brand} ${phone.model}`} />
         )}
+        <p className="text-[11px] text-slate-400 mt-3">Aangemaakt op {fmt(phone.createdAt)}</p>
       </div>
 
       <PhoneModal open={showModal} onClose={() => setShowModal(false)} onSuccess={handleSaved} teammates={teammates} phone={phone} />
