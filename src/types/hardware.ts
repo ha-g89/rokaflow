@@ -23,6 +23,7 @@ export interface HardwareAssetListItem {
   locationName: string | null
   issuedAt: string | null
   returnedAt: string | null
+  createdAt: string
 }
 
 export const HARDWARE_TYPE_OPTIONS = [

@@ -256,6 +256,8 @@ function HardwareDetailPanel({ asset, teammates, onEdit, onDelete, onUnlink, onL
             />
           )}
         </div>
+
+        <p className="text-[11px] text-slate-400 mt-3">Aangemaakt op {fmtDate(asset.createdAt)}</p>
       </CardContent>
 
       <ConfirmDeleteModal
@@ -708,6 +710,7 @@ export function HardwareDetailFullView({ initialAsset, teammates, onBack, onDele
                 subtitle={`${asset.brand} ${asset.name}`}
               />
             )}
+            <p className="text-[11px] text-slate-400 mt-3">Aangemaakt op {fmtDate(asset.createdAt)}</p>
           </CardContent>
         </Card>
       </div>
