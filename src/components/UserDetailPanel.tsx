@@ -838,31 +838,15 @@ export function UserDetailPanel({ user, canEdit, departments = [], managers = []
 
           {/* Quick stats */}
           {(() => {
-            const activeSoftware = [
-              ...user.software.filter(s => s.isActive).map(s => s.name),
-              ...user.licenses.filter(l => l.isSoftwareLicense && l.isActive).map(l => l.name),
-            ]
-            const shown = activeSoftware.slice(0, 3)
-            const extra = activeSoftware.length - shown.length
+            const activeSoftwareCount = user.software.filter(s => s.isActive).length
+              + user.licenses.filter(l => l.isSoftwareLicense && l.isActive).length
             return (
               <div className="mt-3 grid grid-cols-3 gap-2 items-start">
                 <div className="rounded-xl bg-slate-50 p-3">
                   <p className="text-xs text-slate-400">Actieve software</p>
-                  {activeSoftware.length === 0 ? (
-                    <p className="mt-0.5 text-sm font-semibold text-slate-800">—</p>
-                  ) : (
-                    <>
-                      <p className="mt-0.5 text-sm font-semibold text-slate-800">{activeSoftware.length}</p>
-                      <div className="mt-1.5 flex flex-wrap gap-1">
-                        {shown.map((name, i) => (
-                          <span key={i} className="text-xs px-1.5 py-0.5 bg-white border border-slate-200 text-slate-600 rounded-md font-medium max-w-full truncate" title={name}>{name}</span>
-                        ))}
-                        {extra > 0 && (
-                          <span className="text-xs px-1.5 py-0.5 text-slate-400 font-medium">+{extra} meer</span>
-                        )}
-                      </div>
-                    </>
-                  )}
+                  <p className="mt-0.5 text-sm font-semibold text-slate-800">
+                    {activeSoftwareCount || '—'}
+                  </p>
                 </div>
                 <div className="rounded-xl bg-slate-50 p-3">
                   <p className="text-xs text-slate-400">Hardware</p>
