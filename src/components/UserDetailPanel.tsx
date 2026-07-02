@@ -536,9 +536,11 @@ interface Props {
   onDelete?: () => void
   onHardwareClick?: (asset: HardwareAssetListItem) => void
   onPhoneClick?: (phone: PhoneListItem) => void
+  onSoftwareClick?: (licenseId: string) => void | Promise<void>
+  onLicenseClick?: (licenseId: string) => void | Promise<void>
 }
 
-export function UserDetailPanel({ user, canEdit, departments = [], managers = [], locations = [], teammates = [], checklistBasePath, historyPath, softwarePath, onChecklistToggle, onUserUpdated, onDelete, onHardwareClick, onPhoneClick }: Props) {
+export function UserDetailPanel({ user, canEdit, departments = [], managers = [], locations = [], teammates = [], checklistBasePath, historyPath, softwarePath, onChecklistToggle, onUserUpdated, onDelete, onHardwareClick, onPhoneClick, onSoftwareClick, onLicenseClick }: Props) {
   const status = user.status as UserStatus
   const statusTone = status === 'InService' ? 'good' : status === 'StartPlanned' ? 'info' : status === 'LeavePlanned' ? 'warn' : 'bad'
 
@@ -552,6 +554,13 @@ export function UserDetailPanel({ user, canEdit, departments = [], managers = []
   const [activeTab, setActiveTab] = useState<'notes' | 'history'>('notes')
   const [confirmUnlink, setConfirmUnlink] = useState<{ name: string; subtitle?: string; onConfirm: () => Promise<void> } | null>(null)
   const [unlinking, setUnlinking] = useState(false)
+  const [clickingKey, setClickingKey] = useState<string | null>(null)
+
+  const handleCatalogClick = async (fn: ((id: string) => void | Promise<void>) | undefined, licenseId: string, key: string) => {
+    if (!fn) return
+    setClickingKey(key)
+    try { await fn(licenseId) } finally { setClickingKey(null) }
+  }
 
   // Local checklist state for optimistic updates
   const [localStarter, setLocalStarter] = useState(user.starterChecklist)
@@ -953,8 +962,8 @@ export function UserDetailPanel({ user, canEdit, departments = [], managers = []
         const softwareLicenses = user.licenses.filter(l => l.isSoftwareLicense)
         const pureLicenses     = user.licenses.filter(l => !l.isSoftwareLicense)
         const allSoftware      = [
-          ...user.software.map(s => ({ key: s.id, name: s.name, sub: `${s.account ? s.account + ' • ' : ''}vanaf ${fmt(s.issuedAt)}`, active: s.isActive, tag: null as string | null, onUnlink: () => openUnlinkSoftwareAssignment(s) })),
-          ...softwareLicenses.map(l => ({ key: l.userLicenseId, name: l.name, sub: `${l.vendor || 'Freeware'} • toegewezen ${fmt(l.assignedAt)}`, active: l.isActive, tag: LICENSE_TYPE_LABEL[l.type] ?? l.type, onUnlink: () => openUnlinkLicense(l) })),
+          ...user.software.map(s => ({ key: s.id, name: s.name, sub: `${s.account ? s.account + ' • ' : ''}vanaf ${fmt(s.issuedAt)}`, active: s.isActive, tag: null as string | null, licenseId: null as string | null, onUnlink: () => openUnlinkSoftwareAssignment(s) })),
+          ...softwareLicenses.map(l => ({ key: l.userLicenseId, name: l.name, sub: `${l.vendor || 'Freeware'} • toegewezen ${fmt(l.assignedAt)}`, active: l.isActive, tag: LICENSE_TYPE_LABEL[l.type] ?? l.type, licenseId: l.licenseId as string | null, onUnlink: () => openUnlinkLicense(l) })),
         ]
         return (
           <div className="grid gap-4 xl:grid-cols-2">
@@ -969,26 +978,34 @@ export function UserDetailPanel({ user, canEdit, departments = [], managers = []
                 <p className="text-sm text-slate-400">Geen software gekoppeld.</p>
               ) : (
                 <div className="space-y-3">
-                  {allSoftware.map(s => (
-                    <div key={s.key} className="rounded-xl border border-slate-100 bg-white p-3">
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="min-w-0">
-                          <p className="text-sm font-semibold text-slate-800 truncate">{s.name}</p>
-                          <p className="text-xs text-slate-500">{s.sub}</p>
+                  {allSoftware.map(s => {
+                    const clickable = !!s.licenseId && !!onSoftwareClick
+                    return (
+                      <div
+                        key={s.key}
+                        onClick={clickable ? () => handleCatalogClick(onSoftwareClick, s.licenseId!, s.key) : undefined}
+                        className={`rounded-xl border border-slate-100 bg-white p-3 transition-colors ${clickable ? 'cursor-pointer hover:border-blue-200 hover:bg-blue-50/30' : ''}`}
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold text-slate-800 truncate">{s.name}</p>
+                            <p className="text-xs text-slate-500">{s.sub}</p>
+                          </div>
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            {clickingKey === s.key && <Loader2 size={13} className="animate-spin text-blue-400" />}
+                            {s.tag && (
+                              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${LICENSE_TYPE_TONE[s.tag] ?? 'bg-slate-100 text-slate-600'}`}>
+                                {s.tag}
+                              </span>
+                            )}
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2 flex-shrink-0">
-                          {s.tag && (
-                            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${LICENSE_TYPE_TONE[s.tag] ?? 'bg-slate-100 text-slate-600'}`}>
-                              {s.tag}
-                            </span>
-                          )}
+                        <div className="mt-2 flex justify-end">
+                          <button onClick={e => { e.stopPropagation(); s.onUnlink() }} className="text-xs font-medium text-slate-400 hover:text-red-500 transition-colors">Ontkoppelen</button>
                         </div>
                       </div>
-                      <div className="mt-2 flex justify-end">
-                        <button onClick={s.onUnlink} className="text-xs font-medium text-slate-400 hover:text-red-500 transition-colors">Ontkoppelen</button>
-                      </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               )}
             </Section>
@@ -1002,22 +1019,32 @@ export function UserDetailPanel({ user, canEdit, departments = [], managers = []
                 <p className="text-sm text-slate-400">Geen licenties gekoppeld.</p>
               ) : (
                 <div className="space-y-2">
-                  {pureLicenses.map(l => (
-                    <div key={l.userLicenseId} className="rounded-xl border border-slate-100 bg-white p-3">
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="min-w-0">
-                          <p className="text-sm font-semibold text-slate-800 truncate">{l.name}</p>
-                          <p className="text-xs text-slate-500">{l.vendor || '—'} • Toegewezen {fmt(l.assignedAt)}</p>
+                  {pureLicenses.map(l => {
+                    const clickable = !!onLicenseClick
+                    return (
+                      <div
+                        key={l.userLicenseId}
+                        onClick={clickable ? () => handleCatalogClick(onLicenseClick, l.licenseId, l.userLicenseId) : undefined}
+                        className={`rounded-xl border border-slate-100 bg-white p-3 transition-colors ${clickable ? 'cursor-pointer hover:border-blue-200 hover:bg-blue-50/30' : ''}`}
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold text-slate-800 truncate">{l.name}</p>
+                            <p className="text-xs text-slate-500">{l.vendor || '—'} • Toegewezen {fmt(l.assignedAt)}</p>
+                          </div>
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            {clickingKey === l.userLicenseId && <Loader2 size={13} className="animate-spin text-blue-400" />}
+                            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${LICENSE_TYPE_TONE[l.type] ?? 'bg-slate-100 text-slate-600'}`}>
+                              {LICENSE_TYPE_LABEL[l.type] ?? l.type}
+                            </span>
+                          </div>
                         </div>
-                        <span className={`flex-shrink-0 text-xs px-2 py-0.5 rounded-full font-medium ${LICENSE_TYPE_TONE[l.type] ?? 'bg-slate-100 text-slate-600'}`}>
-                          {LICENSE_TYPE_LABEL[l.type] ?? l.type}
-                        </span>
+                        <div className="mt-2 flex justify-end">
+                          <button onClick={e => { e.stopPropagation(); openUnlinkLicense(l) }} className="text-xs font-medium text-slate-400 hover:text-red-500 transition-colors">Ontkoppelen</button>
+                        </div>
                       </div>
-                      <div className="mt-2 flex justify-end">
-                        <button onClick={() => openUnlinkLicense(l)} className="text-xs font-medium text-slate-400 hover:text-red-500 transition-colors">Ontkoppelen</button>
-                      </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               )}
             </Section>

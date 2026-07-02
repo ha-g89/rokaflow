@@ -17,7 +17,8 @@ import { OverviewView } from './views/OverviewView'
 import { HistoryView } from './views/HistoryView'
 import { SettingsView } from './views/SettingsView'
 import { HardwareView, HardwareDetailFullView } from './views/HardwareView'
-import { SoftwareView } from './views/SoftwareView'
+import { SoftwareView, SoftwareDetailFullView } from './views/SoftwareView'
+import { LicenseDetailFullView } from './views/LicenseView'
 import { TelefonieView, PhoneDetailFullView } from './views/TelefonieView'
 import { DepartmentsView } from './views/DepartmentsView'
 import { LocationsView } from './views/LocationsView'
@@ -36,7 +37,7 @@ import type { MyPlanDto } from '@/types/platformPlan'
 type View =
   | 'employees' | 'employee-detail'
   | 'departments' | 'locations'
-  | 'hardware' | 'hardware-detail' | 'software' | 'phones' | 'phone-detail'
+  | 'hardware' | 'hardware-detail' | 'software' | 'software-detail' | 'license-detail' | 'phones' | 'phone-detail'
   | 'processes'
   | 'overviews' | 'history' | 'contracts'
   | 'settings' | 'help'
@@ -49,6 +50,8 @@ const VIEW_TITLES: Record<View, string> = {
   hardware:          'Hardware',
   'hardware-detail': 'Hardware details',
   software:          'Software',
+  'software-detail': 'Software details',
+  'license-detail':  'Licentie details',
   phones:            'Telefonie',
   'phone-detail':    'Telefoon details',
   processes:         'Processen',
@@ -217,6 +220,34 @@ export default function ClientPortal() {
   const handlePhoneDeleted     = () => { setView('phones'); setSelectedPhone(null); setNavHistory([]) }
   const handlePhoneFromEmployee = (phone: import('@/types/phone').PhoneListItem) => { setSelectedPhone(phone); pushAndNavigate('phone-detail', 'Terug naar medewerker') }
 
+  const [selectedSoftware, setSelectedSoftware] = useState<import('@/types/software').SoftwareListItem | null>(null)
+  const handleExpandSoftware   = (item: import('@/types/software').SoftwareListItem) => { setSelectedSoftware(item); pushAndNavigate('software-detail', 'Terug naar software') }
+  const handleBackToSoftware   = () => { setView('software'); setSelectedSoftware(null); setNavHistory([]) }
+  const handleSoftwareDeleted  = () => { setView('software'); setSelectedSoftware(null); setNavHistory([]) }
+  const handleSoftwareFromEmployee = async (licenseId: string) => {
+    try {
+      const { data } = await api.get<import('@/types/software').SoftwareListItem[]>('/portal/software')
+      const item = data.find(s => s.licenseId === licenseId)
+      if (item) { setSelectedSoftware(item); pushAndNavigate('software-detail', 'Terug naar medewerker') }
+    } catch {
+      // niet-kritiek — gebruiker blijft op de huidige view staan
+    }
+  }
+
+  const [selectedLicense, setSelectedLicense] = useState<import('@/types/license').LicenseListItem | null>(null)
+  const handleExpandLicense    = (item: import('@/types/license').LicenseListItem) => { setSelectedLicense(item); pushAndNavigate('license-detail', 'Terug naar licenties') }
+  const handleBackToLicenses   = () => { setView('software'); setSelectedLicense(null); setNavHistory([]) }
+  const handleLicenseDeleted   = () => { setView('software'); setSelectedLicense(null); setNavHistory([]) }
+  const handleLicenseFromEmployee = async (licenseId: string) => {
+    try {
+      const { data } = await api.get<import('@/types/license').LicenseListItem[]>('/portal/licenses')
+      const item = data.find(l => l.id === licenseId)
+      if (item) { setSelectedLicense(item); pushAndNavigate('license-detail', 'Terug naar medewerker') }
+    } catch {
+      // niet-kritiek — gebruiker blijft op de huidige view staan
+    }
+  }
+
   const openNotificationTarget = async (entityType: string, entityId: string) => {
     try {
       switch (entityType) {
@@ -235,9 +266,12 @@ export default function ClientPortal() {
           if (phone) handleExpandPhone(phone)
           break
         }
-        case 'License':
-          handleNavClick('contracts')
+        case 'License': {
+          const { data } = await api.get<import('@/types/license').LicenseListItem[]>('/portal/licenses')
+          const license = data.find(l => l.id === entityId)
+          if (license) handleExpandLicense(license)
           break
+        }
         case 'Subscription':
           handleNavClick('phones')
           break
@@ -490,6 +524,8 @@ export default function ClientPortal() {
                 teammates={teammates}
                 onHardwareClick={handleHardwareFromEmployee}
                 onPhoneClick={handlePhoneFromEmployee}
+                onSoftwareClick={handleSoftwareFromEmployee}
+                onLicenseClick={handleLicenseFromEmployee}
               />
             )}
 
@@ -515,7 +551,25 @@ export default function ClientPortal() {
                 backLabel={navHistory[navHistory.length - 1]?.backLabel ?? 'Terug naar hardware'}
               />
             )}
-            {view === 'software'     && <SoftwareView teammates={teammates} />}
+            {view === 'software'     && <SoftwareView teammates={teammates} onExpandSoftware={handleExpandSoftware} onExpandLicense={handleExpandLicense} />}
+            {view === 'software-detail' && selectedSoftware && (
+              <SoftwareDetailFullView
+                initialSoftware={selectedSoftware}
+                teammates={teammates}
+                onBack={navHistory.length > 0 ? goBack : handleBackToSoftware}
+                onDeleted={handleSoftwareDeleted}
+                backLabel={navHistory[navHistory.length - 1]?.backLabel ?? 'Terug naar software'}
+              />
+            )}
+            {view === 'license-detail' && selectedLicense && (
+              <LicenseDetailFullView
+                initialLicense={selectedLicense}
+                teammates={teammates}
+                onBack={navHistory.length > 0 ? goBack : handleBackToLicenses}
+                onDeleted={handleLicenseDeleted}
+                backLabel={navHistory[navHistory.length - 1]?.backLabel ?? 'Terug naar licenties'}
+              />
+            )}
             {view === 'phones'       && <TelefonieView teammates={teammates} onExpand={handleExpandPhone} />}
             {view === 'phone-detail' && selectedPhone && (
               <PhoneDetailFullView
