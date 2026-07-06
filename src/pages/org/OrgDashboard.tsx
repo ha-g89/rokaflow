@@ -149,7 +149,11 @@ export default function OrgDashboard() {
     } finally { setLoadingDetail(false) }
   }, [])
 
-  useEffect(() => { fetchClients(); fetchTransfers() }, [fetchClients, fetchTransfers])
+  // user?.tenantId as a dep (not just the stable fetchClients/fetchTransfers
+  // refs) so returning from a client-context-switch — which restores the
+  // MSP's own tenantId onto this same, still-mounted component — refetches
+  // instead of leaving the client's stale list/transfers on screen.
+  useEffect(() => { fetchClients(); fetchTransfers() }, [fetchClients, fetchTransfers, user?.tenantId])
 
   const handleSelectClient = (client: ClientListItem) => {
     setSelectedClient(client)

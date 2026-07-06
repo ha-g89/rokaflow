@@ -1,4 +1,5 @@
-﻿import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+﻿import { useEffect } from 'react'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import InvitePage from '@/pages/InvitePage'
 import ForgotPasswordPage from '@/pages/ForgotPasswordPage'
 import ResetPasswordPage from '@/pages/ResetPasswordPage'
@@ -41,7 +42,28 @@ function RootRedirect() {
   return <Navigate to={ROLE_HOME[user.role] ?? '/login'} replace />
 }
 
+// Browser back/forward fires a native 'popstate' event — unlike navigate()
+// (pushState), it never fires for the "switch into client" flow itself, so
+// this can safely restore the MSP context the moment the user actually
+// navigates back to an /org URL while still switched into a client portal.
+// Runs before React re-renders the matched route, so ProtectedRoute never
+// sees the stale client-scoped token for the /org route.
+function useRestoreMspContextOnBrowserBack() {
+  useEffect(() => {
+    const handlePopState = () => {
+      const { user, switchBack } = useAuthStore.getState()
+      if (user?.switchedFromOrgId && window.location.pathname.startsWith('/org')) {
+        switchBack()
+      }
+    }
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, [])
+}
+
 export default function App() {
+  useRestoreMspContextOnBrowserBack()
+
   return (
     <BrowserRouter>
       <Routes>

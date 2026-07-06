@@ -3,7 +3,7 @@ import {
   Users, LogOut, Laptop, Shield, Phone as PhoneIcon,
   ClipboardList, BarChart3, History, FileText,
   Settings, Building2, MapPin,
-  ChevronDown, Moon, Sun, ArrowLeftCircle, ArrowLeft,
+  ChevronDown, ChevronRight, Moon, Sun, ArrowLeftCircle,
 } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { useThemeStore } from '@/store/themeStore'
@@ -335,7 +335,21 @@ export default function ClientPortal() {
           <p className="text-xs text-slate-500 mt-0.5">Portaal</p>
         </div>
         <div className="flex-1 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-6 flex items-center justify-between">
-          <h1 className="text-sm font-semibold text-slate-800 dark:text-slate-100">{VIEW_TITLES[view]}</h1>
+          <div className="flex items-center gap-3 min-w-0">
+            <h1 className="text-sm font-semibold text-slate-800 dark:text-slate-100 truncate">{VIEW_TITLES[view]}</h1>
+            {isMspMode && (
+              <button
+                onClick={handleSwitchBack}
+                title={`Terug naar ${user?.switchedFromOrgName}`}
+                className="flex items-center gap-1.5 pl-2.5 pr-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors flex-shrink-0"
+              >
+                <ArrowLeftCircle size={12} className="text-slate-400 dark:text-slate-500 flex-shrink-0" />
+                <span className="text-xs font-medium text-slate-600 dark:text-slate-300">{user?.tenantName}</span>
+                <ChevronRight size={12} className="text-slate-400 dark:text-slate-600 flex-shrink-0" />
+                <span className="text-xs font-semibold text-indigo-600 dark:text-indigo-400">{user?.switchedFromOrgName}</span>
+              </button>
+            )}
+          </div>
 
           <div className="flex items-center gap-1">
           <div className="relative" ref={notificationMenuRef}>
@@ -475,26 +489,6 @@ export default function ClientPortal() {
 
         {/* ── Main content ─────────────────────────────────────────────── */}
         <div className="flex-1 flex flex-col overflow-hidden">
-
-          {/* MSP banner */}
-          {isMspMode && (
-            <div className="bg-amber-50 dark:bg-amber-900/30 border-b border-amber-200 dark:border-amber-700 px-6 py-2 flex items-center justify-between flex-shrink-0">
-              <div className="flex items-center gap-2 text-amber-800 dark:text-amber-300">
-                <ArrowLeftCircle size={15} />
-                <span className="text-xs font-medium">
-                  MSP beheer modus — je beheert <strong>{user?.tenantName}</strong> namens{' '}
-                  <strong>{user?.switchedFromOrgName}</strong>
-                </span>
-              </div>
-              <button
-                onClick={handleSwitchBack}
-                className="flex items-center gap-1.5 text-xs font-semibold text-amber-700 dark:text-amber-300 hover:text-amber-900 dark:hover:text-amber-100 transition-colors"
-              >
-                <ArrowLeft size={13} />
-                Terug naar {user?.switchedFromOrgName}
-              </button>
-            </div>
-          )}
 
           <div className="flex-1 overflow-hidden p-6 bg-slate-200 dark:bg-slate-900">
 
