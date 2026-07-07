@@ -337,21 +337,21 @@ export default function ClientPortal() {
         <div className="flex-1 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-6 flex items-center justify-between">
           <div className="flex items-center gap-3 min-w-0">
             <h1 className="text-sm font-semibold text-slate-800 dark:text-slate-100 truncate">{VIEW_TITLES[view]}</h1>
-            {isMspMode && (
-              <button
-                onClick={handleSwitchBack}
-                title={`Terug naar ${user?.switchedFromOrgName}`}
-                className="flex items-center gap-1.5 pl-2.5 pr-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors flex-shrink-0"
-              >
-                <ArrowLeftCircle size={12} className="text-slate-400 dark:text-slate-500 flex-shrink-0" />
-                <span className="text-xs font-medium text-slate-600 dark:text-slate-300">{user?.tenantName}</span>
-                <ChevronRight size={12} className="text-slate-400 dark:text-slate-600 flex-shrink-0" />
-                <span className="text-xs font-semibold text-indigo-600 dark:text-indigo-400">{user?.switchedFromOrgName}</span>
-              </button>
-            )}
           </div>
 
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-2">
+          {isMspMode && (
+            <button
+              onClick={handleSwitchBack}
+              title={`Terug naar ${user?.switchedFromOrgName}`}
+              className="flex items-center gap-1.5 pl-2.5 pr-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors flex-shrink-0"
+            >
+              <ArrowLeftCircle size={12} className="text-slate-400 dark:text-slate-500 flex-shrink-0" />
+              <span className="text-xs font-medium text-slate-600 dark:text-slate-300">{user?.tenantName}</span>
+              <ChevronRight size={12} className="text-slate-400 dark:text-slate-600 flex-shrink-0" />
+              <span className="text-xs font-semibold text-indigo-600 dark:text-indigo-400">{user?.switchedFromOrgName}</span>
+            </button>
+          )}
           <div className="relative" ref={notificationMenuRef}>
             <NotificationBell
               countEndpoint="/portal/notifications/count"
