@@ -50,10 +50,10 @@ export const LICENSE_TYPE_LABEL: Record<string, string> = {
 }
 
 export const LICENSE_TYPE_TONE: Record<string, string> = {
-  Basic: 'bg-slate-100 text-slate-600',
-  Pro: 'bg-blue-100 text-blue-700',
-  Enterprise: 'bg-indigo-100 text-indigo-700',
-  Free: 'bg-emerald-100 text-emerald-700',
+  Basic: 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300',
+  Pro: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+  Enterprise: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300',
+  Free: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
 }
 
 export const LICENSE_TARGET_LABEL: Record<string, string> = {

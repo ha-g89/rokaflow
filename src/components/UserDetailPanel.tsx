@@ -504,7 +504,7 @@ function Section({ title, icon, action, children }: { title: string; icon: React
     <Card className="rounded-2xl shadow-sm">
       <CardContent className="p-5">
         <div className="mb-4 flex items-center justify-between gap-2">
-          <h3 className="flex items-center gap-2 text-sm font-bold text-slate-800">
+          <h3 className="flex items-center gap-2 text-sm font-bold text-slate-800 dark:text-slate-100">
             {icon}
             {title}
           </h3>
@@ -890,25 +890,25 @@ export function UserDetailPanel({ user, canEdit, departments = [], managers = []
                 <div
                   key={h.id}
                   onClick={() => onHardwareClick?.(toHardwareListItem(h))}
-                  className={`rounded-xl border border-slate-100 bg-white p-3 transition-colors ${onHardwareClick ? 'cursor-pointer hover:border-blue-200 hover:bg-blue-50/30' : ''}`}
+                  className={`rounded-xl border border-slate-200 dark:border-slate-700/60 bg-slate-50 dark:bg-slate-900/60 p-3 transition-colors ${onHardwareClick ? 'cursor-pointer hover:border-blue-200 dark:hover:border-blue-800/50 hover:bg-blue-50/30 dark:hover:bg-blue-900/10' : ''}`}
                 >
                   <div className="flex items-center justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="text-sm font-semibold text-slate-800 truncate">{h.name}</p>
-                      <p className="text-xs text-slate-500">
+                      <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 truncate">{h.name}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
                         {h.brand && `${h.brand} · `}{HARDWARE_TYPE_LABEL[h.type] ?? h.type}
                         {h.assetNumber && ` · ${h.assetNumber}`}
                       </p>
                     </div>
-                    <span className={`flex-shrink-0 text-xs px-2 py-0.5 rounded-full font-medium ${HARDWARE_STATUS_TONE[h.status] ?? 'bg-slate-100 text-slate-600'}`}>
+                    <span className={`flex-shrink-0 text-xs px-2 py-0.5 rounded-full font-medium ${HARDWARE_STATUS_TONE[h.status] ?? 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300'}`}>
                       {HARDWARE_STATUS_LABEL[h.status] ?? h.status}
                     </span>
                   </div>
                   {h.issuedAt && (
-                    <p className="mt-1 text-xs text-slate-400">Uitgifte: {fmt(h.issuedAt)}</p>
+                    <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">Uitgifte: {fmt(h.issuedAt)}</p>
                   )}
-                  <div className="mt-2 flex justify-end">
-                    <button onClick={e => { e.stopPropagation(); openUnlinkHardware(h) }} className="text-xs font-medium text-slate-400 hover:text-red-500 transition-colors">Ontkoppelen</button>
+                  <div className="mt-2 pt-2 border-t border-slate-200 dark:border-slate-700/60 flex justify-end">
+                    <button onClick={e => { e.stopPropagation(); openUnlinkHardware(h) }} className="text-xs font-medium text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 transition-colors">Ontkoppelen</button>
                   </div>
                 </div>
               ))}
@@ -929,24 +929,24 @@ export function UserDetailPanel({ user, canEdit, departments = [], managers = []
                 <div
                   key={p.id}
                   onClick={() => onPhoneClick?.(toPhoneListItem(p))}
-                  className={`rounded-xl border border-slate-100 bg-white p-3 transition-colors ${onPhoneClick ? 'cursor-pointer hover:border-blue-200 hover:bg-blue-50/30' : ''}`}
+                  className={`rounded-xl border border-slate-200 dark:border-slate-700/60 bg-slate-50 dark:bg-slate-900/60 p-3 transition-colors ${onPhoneClick ? 'cursor-pointer hover:border-blue-200 dark:hover:border-blue-800/50 hover:bg-blue-50/30 dark:hover:bg-blue-900/10' : ''}`}
                 >
                   <div className="flex items-center justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="text-sm font-semibold text-slate-800 truncate">{p.brand} {p.model}</p>
-                      <p className="text-xs text-slate-500 truncate">
+                      <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 truncate">{p.brand} {p.model}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
                         {p.simPhoneNumber || p.serialNumber || '—'}
                       </p>
                     </div>
-                    <span className={`flex-shrink-0 text-xs px-2 py-0.5 rounded-full font-medium ${PHONE_STATUS_TONE[p.status as keyof typeof PHONE_STATUS_TONE] ?? 'bg-slate-100 text-slate-600'}`}>
+                    <span className={`flex-shrink-0 text-xs px-2 py-0.5 rounded-full font-medium ${PHONE_STATUS_TONE[p.status as keyof typeof PHONE_STATUS_TONE] ?? 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300'}`}>
                       {PHONE_STATUS_LABEL[p.status as keyof typeof PHONE_STATUS_LABEL] ?? p.status}
                     </span>
                   </div>
                   {p.issuedAt && (
-                    <p className="mt-1 text-xs text-slate-400">Uitgifte: {fmt(p.issuedAt)}</p>
+                    <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">Uitgifte: {fmt(p.issuedAt)}</p>
                   )}
-                  <div className="mt-2 flex justify-end">
-                    <button onClick={e => { e.stopPropagation(); openUnlinkPhone(p) }} className="text-xs font-medium text-slate-400 hover:text-red-500 transition-colors">Ontkoppelen</button>
+                  <div className="mt-2 pt-2 border-t border-slate-200 dark:border-slate-700/60 flex justify-end">
+                    <button onClick={e => { e.stopPropagation(); openUnlinkPhone(p) }} className="text-xs font-medium text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 transition-colors">Ontkoppelen</button>
                   </div>
                 </div>
               ))}
@@ -984,24 +984,24 @@ export function UserDetailPanel({ user, canEdit, departments = [], managers = []
                       <div
                         key={s.key}
                         onClick={clickable ? () => handleCatalogClick(onSoftwareClick, s.licenseId!, s.key) : undefined}
-                        className={`rounded-xl border border-slate-100 bg-white p-3 transition-colors ${clickable ? 'cursor-pointer hover:border-blue-200 hover:bg-blue-50/30' : ''}`}
+                        className={`rounded-xl border border-slate-200 dark:border-slate-700/60 bg-slate-50 dark:bg-slate-900/60 p-3 transition-colors ${clickable ? 'cursor-pointer hover:border-blue-200 dark:hover:border-blue-800/50 hover:bg-blue-50/30 dark:hover:bg-blue-900/10' : ''}`}
                       >
                         <div className="flex items-center justify-between gap-3">
                           <div className="min-w-0">
-                            <p className="text-sm font-semibold text-slate-800 truncate">{s.name}</p>
-                            <p className="text-xs text-slate-500">{s.sub}</p>
+                            <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 truncate">{s.name}</p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400">{s.sub}</p>
                           </div>
                           <div className="flex items-center gap-2 flex-shrink-0">
                             {clickingKey === s.key && <Loader2 size={13} className="animate-spin text-blue-400" />}
                             {s.tag && (
-                              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${LICENSE_TYPE_TONE[s.tag] ?? 'bg-slate-100 text-slate-600'}`}>
+                              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${LICENSE_TYPE_TONE[s.tag] ?? 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300'}`}>
                                 {s.tag}
                               </span>
                             )}
                           </div>
                         </div>
-                        <div className="mt-2 flex justify-end">
-                          <button onClick={e => { e.stopPropagation(); s.onUnlink() }} className="text-xs font-medium text-slate-400 hover:text-red-500 transition-colors">Ontkoppelen</button>
+                        <div className="mt-2 pt-2 border-t border-slate-200 dark:border-slate-700/60 flex justify-end">
+                          <button onClick={e => { e.stopPropagation(); s.onUnlink() }} className="text-xs font-medium text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 transition-colors">Ontkoppelen</button>
                         </div>
                       </div>
                     )
@@ -1025,22 +1025,22 @@ export function UserDetailPanel({ user, canEdit, departments = [], managers = []
                       <div
                         key={l.userLicenseId}
                         onClick={clickable ? () => handleCatalogClick(onLicenseClick, l.licenseId, l.userLicenseId) : undefined}
-                        className={`rounded-xl border border-slate-100 bg-white p-3 transition-colors ${clickable ? 'cursor-pointer hover:border-blue-200 hover:bg-blue-50/30' : ''}`}
+                        className={`rounded-xl border border-slate-200 dark:border-slate-700/60 bg-slate-50 dark:bg-slate-900/60 p-3 transition-colors ${clickable ? 'cursor-pointer hover:border-blue-200 dark:hover:border-blue-800/50 hover:bg-blue-50/30 dark:hover:bg-blue-900/10' : ''}`}
                       >
                         <div className="flex items-center justify-between gap-3">
                           <div className="min-w-0">
-                            <p className="text-sm font-semibold text-slate-800 truncate">{l.name}</p>
-                            <p className="text-xs text-slate-500">{l.vendor || '—'} • Toegewezen {fmt(l.assignedAt)}</p>
+                            <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 truncate">{l.name}</p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400">{l.vendor || '—'} • Toegewezen {fmt(l.assignedAt)}</p>
                           </div>
                           <div className="flex items-center gap-2 flex-shrink-0">
                             {clickingKey === l.userLicenseId && <Loader2 size={13} className="animate-spin text-blue-400" />}
-                            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${LICENSE_TYPE_TONE[l.type] ?? 'bg-slate-100 text-slate-600'}`}>
+                            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${LICENSE_TYPE_TONE[l.type] ?? 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300'}`}>
                               {LICENSE_TYPE_LABEL[l.type] ?? l.type}
                             </span>
                           </div>
                         </div>
-                        <div className="mt-2 flex justify-end">
-                          <button onClick={e => { e.stopPropagation(); openUnlinkLicense(l) }} className="text-xs font-medium text-slate-400 hover:text-red-500 transition-colors">Ontkoppelen</button>
+                        <div className="mt-2 pt-2 border-t border-slate-200 dark:border-slate-700/60 flex justify-end">
+                          <button onClick={e => { e.stopPropagation(); openUnlinkLicense(l) }} className="text-xs font-medium text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 transition-colors">Ontkoppelen</button>
                         </div>
                       </div>
                     )

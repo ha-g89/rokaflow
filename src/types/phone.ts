@@ -33,9 +33,9 @@ export const PHONE_STATUS_LABEL: Record<PhoneStatus, string> = {
 }
 
 export const PHONE_STATUS_TONE: Record<PhoneStatus, string> = {
-  InStock: 'bg-blue-100 text-blue-700',
-  InUse: 'bg-emerald-100 text-emerald-700',
-  Decommissioned: 'bg-slate-100 text-slate-500',
+  InStock: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+  InUse: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
+  Decommissioned: 'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400',
 }
 
 export const PHONE_STATUS_OPTIONS = [
