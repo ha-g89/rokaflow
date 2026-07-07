@@ -5,7 +5,7 @@ import { z } from 'zod'
 import {
   Shield, CreditCard, CheckCircle2, ChevronRight, Archive,
   Plus, Search, Users, Pencil, Trash2, X, StickyNote, History,
-  Maximize2, ArrowLeft,
+  Maximize2, ArrowLeft, Building2, Package, Calendar,
 } from 'lucide-react'
 import api from '@/lib/axios'
 import { Card, CardContent } from '@/components/ui/Card'
@@ -395,7 +395,7 @@ function daysUntil(d: string | null | undefined): number | null {
   return Math.ceil(diff / 86_400_000)
 }
 
-// ── SoftwareLicenseCard — gedeeld tussen klein paneel en volledige weergave ────
+// ── SoftwareLicenseCard — gebruikt door het compacte SoftwareDetailPanel ──────
 
 function SoftwareLicenseCard({ software, teammates, onUsersChanged }: {
   software: SoftwareListItem
@@ -636,6 +636,11 @@ function SoftwareDetailPanel({ software, teammates, onEdit, onDelete, onUsersCha
 
 // ── SoftwareDetailFullView ──────────────────────────────────────────────────────
 
+function initials(name: string) {
+  const parts = name.trim().split(/\s+/)
+  return ((parts[0]?.[0] ?? '') + (parts[1]?.[0] ?? '')).toUpperCase() || '?'
+}
+
 export function SoftwareDetailFullView({ initialSoftware, teammates, onBack, onDeleted, backLabel = 'Terug naar software' }: {
   initialSoftware: SoftwareListItem
   teammates: ClientUserListItem[]
@@ -648,6 +653,24 @@ export function SoftwareDetailFullView({ initialSoftware, teammates, onBack, onD
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [activeTab, setActiveTab]   = useState<'notes' | 'history'>('notes')
 
+  const [licenseUsers, setLicenseUsers] = useState<LicenseUserDto[]>([])
+  const [loadingUsers, setLoadingUsers] = useState(false)
+  const [showAssignRow, setShowAssignRow] = useState(false)
+  const [assignUserId, setAssignUserId]   = useState('')
+  const [assigning, setAssigning]         = useState(false)
+
+  const fetchLicenseUsers = useCallback(async () => {
+    if (!software.licenseId) { setLicenseUsers([]); return }
+    setLoadingUsers(true)
+    try {
+      const { data } = await api.get<LicenseListItem[]>('/portal/licenses')
+      const match = data.find(l => l.id === software.licenseId)
+      setLicenseUsers(match?.users ?? [])
+    } finally { setLoadingUsers(false) }
+  }, [software.licenseId])
+
+  useEffect(() => { fetchLicenseUsers() }, [fetchLicenseUsers])
+
   const refresh = async () => {
     const { data } = await api.get<SoftwareListItem[]>('/portal/software')
     const updated = data.find(s => s.id === software.id)
@@ -658,6 +681,34 @@ export function SoftwareDetailFullView({ initialSoftware, teammates, onBack, onD
     await api.delete(`/portal/software/${software.id}`)
     onDeleted()
   }
+
+  const handleAssign = async (userId: string) => {
+    if (!software.licenseId) return
+    setAssigning(true)
+    try {
+      await api.post(`/portal/licenses/${software.licenseId}/assign`, { userId })
+      setAssignUserId('')
+      setShowAssignRow(false)
+      await fetchLicenseUsers()
+      await refresh()
+    } finally { setAssigning(false) }
+  }
+
+  const handleRevoke = async (userId: string) => {
+    if (!software.licenseId) return
+    await api.delete(`/portal/licenses/${software.licenseId}/users/${userId}`)
+    await fetchLicenseUsers()
+    await refresh()
+  }
+
+  const isUnlimited    = software.maxUsers === 0
+  const usedCount      = software.assignedUsers ?? 0
+  const usedPct        = software.licenseId
+    ? isUnlimited ? Math.min(100, usedCount * 10) : Math.min(100, (usedCount / (software.maxUsers || 1)) * 100)
+    : 0
+  const assignableUsers = teammates.filter(t => !licenseUsers.some(u => u.userId === t.id))
+  const canAssign       = !!software.licenseId && (isUnlimited || (software.maxUsers ?? 0) > usedCount)
+  const usageLabel      = `${usedCount} / ${isUnlimited ? 'onbeperkt' : software.maxUsers}`
 
   return (
     <div className="flex flex-col gap-4 h-full">
@@ -671,25 +722,34 @@ export function SoftwareDetailFullView({ initialSoftware, teammates, onBack, onD
       <div className="flex-1 overflow-y-auto min-h-0 space-y-4">
         <Card>
           <div className="px-6 pt-5 pb-5">
-            <div className="flex justify-end gap-1 mb-3">
-              <button onClick={() => setShowModal(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-                <Pencil size={12} /> Wijzigen
-              </button>
-              <button onClick={() => setConfirmDelete(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
-                <Trash2 size={12} /> Verwijderen
-              </button>
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-start gap-3 min-w-0">
+                <div className="w-12 h-12 rounded-xl bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-300 flex items-center justify-center font-bold text-sm flex-shrink-0">
+                  {initials(software.name)}
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h1 className="text-lg font-bold text-slate-900 dark:text-slate-100 truncate">{software.name}</h1>
+                    <span className={`text-xs px-2.5 py-0.5 rounded-full font-medium flex-shrink-0 ${
+                      software.isPaid
+                        ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
+                        : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
+                    }`}>
+                      {software.isPaid ? 'Betaald' : 'Gratis'}
+                    </span>
+                  </div>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5 truncate">{software.publisher}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <button onClick={() => setShowModal(true)} className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-medium border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                  <Pencil size={13} /> Wijzigen
+                </button>
+                <button onClick={() => setConfirmDelete(true)} className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-medium border border-red-200 dark:border-red-800/60 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+                  <Trash2 size={13} /> Verwijderen
+                </button>
+              </div>
             </div>
-            <div className="flex items-center gap-2 mb-0.5">
-              <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">{software.name}</h1>
-              <span className={`text-xs px-2.5 py-1 rounded-full font-medium flex-shrink-0 ${
-                software.isPaid
-                  ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
-                  : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
-              }`}>
-                {software.isPaid ? 'Betaald' : 'Gratis'}
-              </span>
-            </div>
-            <p className="text-sm text-slate-500 dark:text-slate-400">{software.publisher}</p>
           </div>
         </Card>
 
@@ -697,38 +757,155 @@ export function SoftwareDetailFullView({ initialSoftware, teammates, onBack, onD
           <Card>
             <CardContent className="p-6">
               <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4">Details</h3>
-              <div className="grid grid-cols-2 gap-x-8 gap-y-4">
-                <div>
-                  <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">Uitgever</p>
-                  <p className="text-sm font-medium text-slate-800 dark:text-slate-200">{software.publisher || '—'}</p>
-                </div>
-                {software.vendor && (
-                  <div>
-                    <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">Leverancier</p>
-                    <p className="text-sm font-medium text-slate-800 dark:text-slate-200">{software.vendor}</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex items-center gap-3 rounded-xl border border-slate-200 dark:border-slate-700/60 bg-slate-50 dark:bg-slate-900/60 p-3">
+                  <div className="w-9 h-9 rounded-lg bg-white dark:bg-slate-800 flex items-center justify-center flex-shrink-0 text-slate-400">
+                    <Building2 size={16} />
                   </div>
-                )}
-                <div>
-                  <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">Type</p>
-                  <span className={`text-xs px-2.5 py-0.5 rounded-full font-semibold ${
-                    software.isPaid
-                      ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
-                      : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
-                  }`}>
-                    {software.isPaid ? 'Betaald' : 'Gratis'}
-                  </span>
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">Uitgever</p>
+                    <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 truncate">{software.publisher || '—'}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">Aangemaakt op</p>
-                  <p className="text-sm font-medium text-slate-800 dark:text-slate-200">{fmt(software.createdAt)}</p>
+                <div className="flex items-center gap-3 rounded-xl border border-slate-200 dark:border-slate-700/60 bg-slate-50 dark:bg-slate-900/60 p-3">
+                  <div className="w-9 h-9 rounded-lg bg-white dark:bg-slate-800 flex items-center justify-center flex-shrink-0 text-slate-400">
+                    <Package size={16} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">Leverancier</p>
+                    <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 truncate">{software.vendor || '—'}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 rounded-xl border border-slate-200 dark:border-slate-700/60 bg-slate-50 dark:bg-slate-900/60 p-3">
+                  <div className="w-9 h-9 rounded-lg bg-white dark:bg-slate-800 flex items-center justify-center flex-shrink-0 text-slate-400">
+                    <CreditCard size={16} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">Type</p>
+                    <p className={`text-sm font-semibold truncate ${software.isPaid ? 'text-blue-600 dark:text-blue-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                      {software.isPaid ? 'Betaald' : 'Gratis'}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 rounded-xl border border-slate-200 dark:border-slate-700/60 bg-slate-50 dark:bg-slate-900/60 p-3">
+                  <div className="w-9 h-9 rounded-lg bg-white dark:bg-slate-800 flex items-center justify-center flex-shrink-0 text-slate-400">
+                    <Calendar size={16} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">Aangemaakt op</p>
+                    <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 truncate">{fmt(software.createdAt)}</p>
+                  </div>
                 </div>
               </div>
+
+              {software.licenseId && (
+                <div className="mt-3 rounded-xl border border-slate-200 dark:border-slate-700/60 bg-slate-50 dark:bg-slate-900/60 p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">Licentiegebruik</span>
+                    <span className="text-sm font-semibold text-blue-600 dark:text-blue-400 tabular-nums">{usageLabel}</span>
+                  </div>
+                  <div className="h-1.5 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+                    <div
+                      className={`h-1.5 rounded-full transition-all ${!isUnlimited && usedPct >= 100 ? 'bg-red-500' : !isUnlimited && usedPct >= 80 ? 'bg-amber-400' : 'bg-blue-500'}`}
+                      style={{ width: `${usedPct}%` }}
+                    />
+                  </div>
+                  <p className="mt-2 text-xs text-slate-400 dark:text-slate-500">
+                    {isUnlimited
+                      ? `Onbeperkt aantal zitplaatsen — ${usedCount} gebruiker${usedCount === 1 ? '' : 's'} momenteel toegewezen.`
+                      : `${Math.max(0, (software.maxUsers ?? 0) - usedCount)} zitplaats${(software.maxUsers ?? 0) - usedCount === 1 ? '' : 'en'} beschikbaar van de ${software.maxUsers}.`}
+                  </p>
+                  {software.licenseExpiresAt && (() => {
+                    const days    = daysUntil(software.licenseExpiresAt)
+                    const expired = days !== null && days < 0
+                    const soon    = days !== null && days >= 0 && days <= 30
+                    return (
+                      <div className="mt-3 pt-3 border-t border-slate-200 dark:border-slate-700/60 flex items-center justify-between">
+                        <span className="text-xs text-slate-400">Vervaldatum</span>
+                        <span className={`text-xs font-medium ${expired ? 'text-red-500' : soon ? 'text-amber-500' : 'text-slate-500 dark:text-slate-400'}`}>
+                          {fmt(software.licenseExpiresAt)}
+                        </span>
+                      </div>
+                    )
+                  })()}
+                </div>
+              )}
             </CardContent>
           </Card>
 
           <Card className="h-full">
             <CardContent className="p-5">
-              <SoftwareLicenseCard software={software} teammates={teammates} onUsersChanged={refresh} />
+              <h3 className="flex items-center gap-2 text-xs font-semibold text-violet-500 dark:text-violet-400 uppercase tracking-wider mb-4">
+                <Users size={14} /> Gebruikers bijhouden
+              </h3>
+
+              {software.licenseId ? (
+                <>
+                  <div className="rounded-xl border border-slate-200 dark:border-slate-700/60 bg-slate-50 dark:bg-slate-900/60 p-3 mb-4 flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 truncate">{software.name}</p>
+                      <p className="text-xs text-slate-400">Gebruikers</p>
+                    </div>
+                    <span className="text-sm font-semibold text-blue-600 dark:text-blue-400 flex-shrink-0 tabular-nums">{usageLabel}</span>
+                  </div>
+
+                  <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Toegewezen gebruikers</p>
+
+                  {loadingUsers ? (
+                    <div className="flex items-center gap-2 text-xs text-slate-400 py-2"><LoadingSpinner size="xs" />Laden…</div>
+                  ) : licenseUsers.length === 0 ? (
+                    <p className="text-sm text-slate-400 mb-3">Nog geen gebruikers toegewezen.</p>
+                  ) : (
+                    <ul className="space-y-2 mb-3">
+                      {licenseUsers.map(u => (
+                        <li key={u.userLicenseId} className="flex items-center justify-between gap-2 rounded-xl border border-slate-200 dark:border-slate-700/60 bg-slate-50 dark:bg-slate-900/60 p-3">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="w-9 h-9 rounded-full bg-violet-100 dark:bg-violet-900/40 text-violet-600 dark:text-violet-300 flex items-center justify-center font-bold text-xs flex-shrink-0">
+                              {initials(u.fullName)}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 truncate">{u.fullName}</p>
+                              <p className="text-xs text-slate-400 truncate">{u.email}</p>
+                            </div>
+                          </div>
+                          <button onClick={() => handleRevoke(u.userId)} className="text-xs font-medium text-slate-400 hover:text-red-500 dark:hover:text-red-400 transition-colors flex-shrink-0">
+                            Intrekken
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+
+                  {canAssign && assignableUsers.length > 0 && (
+                    showAssignRow ? (
+                      <div className="flex gap-2">
+                        <select
+                          value={assignUserId}
+                          onChange={e => setAssignUserId(e.target.value)}
+                          className="flex-1 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 text-sm bg-white dark:bg-slate-900/60 dark:shadow-[inset_0_1px_3px_0_rgba(0,0,0,0.4)] text-slate-900 dark:text-slate-100 focus:outline-none focus:border-blue-400 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-500/25"
+                        >
+                          <option value="">— Selecteer medewerker —</option>
+                          {assignableUsers.map(u => (
+                            <option key={u.id} value={u.id}>{u.firstName} {u.lastName}</option>
+                          ))}
+                        </select>
+                        <Button size="sm" disabled={!assignUserId || assigning} onClick={() => handleAssign(assignUserId)}>
+                          {assigning ? '…' : 'OK'}
+                        </Button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setShowAssignRow(true)}
+                        className="w-full flex items-center justify-center gap-1.5 rounded-xl border border-dashed border-slate-300 dark:border-slate-600 py-2.5 text-sm font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-colors"
+                      >
+                        <Plus size={14} /> Gebruiker toewijzen
+                      </button>
+                    )
+                  )}
+                </>
+              ) : (
+                <p className="text-sm text-slate-400">Geen licentie gekoppeld.</p>
+              )}
             </CardContent>
           </Card>
         </div>
