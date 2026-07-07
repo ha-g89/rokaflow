@@ -13,7 +13,7 @@ import { ConfirmDeleteModal } from '@/components/ui/ConfirmDeleteModal'
 import { HardwareModal } from '@/components/HardwareModal'
 import { NotesPanel } from '@/components/NotesPanel'
 import type { HardwareAssetListItem } from '@/types/hardware'
-import { HARDWARE_STATUS_LABEL, HARDWARE_STATUS_TONE, HARDWARE_TYPE_LABEL } from '@/types/hardware'
+import { HARDWARE_STATUS_LABEL, HARDWARE_STATUS_TONE, HARDWARE_TYPE_LABEL, HARDWARE_SPEC_FIELDS } from '@/types/hardware'
 import type { ClientUserListItem } from '@/types/clientUser'
 import type { LocationListItem } from '@/types/location'
 
@@ -302,10 +302,14 @@ export function HardwareView({ teammates, onExpand }: { teammates: ClientUserLis
     }
   }, [assets]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const filtered = assets.filter(a =>
-    `${a.name} ${a.brand} ${a.assetNumber} ${a.serialNumber} ${a.assignedToName ?? ''} ${a.location}`
+  const filtered = assets.filter(a => {
+    const spec = a.specifications
+    const specText = spec
+      ? `${spec.operatingSystem ?? ''} ${spec.processor ?? ''} ${spec.buildYear ?? ''}`
+      : ''
+    return `${a.name} ${a.brand} ${a.assetNumber} ${a.serialNumber} ${a.assignedToName ?? ''} ${a.location} ${specText}`
       .toLowerCase().includes(search.toLowerCase())
-  )
+  })
 
   const totaal       = assets.length
   const inGebruik    = assets.filter(a => a.status === 'InUse').length
@@ -469,6 +473,104 @@ export function HardwareView({ teammates, onExpand }: { teammates: ClientUserLis
 }
 
 // ── Full-screen detail view ───────────────────────────────────────────────────
+
+function HardwareSpecificationsCard({ asset, onSaved }: {
+  asset: HardwareAssetListItem
+  onSaved: () => void
+}) {
+  const fields = HARDWARE_SPEC_FIELDS[asset.type] ?? []
+  const [editing, setEditing] = useState(false)
+  const [values, setValues]   = useState<Record<string, string>>({})
+  const [saving, setSaving]   = useState(false)
+
+  if (fields.length === 0) return null
+
+  const startEditing = () => {
+    const initial: Record<string, string> = {}
+    for (const f of fields) {
+      const current = asset.specifications?.[f.key]
+      initial[f.key] = current != null ? String(current) : ''
+    }
+    setValues(initial)
+    setEditing(true)
+  }
+
+  const handleSave = async () => {
+    setSaving(true)
+    try {
+      const body: Record<string, string | number | null> = {}
+      for (const f of fields) {
+        const raw = (values[f.key] ?? '').trim()
+        body[f.key] = raw === '' ? null : f.type === 'number' ? Number(raw) : raw
+      }
+      await api.put(`/portal/hardware/${asset.id}/specifications`, body)
+      setEditing(false)
+      onSaved()
+    } finally { setSaving(false) }
+  }
+
+  const hasAnyValue = fields.some(f => asset.specifications?.[f.key] != null)
+
+  return (
+    <Card>
+      <CardContent className="p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Specificaties</h3>
+          {!editing && (
+            <button
+              onClick={startEditing}
+              className="flex items-center gap-1.5 text-xs font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 px-2 py-1 rounded-lg transition-colors"
+            >
+              <Pencil size={11} /> {hasAnyValue ? 'Bewerken' : 'Aanvullen'}
+            </button>
+          )}
+        </div>
+
+        {editing ? (
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              {fields.map(f => (
+                <div key={f.key}>
+                  <label className="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">{f.label}</label>
+                  <input
+                    type={f.type === 'number' ? 'number' : 'text'}
+                    value={values[f.key] ?? ''}
+                    onChange={e => setValues(v => ({ ...v, [f.key]: e.target.value }))}
+                    className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900/60 dark:shadow-[inset_0_1px_3px_0_rgba(0,0,0,0.4)] text-slate-900 dark:text-slate-100 focus:outline-none focus:border-blue-400 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-500/25"
+                  />
+                </div>
+              ))}
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="secondary" size="sm" onClick={() => setEditing(false)} disabled={saving}>Annuleren</Button>
+              <Button size="sm" onClick={handleSave} disabled={saving}>{saving ? 'Opslaan…' : 'Opslaan'}</Button>
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-3">
+            {fields.map(f => {
+              const value = asset.specifications?.[f.key]
+              const Icon = f.icon
+              return (
+                <div key={f.key} className="flex items-center gap-3 rounded-xl border border-slate-200 dark:border-slate-700/60 bg-slate-50 dark:bg-slate-900/60 p-3">
+                  <div className="w-9 h-9 rounded-lg bg-white dark:bg-slate-800 flex items-center justify-center flex-shrink-0 text-slate-400">
+                    <Icon size={16} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">{f.label}</p>
+                    <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 truncate">
+                      {value != null && value !== '' ? `${value}${f.unit ?? ''}` : '—'}
+                    </p>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
 
 export function HardwareDetailFullView({ initialAsset, teammates, onBack, onDeleted, backLabel = 'Terug naar hardware' }: {
   initialAsset: HardwareAssetListItem
@@ -690,6 +792,8 @@ export function HardwareDetailFullView({ initialAsset, teammates, onBack, onDele
             </CardContent>
           </Card>
         </div>
+
+        <HardwareSpecificationsCard asset={asset} onSaved={refresh} />
 
         {/* ── Notities + Historie — volle breedte onderaan ── */}
         <Card>

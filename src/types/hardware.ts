@@ -1,9 +1,59 @@
+import type { LucideIcon } from 'lucide-react'
+import { Cpu, MemoryStick, HardDrive, AppWindow, Maximize, Calendar } from 'lucide-react'
+
 export interface HardwareHistoryItem {
   id: string
   occurredAt: string
   summary: string
   description: string
   performedBy: string | null
+}
+
+export interface HardwareSpecifications {
+  operatingSystem: string | null
+  processor: string | null
+  ramGb: number | null
+  storageGb: number | null
+  storageType: string | null
+  screenSizeInch: number | null
+  buildYear: number | null
+}
+
+export interface SpecField {
+  key: keyof HardwareSpecifications
+  label: string
+  type: 'text' | 'number'
+  unit?: string
+  icon: LucideIcon
+}
+
+export const HARDWARE_SPEC_FIELDS: Record<string, SpecField[]> = {
+  Laptop: [
+    { key: 'operatingSystem', label: 'Besturingssysteem', type: 'text', icon: AppWindow },
+    { key: 'processor', label: 'Processor', type: 'text', icon: Cpu },
+    { key: 'ramGb', label: 'RAM', type: 'number', unit: ' GB', icon: MemoryStick },
+    { key: 'storageGb', label: 'Opslag', type: 'number', unit: ' GB', icon: HardDrive },
+    { key: 'buildYear', label: 'Bouwjaar', type: 'number', icon: Calendar },
+  ],
+  Desktop: [
+    { key: 'operatingSystem', label: 'Besturingssysteem', type: 'text', icon: AppWindow },
+    { key: 'processor', label: 'Processor', type: 'text', icon: Cpu },
+    { key: 'ramGb', label: 'RAM', type: 'number', unit: ' GB', icon: MemoryStick },
+    { key: 'storageGb', label: 'Opslag', type: 'number', unit: ' GB', icon: HardDrive },
+    { key: 'buildYear', label: 'Bouwjaar', type: 'number', icon: Calendar },
+  ],
+  Tablet: [
+    { key: 'operatingSystem', label: 'Besturingssysteem', type: 'text', icon: AppWindow },
+    { key: 'storageGb', label: 'Opslag', type: 'number', unit: ' GB', icon: HardDrive },
+    { key: 'screenSizeInch', label: 'Schermgrootte', type: 'number', unit: '"', icon: Maximize },
+    { key: 'buildYear', label: 'Bouwjaar', type: 'number', icon: Calendar },
+  ],
+  Monitor: [
+    { key: 'screenSizeInch', label: 'Schermgrootte', type: 'number', unit: '"', icon: Maximize },
+    { key: 'buildYear', label: 'Bouwjaar', type: 'number', icon: Calendar },
+  ],
+  Phone: [],
+  Other: [],
 }
 
 export interface HardwareAssetListItem {
@@ -24,6 +74,7 @@ export interface HardwareAssetListItem {
   issuedAt: string | null
   returnedAt: string | null
   createdAt: string
+  specifications: HardwareSpecifications | null
 }
 
 export const HARDWARE_TYPE_OPTIONS = [
