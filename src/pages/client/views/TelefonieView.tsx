@@ -12,6 +12,7 @@ import { PhoneSetupWizard } from '@/components/PhoneSetupWizard'
 import { SimCardModal } from '@/components/SimCardModal'
 import { SubscriptionModal } from '@/components/SubscriptionModal'
 import { NotesPanel } from '@/components/NotesPanel'
+import { EntityChecklistCard } from '@/components/EntityChecklistCard'
 import { LoadingState } from '@/components/ui/LoadingState'
 import type { PhoneListItem } from '@/types/phone'
 import { PHONE_STATUS_LABEL, PHONE_STATUS_TONE } from '@/types/phone'
@@ -938,6 +939,8 @@ export function PhoneDetailFullView({ initialPhone, teammates, onBack, onDeleted
           )}
         </div>
       </div>
+
+      <EntityChecklistCard entityType="Phone" entityId={phone.id} />
 
       {/* Notes / History */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">

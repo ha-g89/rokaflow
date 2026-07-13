@@ -40,6 +40,8 @@ import {
   CHECKLIST_TYPE_TONE,
   AUTOMATION_KEY_OPTIONS,
   AUTOMATION_KEY_LABEL,
+  AUTO_APPLY_TRIGGER_OPTIONS,
+  AUTO_APPLY_TRIGGER_LABEL,
 } from '@/types/processTemplate'
 
 const ENTITY_ICON: Record<TargetEntityType, React.ReactNode> = {
@@ -170,7 +172,7 @@ function ItemRow({
   item, index, total, isEditing, isSaving,
   onStartEdit, onSaveEdit, onCancelEdit,
   onMoveUp, onMoveDown, onDeleteClick, onDeleteConfirm, onDeleteCancel,
-  isConfirmingDelete,
+  isConfirmingDelete, showAutomation,
 }: {
   item: ProcessTemplateItem
   index: number
@@ -186,6 +188,7 @@ function ItemRow({
   onDeleteConfirm: () => void
   onDeleteCancel: () => void
   isConfirmingDelete: boolean
+  showAutomation: boolean
 }) {
   const [draftTitle, setDraftTitle]       = useState(item.title)
   const [draftRequired, setDraftRequired] = useState(item.isRequired)
@@ -361,23 +364,25 @@ function ItemRow({
               }`}>Verplicht</span>
             </button>
 
-            {/* Automatisering dropdown */}
-            <div className={`flex items-center gap-1 text-[10px] rounded-full px-2 py-0.5 transition-all ${
-              draftAutoKey ? 'bg-violet-100 ring-1 ring-violet-200' : 'bg-slate-100'
-            }`}>
-              <Zap size={9} className={draftAutoKey ? 'text-violet-500' : 'text-slate-400'} />
-              <select
-                value={draftAutoKey}
-                onChange={e => setDraftAutoKey(e.target.value)}
-                className={`text-[10px] font-semibold bg-transparent border-0 focus:outline-none focus:ring-0 cursor-pointer ${
-                  draftAutoKey ? 'text-violet-600' : 'text-slate-400'
-                }`}
-              >
-                {AUTOMATION_KEY_OPTIONS.map(o => (
-                  <option key={o.value} value={o.value}>{o.label}</option>
-                ))}
-              </select>
-            </div>
+            {/* Automatisering dropdown — de event-keys gelden alleen voor medewerker-checklists */}
+            {showAutomation && (
+              <div className={`flex items-center gap-1 text-[10px] rounded-full px-2 py-0.5 transition-all ${
+                draftAutoKey ? 'bg-violet-100 ring-1 ring-violet-200' : 'bg-slate-100'
+              }`}>
+                <Zap size={9} className={draftAutoKey ? 'text-violet-500' : 'text-slate-400'} />
+                <select
+                  value={draftAutoKey}
+                  onChange={e => setDraftAutoKey(e.target.value)}
+                  className={`text-[10px] font-semibold bg-transparent border-0 focus:outline-none focus:ring-0 cursor-pointer ${
+                    draftAutoKey ? 'text-violet-600' : 'text-slate-400'
+                  }`}
+                >
+                  {AUTOMATION_KEY_OPTIONS.map(o => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -422,6 +427,7 @@ export function ProcessesView() {
   const [editingHeader, setEditingHeader]   = useState(false)
   const [headerName, setHeaderName]         = useState('')
   const [headerDesc, setHeaderDesc]         = useState('')
+  const [headerTrigger, setHeaderTrigger]   = useState('')
   const [savingHeader, setSavingHeader]     = useState(false)
 
   const [editingItemId, setEditingItemId]   = useState<string | null>(null)
@@ -476,6 +482,7 @@ export function ProcessesView() {
     if (!selected) return
     setHeaderName(selected.name)
     setHeaderDesc(selected.description ?? '')
+    setHeaderTrigger(selected.autoApplyTrigger ?? '')
     setEditingHeader(true)
   }
 
@@ -486,9 +493,10 @@ export function ProcessesView() {
       const { data } = await api.put<ProcessTemplateDetail>(`/portal/process-templates/${selected.id}`, {
         name: headerName.trim(),
         description: headerDesc.trim() || null,
+        autoApplyTrigger: headerTrigger || null,
       })
       setSelected(data)
-      setTemplates(prev => prev.map(t => t.id === data.id ? { ...t, name: data.name, description: data.description } : t))
+      setTemplates(prev => prev.map(t => t.id === data.id ? { ...t, name: data.name, description: data.description, autoApplyTrigger: data.autoApplyTrigger } : t))
       setEditingHeader(false)
     } finally { setSavingHeader(false) }
   }
@@ -690,6 +698,30 @@ export function ProcessesView() {
                       className="w-full text-sm text-slate-500 border-b border-slate-200 bg-transparent outline-none pb-0.5"
                       placeholder="Omschrijving (optioneel)…"
                     />
+                    {AUTO_APPLY_TRIGGER_OPTIONS[selected.targetEntityType] && (
+                      <div className="pt-1">
+                        <label className="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">
+                          Automatisch toepassen
+                        </label>
+                        <div className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 ring-1 transition-all ${
+                          headerTrigger ? 'bg-violet-50 ring-violet-200' : 'bg-slate-50 ring-slate-200'
+                        }`}>
+                          <Zap size={11} className={headerTrigger ? 'text-violet-500' : 'text-slate-400'} />
+                          <select
+                            value={headerTrigger}
+                            onChange={e => setHeaderTrigger(e.target.value)}
+                            className={`text-xs font-medium bg-transparent border-0 focus:outline-none focus:ring-0 cursor-pointer ${
+                              headerTrigger ? 'text-violet-700' : 'text-slate-500'
+                            }`}
+                          >
+                            <option value="">— Alleen handmatig —</option>
+                            {AUTO_APPLY_TRIGGER_OPTIONS[selected.targetEntityType]!.map(o => (
+                              <option key={o.value} value={o.value}>{o.label}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                    )}
                     <div className="flex items-center gap-2 pt-1">
                       <Button size="sm" onClick={saveHeader} disabled={savingHeader}>{savingHeader ? 'Opslaan…' : 'Opslaan'}</Button>
                       <Button size="sm" variant="secondary" onClick={() => setEditingHeader(false)}>Annuleren</Button>
@@ -711,6 +743,11 @@ export function ProcessesView() {
                         {selected.defaultChecklistType && (
                           <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${CHECKLIST_TYPE_TONE[selected.defaultChecklistType]}`}>
                             Gebruikt voor: {CHECKLIST_TYPE_LABEL[selected.defaultChecklistType]}
+                          </span>
+                        )}
+                        {selected.autoApplyTrigger && (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-violet-50 text-violet-600 ring-1 ring-violet-200">
+                            <Zap size={9} /> Auto: {AUTO_APPLY_TRIGGER_LABEL[selected.autoApplyTrigger] ?? selected.autoApplyTrigger}
                           </span>
                         )}
                       </div>
@@ -770,6 +807,7 @@ export function ProcessesView() {
                             onDeleteClick={() => { setDeletingItemId(item.id); setEditingItemId(null) }}
                             onDeleteConfirm={() => deleteItem(item.id)}
                             onDeleteCancel={() => setDeletingItemId(null)}
+                            showAutomation={selected.targetEntityType === 'Employee'}
                           />
                         ))}
                       </SortableContext>

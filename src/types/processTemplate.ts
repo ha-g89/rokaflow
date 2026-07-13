@@ -7,6 +7,7 @@ export interface ProcessTemplateListItem {
   description: string | null
   targetEntityType: TargetEntityType
   defaultChecklistType: DefaultChecklistType | null
+  autoApplyTrigger: string | null
   isSystemDefault: boolean
   itemCount: number
   sortOrder: number
@@ -78,4 +79,26 @@ export const AUTOMATION_KEY_LABEL: Record<string, string> = {
   device_returned:  'Device ↙',
   phone_returned:   'Telefoon ↙',
   license_revoked:  'Licentie ↙',
+}
+
+// ── Auto-apply triggers (checklist verschijnt vanzelf op het apparaat) ────────
+
+export const AUTO_APPLY_TRIGGER_OPTIONS: Partial<Record<TargetEntityType, { value: string; label: string }[]>> = {
+  Hardware: [
+    { value: 'hardware.age_near_limit', label: 'Hardware nadert 5 jaar (4,5+ jaar oud)' },
+    { value: 'hardware.age_over_limit', label: 'Hardware ouder dan 5 jaar' },
+    { value: 'hardware.os_outdated',    label: 'Besturingssysteem verouderd (end-of-life)' },
+  ],
+  Phone: [
+    { value: 'phone.age_near_limit', label: 'Telefoon nadert 3 jaar (2,5+ jaar oud)' },
+    { value: 'phone.age_over_limit', label: 'Telefoon ouder dan 3 jaar' },
+  ],
+}
+
+export const AUTO_APPLY_TRIGGER_LABEL: Record<string, string> = {
+  'hardware.age_near_limit': 'Nadert 5 jaar',
+  'hardware.age_over_limit': 'Ouder dan 5 jaar',
+  'hardware.os_outdated':    'OS verouderd',
+  'phone.age_near_limit':    'Nadert 3 jaar',
+  'phone.age_over_limit':    'Ouder dan 3 jaar',
 }

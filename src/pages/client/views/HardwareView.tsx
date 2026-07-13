@@ -12,6 +12,7 @@ import { ItemHistoryBlock } from '@/components/portal/AuditHistory'
 import { ConfirmDeleteModal } from '@/components/ui/ConfirmDeleteModal'
 import { HardwareModal } from '@/components/HardwareModal'
 import { ReceiveHardwareModal } from '@/components/ReceiveHardwareModal'
+import { EntityChecklistCard } from '@/components/EntityChecklistCard'
 import { NotesPanel } from '@/components/NotesPanel'
 import type { HardwareAssetListItem } from '@/types/hardware'
 import { HARDWARE_STATUS_LABEL, HARDWARE_STATUS_TONE, HARDWARE_TYPE_LABEL, HARDWARE_SPEC_FIELDS } from '@/types/hardware'
@@ -830,6 +831,8 @@ export function HardwareDetailFullView({ initialAsset, teammates, onBack, onDele
         </div>
 
         <HardwareSpecificationsCard asset={asset} onSaved={refresh} />
+
+        <EntityChecklistCard entityType="Hardware" entityId={asset.id} />
 
         {/* ── Notities + Historie — volle breedte onderaan ── */}
         <Card>
