@@ -19,6 +19,21 @@ export function fmtDate(d: string | null | undefined) {
   return new Date(d).toLocaleDateString('nl-NL', { day: '2-digit', month: '2-digit', year: 'numeric' })
 }
 
+function statusPillLabel(u: ClientUserListItem) {
+  switch (u.status) {
+    case 'StartPlanned':
+      return u.startDate ? `In dienst gepland per ${fmtDate(u.startDate)}` : STATUS_LABEL.StartPlanned
+    case 'InService':
+      return u.startDate ? `In dienst per ${fmtDate(u.startDate)}` : STATUS_LABEL.InService
+    case 'LeavePlanned':
+      return u.leaveDate ? `Uit dienst gepland per ${fmtDate(u.leaveDate)}` : STATUS_LABEL.LeavePlanned
+    case 'Left':
+      return u.leaveDate ? `Uit dienst per ${fmtDate(u.leaveDate)}` : STATUS_LABEL.Left
+    default:
+      return STATUS_LABEL[u.status]
+  }
+}
+
 // ── Delete employee modal ─────────────────────────────────────────────────────
 
 type Blocker = { icon: React.ReactNode; type: string; name: string }
@@ -193,7 +208,7 @@ export function EmployeeListView({ teammates, loading, search, currentUserId, on
       .toLowerCase().includes(search.toLowerCase())
   )
 
-  const cols = 'grid-cols-[2.5fr_1fr_1fr_1fr_1fr_1fr_80px_90px_40px]'
+  const cols = 'grid-cols-[2.5fr_1fr_1fr_1fr_1.6fr_80px_90px_40px]'
 
   const totaalMedewerkers = teammates.length
   const inDienst          = teammates.filter(t => t.status === 'InService').length
@@ -227,7 +242,7 @@ export function EmployeeListView({ teammates, loading, search, currentUserId, on
 
       <Card className="flex-1 overflow-hidden flex flex-col">
         <div className={`grid ${cols} gap-3 px-5 py-3 bg-slate-50 border-b border-slate-100`}>
-          {['Naam', 'Manager', 'Afdeling', 'Functie', 'Startdatum', 'Status', 'Assets', 'Licenties', ''].map(h => (
+          {['Naam', 'Manager', 'Afdeling', 'Functie', 'Status', 'Assets', 'Licenties', ''].map(h => (
             <span key={h} className="text-xs font-semibold text-slate-500 uppercase tracking-wider truncate">{h}</span>
           ))}
         </div>
@@ -264,16 +279,8 @@ export function EmployeeListView({ teammates, loading, search, currentUserId, on
                     </span>
                   ) : <span />}
                   <p className="text-sm text-slate-500 truncate">{u.jobTitle || '—'}</p>
-                  <p className="text-sm text-slate-500">{fmtDate(u.startDate)}</p>
-                  <span
-                    className={`text-xs px-2 py-0.5 rounded-full font-medium w-fit ${STATUS_TONE[u.status]}`}
-                    title={
-                      u.status === 'StartPlanned' && u.startDate ? `In dienst per ${fmtDate(u.startDate)}`
-                      : u.status === 'LeavePlanned' && u.leaveDate ? `Uit dienst per ${fmtDate(u.leaveDate)}`
-                      : undefined
-                    }
-                  >
-                    {STATUS_LABEL[u.status]}
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium w-fit truncate ${STATUS_TONE[u.status]}`}>
+                    {statusPillLabel(u)}
                   </span>
                   <div className="flex items-center gap-1 text-xs text-slate-500">
                     <Laptop size={12} className="text-slate-400 flex-shrink-0" />
