@@ -391,9 +391,13 @@ export default function OrgDashboard() {
                     : <ul className="divide-y divide-slate-100">
                         {filteredClients.map(c => (
                           <li key={c.id}>
-                            <button
+                            {/* div i.p.v. button: de rij bevat zelf actie-knoppen, en geneste buttons zijn ongeldige HTML */}
+                            <div
+                              role="button"
+                              tabIndex={0}
                               onClick={() => handleSelectClient(c)}
-                              className={`w-full text-left px-3 py-2.5 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors flex items-center justify-between gap-2 ${
+                              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSelectClient(c) } }}
+                              className={`w-full text-left px-3 py-2.5 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors flex items-center justify-between gap-2 ${
                                 selectedClient?.id === c.id ? 'bg-blue-50 dark:bg-blue-950/40 border-l-2 border-blue-500' : ''}`}
                             >
                               {c.logoDataUrl
@@ -437,7 +441,7 @@ export default function OrgDashboard() {
                                   )}
                                 </div>
                               </div>
-                            </button>
+                            </div>
                           </li>
                         ))}
                       </ul>
