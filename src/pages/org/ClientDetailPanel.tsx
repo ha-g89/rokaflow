@@ -54,7 +54,10 @@ function EditUserModal({ user, clientId, onClose, onSaved }: {
         firstName: firstName.trim(), lastName: lastName.trim(), email: email.trim() || null,
       })
       onSaved(); onClose()
-    } catch { setError('Opslaan mislukt.') } finally { setSaving(false) }
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail
+      setError(msg ?? 'Opslaan mislukt.')
+    } finally { setSaving(false) }
   }
 
   return (
