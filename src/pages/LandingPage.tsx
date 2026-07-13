@@ -1,5 +1,9 @@
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import {
+  Users, Laptop, KeyRound, Smartphone, ClipboardCheck, Building2,
+  ShieldCheck, Zap, Monitor,
+} from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import logo from '@/assets/RokaFlow_icon_dark_transparent.png'
@@ -13,12 +17,18 @@ const ROLE_HOME: Record<string, string> = {
 }
 
 const FEATURES = [
-  { n: '01', icon: '👥', name: 'Medewerkerbeheer',      desc: 'Van aantreden tot vertrek. Lifecycle, afdeling, manager en contract in één overzicht.' },
-  { n: '02', icon: '💻', name: 'Hardware & Assets',      desc: 'Laptops en apparatuur per medewerker. Uitgifte- en inleverhistorie altijd beschikbaar.' },
-  { n: '03', icon: '🔑', name: 'Licenties & Software',   desc: 'Inzicht in software-toewijzingen, licentiekosten en bezettingsgraad per seat.' },
-  { n: '04', icon: '📱', name: 'Telefonie',              desc: 'Telefoons, simkaarten en abonnementen gecombineerd — inclusief koppelingen en contracten.' },
-  { n: '05', icon: '✅', name: 'Onboarding & Offboarding', desc: 'Gestructureerde checklists zodat niets wordt vergeten bij in- of uitdienst.' },
-  { n: '06', icon: '🏢', name: 'MSP-platform',           desc: 'Beheer meerdere organisaties vanuit één dashboard. Volledig multi-tenant.' },
+  { n: '01', icon: <Users size={19} />,          name: 'Medewerkerbeheer',        layout: 'wide',
+    desc: 'Van aantreden tot vertrek. Lifecycle, afdeling, manager en contract in één overzicht — inclusief automatische statusovergangen op start- en vertrekdatum.' },
+  { n: '02', icon: <Laptop size={19} />,         name: 'Hardware & Assets',       layout: 'normal',
+    desc: 'Laptops en apparatuur per medewerker. Uitgifte- en inleverhistorie altijd beschikbaar.' },
+  { n: '03', icon: <KeyRound size={19} />,       name: 'Licenties & Software',    layout: 'normal',
+    desc: 'Inzicht in software-toewijzingen, licentiekosten en bezettingsgraad per seat.' },
+  { n: '04', icon: <Smartphone size={19} />,     name: 'Telefonie',               layout: 'normal',
+    desc: 'Telefoons, simkaarten en abonnementen gecombineerd — inclusief koppelingen en contracten.' },
+  { n: '05', icon: <ClipboardCheck size={19} />, name: 'Onboarding & Offboarding', layout: 'normal',
+    desc: 'Gestructureerde checklists zodat niets wordt vergeten bij in- of uitdienst.' },
+  { n: '06', icon: <Building2 size={22} />,      name: 'MSP-platform',            layout: 'full',
+    desc: 'Beheer meerdere organisaties vanuit één dashboard. Volledig multi-tenant, met context-wisselen per klant, geconsolideerde notificaties en eenvoudige klantoverdrachten.' },
 ]
 
 // ── Mock screen sub-components ────────────────────────────────────────────────
@@ -37,7 +47,7 @@ const EmpRow = ({ color, w1 = '62%', w2 = '42%', badge, bCls }: {
 )
 
 const HwRow = ({ icon, w1 = '55%', w2 = '38%', pct, barClr, badge, bCls }: {
-  icon: string; w1?: string; w2?: string; pct: number; barClr: string; badge: string; bCls: string
+  icon: React.ReactNode; w1?: string; w2?: string; pct: number; barClr: string; badge: string; bCls: string
 }) => (
   <div className="rf-sc-row">
     <div className="rf-sc-icon">{icon}</div>
@@ -91,9 +101,43 @@ const CSS = `
     --line-md:   rgba(15,23,42,0.12);
     --green:     #059669;
     --amber:     #d97706;
-    /* screens keep their own dark palette */
-    --sc-bg:     #071628;
-    --sc-top:    #0d2244;
+    /* mock screens follow the active theme: light = product light UI */
+    --sc-bg:         #ffffff;
+    --sc-top:        #f8fafc;
+    --sc-border:     rgba(15,23,42,0.1);
+    --sc-shadow:     0 0 0 1px rgba(15,23,42,0.05), 0 24px 56px rgba(15,23,42,0.13), 0 8px 16px rgba(15,23,42,0.07);
+    --sc-accent:     #2563eb;
+    --sc-title:      rgba(15,23,42,0.55);
+    --sc-text:       rgba(15,23,42,0.85);
+    --sc-text-dim:   rgba(15,23,42,0.4);
+    --sc-line:       rgba(15,23,42,0.12);
+    --sc-line-s:     rgba(15,23,42,0.06);
+    --sc-row-border: rgba(15,23,42,0.06);
+    --sc-track:      rgba(15,23,42,0.08);
+    --sc-tile-bg:    #eff6ff;
+    --sc-tile-bd:    rgba(37,99,235,0.18);
+    --sc-badge-g-bg: rgba(16,185,129,0.14);  --sc-badge-g-tx: #059669;
+    --sc-badge-a-bg: rgba(245,158,11,0.16);  --sc-badge-a-tx: #b45309;
+    --sc-badge-b-bg: rgba(37,99,235,0.12);   --sc-badge-b-tx: #2563eb;
+  }
+  html.dark {
+    --sc-bg:         #071628;
+    --sc-top:        #0d2244;
+    --sc-border:     rgba(255,255,255,0.06);
+    --sc-shadow:     0 0 0 1px rgba(0,0,0,0.3), 0 24px 56px rgba(0,0,0,0.35), 0 8px 16px rgba(0,0,0,0.2);
+    --sc-accent:     #38bdf8;
+    --sc-title:      rgba(238,242,255,0.4);
+    --sc-text:       rgba(238,242,255,0.8);
+    --sc-text-dim:   rgba(238,242,255,0.28);
+    --sc-line:       rgba(238,242,255,0.1);
+    --sc-line-s:     rgba(238,242,255,0.06);
+    --sc-row-border: rgba(238,242,255,0.04);
+    --sc-track:      rgba(238,242,255,0.07);
+    --sc-tile-bg:    rgba(37,99,235,0.1);
+    --sc-tile-bd:    rgba(37,99,235,0.18);
+    --sc-badge-g-bg: rgba(16,185,129,0.18);  --sc-badge-g-tx: #34d399;
+    --sc-badge-a-bg: rgba(245,158,11,0.18);  --sc-badge-a-tx: #fbbf24;
+    --sc-badge-b-bg: rgba(37,99,235,0.22);   --sc-badge-b-tx: #93c5fd;
   }
 
   /* ── Base ───────────────────────────────────────────────────── */
@@ -274,7 +318,7 @@ const CSS = `
   .rf-trust-icon {
     width: 18px; height: 18px; border-radius: 50%;
     background: var(--bg-deep); display: flex; align-items: center; justify-content: center;
-    font-size: 10px;
+    color: var(--accent);
   }
 
   /* ── Hero right (screens) ───────────────────────────────────── */
@@ -289,24 +333,28 @@ const CSS = `
   .rf-app-badge {
     display: flex; align-items: center; gap: 10px;
     background: var(--sc-bg);
-    border: 1px solid rgba(56,189,248,0.2);
+    border: 1px solid var(--sc-tile-bd);
     border-radius: 12px; padding: 8px 14px 8px 10px;
     margin-bottom: 28px;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+    box-shadow: 0 4px 16px rgba(15,23,42,0.1);
     animation: rfReveal 0.8s cubic-bezier(0.16,1,0.3,1) 0.35s both;
+    transition: background 0.3s, border-color 0.3s;
   }
+  html.dark .rf-app-badge { box-shadow: 0 4px 16px rgba(0,0,0,0.18); }
   .rf-app-badge-logo {
     width: 28px; height: 28px; object-fit: contain;
+    filter: brightness(0) opacity(0.82);
   }
+  html.dark .rf-app-badge-logo { filter: none; }
   .rf-app-badge-label {
     font-family: 'Bricolage Grotesque', sans-serif;
     font-size: 13px; font-weight: 700;
-    color: rgba(238,242,255,0.85); letter-spacing: 0.01em;
+    color: var(--sc-text); letter-spacing: 0.01em;
   }
   .rf-app-badge-pill {
     margin-left: 4px; font-size: 9px; font-weight: 700;
     padding: 2px 7px; border-radius: 20px;
-    background: rgba(37,99,235,0.3); color: #93c5fd;
+    background: var(--sc-badge-b-bg); color: var(--sc-badge-b-tx);
     letter-spacing: 0.06em; text-transform: uppercase;
   }
 
@@ -379,12 +427,10 @@ const CSS = `
   .rf-screen {
     border-radius: 10px; overflow: hidden;
     background: var(--sc-bg);
-    border: 1px solid rgba(255,255,255,0.06);
-    box-shadow:
-      0 0 0 1px rgba(0,0,0,0.3),
-      0 24px 56px rgba(0,0,0,0.35),
-      0 8px 16px rgba(0,0,0,0.2);
+    border: 1px solid var(--sc-border);
+    box-shadow: var(--sc-shadow);
     position: relative;
+    transition: background 0.3s, border-color 0.3s, box-shadow 0.3s;
   }
   .rf-screen::after {
     content: '';
@@ -400,8 +446,9 @@ const CSS = `
 
   .rf-sc-chrome {
     height: 27px; background: var(--sc-top);
-    border-bottom: 1px solid rgba(255,255,255,0.06);
+    border-bottom: 1px solid var(--sc-border);
     display: flex; align-items: center; gap: 5px; padding: 0 10px;
+    transition: background 0.3s, border-color 0.3s;
   }
   .rf-sc-dot { width: 7px; height: 7px; border-radius: 50%; }
   .rf-sc-dot-r { background: #ff5f57; }
@@ -410,24 +457,24 @@ const CSS = `
   .rf-sc-title {
     font-family: 'DM Sans', sans-serif;
     font-size: 10px; font-weight: 600;
-    color: rgba(238,242,255,0.4); margin-left: 7px; letter-spacing: 0.04em;
+    color: var(--sc-title); margin-left: 7px; letter-spacing: 0.04em;
   }
   .rf-sc-body { padding: 9px 10px 10px; }
 
   .rf-sc-stats { display: flex; gap: 5px; margin-bottom: 8px; }
   .rf-sc-stat {
-    flex: 1; background: rgba(37,99,235,0.1);
-    border: 1px solid rgba(37,99,235,0.18);
+    flex: 1; background: var(--sc-tile-bg);
+    border: 1px solid var(--sc-tile-bd);
     border-radius: 5px; padding: 5px 6px;
   }
   .rf-sc-stat-n {
     font-family: 'Bricolage Grotesque', sans-serif;
-    font-size: 13px; font-weight: 700; color: #60a5fa; line-height: 1;
+    font-size: 13px; font-weight: 700; color: var(--sc-accent); line-height: 1;
   }
-  .rf-sc-stat-l { font-size: 7.5px; color: rgba(238,242,255,0.28); margin-top: 2px; }
+  .rf-sc-stat-l { font-size: 7.5px; color: var(--sc-text-dim); margin-top: 2px; }
 
   .rf-sc-bar-main-track {
-    background: rgba(238,242,255,0.06); height: 5px;
+    background: var(--sc-track); height: 5px;
     border-radius: 3px; overflow: hidden; margin-bottom: 8px;
   }
   .rf-sc-bar-main-fill {
@@ -438,42 +485,45 @@ const CSS = `
 
   .rf-sc-row {
     display: flex; align-items: center; gap: 7px;
-    padding: 4px 0; border-bottom: 1px solid rgba(238,242,255,0.04);
+    padding: 4px 0; border-bottom: 1px solid var(--sc-row-border);
   }
   .rf-sc-row:last-child { border-bottom: none; }
   .rf-sc-av { width: 20px; height: 20px; border-radius: 50%; flex-shrink: 0; }
-  .rf-sc-icon { font-size: 11px; line-height: 1; flex-shrink: 0; width: 20px; text-align: center; }
+  .rf-sc-icon {
+    line-height: 1; flex-shrink: 0; width: 20px; text-align: center;
+    display: flex; align-items: center; justify-content: center; color: var(--sc-accent);
+  }
   .rf-sc-lines { flex: 1; }
-  .rf-sc-line { height: 5px; border-radius: 2px; background: rgba(238,242,255,0.1); margin-bottom: 3px; }
-  .rf-sc-line-s { background: rgba(238,242,255,0.06); margin-bottom: 0; }
+  .rf-sc-line { height: 5px; border-radius: 2px; background: var(--sc-line); margin-bottom: 3px; }
+  .rf-sc-line-s { background: var(--sc-line-s); margin-bottom: 0; }
 
   .rf-sc-badge {
     font-size: 7px; font-weight: 700;
     padding: 2px 5px; border-radius: 3px;
     white-space: nowrap; flex-shrink: 0;
   }
-  .rf-badge-g { background: rgba(16,185,129,0.18); color: #34d399; }
-  .rf-badge-a { background: rgba(245,158,11,0.18); color: #fbbf24; }
-  .rf-badge-b { background: rgba(37,99,235,0.22); color: #93c5fd; }
+  .rf-badge-g { background: var(--sc-badge-g-bg); color: var(--sc-badge-g-tx); }
+  .rf-badge-a { background: var(--sc-badge-a-bg); color: var(--sc-badge-a-tx); }
+  .rf-badge-b { background: var(--sc-badge-b-bg); color: var(--sc-badge-b-tx); }
 
-  .rf-sc-bar-mini-track { width: 38px; height: 3px; border-radius: 2px; background: rgba(238,242,255,0.08); overflow: hidden; }
+  .rf-sc-bar-mini-track { width: 38px; height: 3px; border-radius: 2px; background: var(--sc-track); overflow: hidden; }
   .rf-sc-bar-mini-fill  { height: 100%; border-radius: 2px; }
 
-  .rf-sc-lic { background: rgba(37,99,235,0.07); border: 1px solid rgba(37,99,235,0.14); border-radius: 5px; padding: 7px 8px; margin-bottom: 5px; }
+  .rf-sc-lic { background: var(--sc-tile-bg); border: 1px solid var(--sc-tile-bd); border-radius: 5px; padding: 7px 8px; margin-bottom: 5px; }
   .rf-sc-lic:last-child { margin-bottom: 0; }
   .rf-sc-lic-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1px; }
-  .rf-sc-lic-name { font-size: 9px; font-weight: 700; color: rgba(238,242,255,0.8); }
-  .rf-sc-lic-vendor { font-size: 7.5px; color: rgba(238,242,255,0.28); margin-bottom: 5px; }
-  .rf-sc-bar-track { background: rgba(238,242,255,0.07); height: 4px; border-radius: 2px; overflow: hidden; }
+  .rf-sc-lic-name { font-size: 9px; font-weight: 700; color: var(--sc-text); }
+  .rf-sc-lic-vendor { font-size: 7.5px; color: var(--sc-text-dim); margin-bottom: 5px; }
+  .rf-sc-bar-track { background: var(--sc-track); height: 4px; border-radius: 2px; overflow: hidden; }
   .rf-sc-bar-fill {
     height: 100%; border-radius: 2px;
     transform-origin: left center; transform: scaleX(0);
     animation: rfBarReveal 0.9s cubic-bezier(0.16,1,0.3,1) both;
   }
 
-  .rf-sc-tabs { display: flex; border-bottom: 1px solid rgba(238,242,255,0.07); margin-bottom: 7px; }
-  .rf-sc-tab { font-size: 8px; font-weight: 600; padding: 4px 7px; color: rgba(238,242,255,0.28); letter-spacing: 0.03em; }
-  .rf-sc-tab.active { color: #38bdf8; border-bottom: 1px solid #38bdf8; margin-bottom: -1px; }
+  .rf-sc-tabs { display: flex; border-bottom: 1px solid var(--sc-row-border); margin-bottom: 7px; }
+  .rf-sc-tab { font-size: 8px; font-weight: 600; padding: 4px 7px; color: var(--sc-text-dim); letter-spacing: 0.03em; }
+  .rf-sc-tab.active { color: var(--sc-accent); border-bottom: 1px solid var(--sc-accent); margin-bottom: -1px; }
 
   @keyframes rfBarReveal { to { transform: scaleX(1); } }
 
@@ -527,6 +577,16 @@ const CSS = `
     gap: 14px;
     max-width: 1160px; margin: 0 auto;
   }
+  /* Bento: eerste kaart breed, MSP-kaart als brede afsluiter */
+  .rf-feat-item--wide { grid-column: span 2; display: flex; align-items: flex-start; gap: 22px; }
+  .rf-feat-item--wide .rf-feat-icon-wrap { margin-bottom: 0; flex-shrink: 0; width: 48px; height: 48px; }
+  .rf-feat-item--full {
+    grid-column: 1 / -1; display: flex; align-items: center; gap: 26px;
+    background: rgba(37,99,235,0.08); border-color: rgba(37,99,235,0.22);
+  }
+  .rf-feat-item--full .rf-feat-icon-wrap { margin-bottom: 0; flex-shrink: 0; width: 52px; height: 52px; }
+  .rf-feat-item--full .rf-feat-name { font-size: 18px; }
+  .rf-feat-item--full .rf-feat-desc { max-width: 560px; }
 
   .rf-feat-item {
     background: rgba(255,255,255,0.03);
@@ -555,7 +615,7 @@ const CSS = `
   .rf-feat-icon-wrap {
     width: 40px; height: 40px; border-radius: 10px;
     background: rgba(37,99,235,0.15); display: flex; align-items: center;
-    justify-content: center; font-size: 18px; margin-bottom: 16px;
+    justify-content: center; margin-bottom: 16px; color: #60a5fa;
   }
   .rf-feat-n {
     font-size: 9.5px; font-weight: 700; letter-spacing: 0.14em;
@@ -768,6 +828,7 @@ const CSS = `
   }
   @media (max-width: 640px) {
     .rf-feat-grid { grid-template-columns: 1fr; }
+    .rf-feat-item--wide, .rf-feat-item--full { grid-column: auto; flex-direction: column; align-items: flex-start; gap: 16px; }
     .rf-headline  { font-size: 40px; }
     .rf-footer    { flex-direction: column; gap: 8px; text-align: center; }
     .rf-so-l, .rf-so-r { display: none; }
@@ -855,15 +916,15 @@ export default function LandingPage() {
 
             <div className="rf-trust">
               <div className="rf-trust-item">
-                <div className="rf-trust-icon">🔒</div>
+                <div className="rf-trust-icon"><ShieldCheck size={11} /></div>
                 Veilig & versleuteld
               </div>
               <div className="rf-trust-item">
-                <div className="rf-trust-icon">⚡</div>
+                <div className="rf-trust-icon"><Zap size={11} /></div>
                 Direct operationeel
               </div>
               <div className="rf-trust-item">
-                <div className="rf-trust-icon">🏢</div>
+                <div className="rf-trust-icon"><Building2 size={11} /></div>
                 Multi-tenant MSP beheer
               </div>
             </div>
@@ -935,10 +996,10 @@ export default function LandingPage() {
                       <div className="rf-sc-bar-main-fill"
                         style={{ width: '66%', background: 'linear-gradient(90deg, #2563eb, #38bdf8)' }} />
                     </div>
-                    <HwRow icon="💻" w1="58%" w2="36%" pct={100} barClr="#2563eb" badge="In gebruik" bCls="rf-badge-b" />
-                    <HwRow icon="💻" w1="50%" w2="42%" pct={100} barClr="#2563eb" badge="In gebruik" bCls="rf-badge-b" />
-                    <HwRow icon="🖥"  w1="52%" w2="30%" pct={0}   barClr="#10b981" badge="Op voorraad" bCls="rf-badge-g" />
-                    <HwRow icon="📱" w1="45%" w2="38%" pct={100} barClr="#f59e0b" badge="In reparatie" bCls="rf-badge-a" />
+                    <HwRow icon={<Laptop size={12} />}     w1="58%" w2="36%" pct={100} barClr="#2563eb" badge="In gebruik" bCls="rf-badge-b" />
+                    <HwRow icon={<Laptop size={12} />}     w1="50%" w2="42%" pct={100} barClr="#2563eb" badge="In gebruik" bCls="rf-badge-b" />
+                    <HwRow icon={<Monitor size={12} />}    w1="52%" w2="30%" pct={0}   barClr="#10b981" badge="Op voorraad" bCls="rf-badge-g" />
+                    <HwRow icon={<Smartphone size={12} />} w1="45%" w2="38%" pct={100} barClr="#f59e0b" badge="In reparatie" bCls="rf-badge-a" />
                   </div>
                 </div>
                 <span className="rf-so-caption">Elke laptop, telefoon en monitor inzichtelijk — statussen en waarde altijd up-to-date.</span>
@@ -984,11 +1045,15 @@ export default function LandingPage() {
           </div>
           <div className="rf-feat-grid">
             {FEATURES.map(f => (
-              <div key={f.n} className="rf-feat-item">
+              <div key={f.n} className={`rf-feat-item ${
+                f.layout === 'wide' ? 'rf-feat-item--wide' : f.layout === 'full' ? 'rf-feat-item--full' : ''
+              }`}>
                 <div className="rf-feat-icon-wrap">{f.icon}</div>
-                <div className="rf-feat-n">{f.n}</div>
-                <div className="rf-feat-name">{f.name}</div>
-                <div className="rf-feat-desc">{f.desc}</div>
+                <div>
+                  <div className="rf-feat-n">{f.n}</div>
+                  <div className="rf-feat-name">{f.name}</div>
+                  <div className="rf-feat-desc">{f.desc}</div>
+                </div>
               </div>
             ))}
           </div>
