@@ -50,6 +50,8 @@ export interface ClientUserDetailResponse {
   locationId: string | null
   locationName: string | null
   isActive: boolean
+  isPortalUser: boolean
+  role: string
   completeness: number
   createdAt: string
   hardware: HardwareAssetDto[]

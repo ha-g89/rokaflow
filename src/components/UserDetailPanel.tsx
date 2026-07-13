@@ -555,6 +555,35 @@ export function UserDetailPanel({ user, canEdit, departments = [], managers = []
   const [confirmUnlink, setConfirmUnlink] = useState<{ name: string; subtitle?: string; onConfirm: () => Promise<void> } | null>(null)
   const [unlinking, setUnlinking] = useState(false)
   const [clickingKey, setClickingKey] = useState<string | null>(null)
+  const [grantingAccess, setGrantingAccess] = useState(false)
+  const [grantError, setGrantError] = useState<string | null>(null)
+  const [confirmRevoke, setConfirmRevoke] = useState(false)
+  const [revokingAccess, setRevokingAccess] = useState(false)
+
+  const handleGrantPortalAccess = async () => {
+    setGrantingAccess(true)
+    setGrantError(null)
+    try {
+      await api.put(`${checklistBasePath}/grant-portal-access`)
+      onUserUpdated?.()
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail
+      setGrantError(msg ?? 'Portaaltoegang geven is mislukt.')
+    } finally {
+      setGrantingAccess(false)
+    }
+  }
+
+  const handleRevokePortalAccess = async () => {
+    setRevokingAccess(true)
+    try {
+      await api.put(`${checklistBasePath}/revoke-portal-access`)
+      onUserUpdated?.()
+    } finally {
+      setRevokingAccess(false)
+      setConfirmRevoke(false)
+    }
+  }
 
   const handleCatalogClick = async (fn: ((id: string) => void | Promise<void>) | undefined, licenseId: string, key: string) => {
     if (!fn) return
@@ -774,6 +803,37 @@ export function UserDetailPanel({ user, canEdit, departments = [], managers = []
         </div>
       </Modal>
 
+      <Modal
+        open={confirmRevoke}
+        onClose={() => !revokingAccess && setConfirmRevoke(false)}
+        title="Portaaltoegang intrekken"
+        className="max-w-sm"
+      >
+        <div className="flex flex-col items-center text-center gap-4 py-2">
+          <div className="w-12 h-12 rounded-full bg-orange-50 flex items-center justify-center">
+            <KeyRound size={22} className="text-orange-500" />
+          </div>
+          <div>
+            <p className="text-sm text-slate-700 leading-relaxed">
+              Weet je zeker dat je de portaaltoegang van{' '}
+              <span className="font-semibold">"{user.firstName} {user.lastName}"</span>{' '}
+              wilt intrekken?
+            </p>
+            <p className="text-xs text-slate-400 mt-1">
+              Deze medewerker kan hierna niet meer inloggen. Toegang kan later opnieuw gegeven worden.
+            </p>
+          </div>
+        </div>
+        <div className="flex gap-2 mt-6">
+          <Button variant="secondary" className="flex-1" onClick={() => setConfirmRevoke(false)} disabled={revokingAccess}>
+            Annuleren
+          </Button>
+          <Button className="flex-1 bg-orange-500 hover:bg-orange-600 text-white" onClick={handleRevokePortalAccess} disabled={revokingAccess}>
+            {revokingAccess ? 'Bezig…' : 'Intrekken'}
+          </Button>
+        </div>
+      </Modal>
+
       <div className="space-y-4">
       {/* ── Profile header ── */}
       <Card className="rounded-2xl shadow-sm">
@@ -794,6 +854,27 @@ export function UserDetailPanel({ user, canEdit, departments = [], managers = []
                   </div>
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
+                  {user.role === 'Employee' && (
+                    user.isPortalUser ? (
+                      <button
+                        onClick={() => setConfirmRevoke(true)}
+                        className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700 hover:bg-emerald-100 hover:border-emerald-300 transition-colors"
+                        title="Klik om portaaltoegang in te trekken"
+                      >
+                        <KeyRound size={12} />
+                        Portaaltoegang actief
+                      </button>
+                    ) : (
+                      <button
+                        onClick={handleGrantPortalAccess}
+                        disabled={grantingAccess}
+                        className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 hover:border-slate-300 disabled:opacity-50 transition-colors"
+                      >
+                        <KeyRound size={12} />
+                        {grantingAccess ? 'Bezig…' : 'Geef portaaltoegang'}
+                      </button>
+                    )
+                  )}
                   <button
                     onClick={() => setEditOpen(true)}
                     className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 hover:border-slate-300 transition-colors"
@@ -812,6 +893,9 @@ export function UserDetailPanel({ user, canEdit, departments = [], managers = []
                   )}
                 </div>
               </div>
+              {grantError && (
+                <p className="mt-2 text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{grantError}</p>
+              )}
             </div>
           </div>
 

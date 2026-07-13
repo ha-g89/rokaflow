@@ -19,7 +19,7 @@ const ROLE_HOME: Record<UserRole, string> = {
   msp_admin:    '/org',
   msp_member:   '/org',
   portal_admin: '/client',
-  employee:     '/client',
+  employee:     '/mijn-omgeving',
 }
 
 const CSS = `

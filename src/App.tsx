@@ -11,6 +11,7 @@ import OrgDashboard from '@/pages/org/OrgDashboard'
 import OrgSettings from '@/pages/org/OrgSettings'
 import RegisterPage from '@/pages/RegisterPage'
 import ClientPortal from '@/pages/client/ClientPortal'
+import SelfServicePortal from '@/pages/client/SelfServicePortal'
 import TransferApprovePage from '@/pages/TransferApprovePage'
 import PricingPage from '@/pages/PricingPage'
 import ProtectedRoute from '@/components/ProtectedRoute'
@@ -21,7 +22,7 @@ const ROLE_HOME: Record<string, string> = {
   msp_admin:    '/org',
   msp_member:   '/org',
   portal_admin: '/client',
-  employee:     '/client',
+  employee:     '/mijn-omgeving',
 }
 
 function RootRedirect() {
@@ -108,8 +109,18 @@ export default function App() {
         <Route
           path="/client/*"
           element={
-            <ProtectedRoute roles={['portal_admin', 'employee']}>
+            <ProtectedRoute roles={['portal_admin']}>
               <ClientPortal />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Medewerker zelfbediening (read-only) */}
+        <Route
+          path="/mijn-omgeving/*"
+          element={
+            <ProtectedRoute roles={['employee']}>
+              <SelfServicePortal />
             </ProtectedRoute>
           }
         />
