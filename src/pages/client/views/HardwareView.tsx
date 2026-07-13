@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
   Laptop, Search, Plus, Package, Activity, Archive, XCircle,
-  Pencil, Trash2, StickyNote, History, Link2Off, User, Maximize2, ArrowLeft,
+  Pencil, Trash2, StickyNote, History, Link2Off, User, Maximize2, ArrowLeft, PackageCheck,
 } from 'lucide-react'
 import api from '@/lib/axios'
 import { Card, CardContent } from '@/components/ui/Card'
@@ -11,6 +11,7 @@ import { StatCard } from '@/components/portal/PortalUI'
 import { ItemHistoryBlock } from '@/components/portal/AuditHistory'
 import { ConfirmDeleteModal } from '@/components/ui/ConfirmDeleteModal'
 import { HardwareModal } from '@/components/HardwareModal'
+import { ReceiveHardwareModal } from '@/components/ReceiveHardwareModal'
 import { NotesPanel } from '@/components/NotesPanel'
 import type { HardwareAssetListItem } from '@/types/hardware'
 import { HARDWARE_STATUS_LABEL, HARDWARE_STATUS_TONE, HARDWARE_TYPE_LABEL, HARDWARE_SPEC_FIELDS } from '@/types/hardware'
@@ -31,7 +32,7 @@ function typeNameToValue(typeName: string): number {
 
 // ── Detail panel ──────────────────────────────────────────────────────────────
 
-function HardwareDetailPanel({ asset, teammates, onEdit, onDelete, onUnlink, onLink, onExpand, historyKey }: {
+function HardwareDetailPanel({ asset, teammates, onEdit, onDelete, onUnlink, onLink, onExpand, onReceived, historyKey }: {
   asset: HardwareAssetListItem
   teammates: ClientUserListItem[]
   onEdit: () => void
@@ -39,6 +40,7 @@ function HardwareDetailPanel({ asset, teammates, onEdit, onDelete, onUnlink, onL
   onUnlink: () => Promise<void>
   onLink: (userId: string) => Promise<void>
   onExpand: () => void
+  onReceived: () => void
   historyKey: number
 }) {
   const [confirmDelete, setConfirmDelete]   = useState(false)
@@ -47,6 +49,7 @@ function HardwareDetailPanel({ asset, teammates, onEdit, onDelete, onUnlink, onL
   const [showLinking, setShowLinking]       = useState(false)
   const [linkUserId, setLinkUserId]         = useState('')
   const [linking, setLinking]               = useState(false)
+  const [showReceive, setShowReceive]       = useState(false)
   const [activeTab, setActiveTab]           = useState<'notes' | 'history'>('notes')
 
   const handleUnlinkConfirm = async () => {
@@ -68,6 +71,7 @@ function HardwareDetailPanel({ asset, teammates, onEdit, onDelete, onUnlink, onL
     setConfirmUnlink(false)
     setShowLinking(false)
     setLinkUserId('')
+    setShowReceive(false)
   }, [asset.id])
 
   return (
@@ -82,6 +86,11 @@ function HardwareDetailPanel({ asset, teammates, onEdit, onDelete, onUnlink, onL
             </p>
           </div>
           <div className="flex items-center gap-1 flex-shrink-0">
+            {asset.status === 'OnOrder' && (
+              <button onClick={() => setShowReceive(true)} title="Ontvangen" className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 transition-colors">
+                <PackageCheck size={13} />
+              </button>
+            )}
             <button onClick={onEdit} title="Wijzigen" className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors">
               <Pencil size={13} />
             </button>
@@ -135,6 +144,7 @@ function HardwareDetailPanel({ asset, teammates, onEdit, onDelete, onUnlink, onL
               asset.status === 'InUse'          ? 'text-emerald-600' :
               asset.status === 'InStock'        ? 'text-blue-600' :
               asset.status === 'UnderRepair'    ? 'text-orange-500' :
+              asset.status === 'OnOrder'        ? 'text-amber-600' :
               asset.status === 'Decommissioned' ? 'text-red-500' : 'text-slate-500'
             }`}>
               {HARDWARE_STATUS_LABEL[asset.status] ?? asset.status}
@@ -150,6 +160,12 @@ function HardwareDetailPanel({ asset, teammates, onEdit, onDelete, onUnlink, onL
             <div>
               <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">Inleverdatum</p>
               <p className="text-sm font-medium text-slate-800">{fmtDate(asset.returnedAt)}</p>
+            </div>
+          )}
+          {asset.orderedAt && (
+            <div>
+              <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">Besteldatum</p>
+              <p className="text-sm font-medium text-slate-800">{fmtDate(asset.orderedAt)}</p>
             </div>
           )}
         </div>
@@ -265,6 +281,13 @@ function HardwareDetailPanel({ asset, teammates, onEdit, onDelete, onUnlink, onL
         onClose={() => setConfirmDelete(false)}
         onConfirm={() => { setConfirmDelete(false); onDelete() }}
         itemName={`${asset.brand} ${asset.name}`}
+      />
+
+      <ReceiveHardwareModal
+        open={showReceive}
+        onClose={() => setShowReceive(false)}
+        onSuccess={() => { setShowReceive(false); onReceived() }}
+        asset={asset}
       />
     </Card>
   )
@@ -445,6 +468,7 @@ export function HardwareView({ teammates, onExpand }: { teammates: ClientUserLis
               onUnlink={() => handleUnlink(selected)}
               onLink={(userId) => handleLink(selected, userId)}
               onExpand={() => onExpand?.(selected)}
+              onReceived={fetchAssets}
               historyKey={historyKey}
             />
           ) : (
@@ -582,6 +606,7 @@ export function HardwareDetailFullView({ initialAsset, teammates, onBack, onDele
   const [asset, setAsset]           = useState<HardwareAssetListItem>(initialAsset)
   const [locations, setLocations]   = useState<LocationListItem[]>([])
   const [showModal, setShowModal]   = useState(false)
+  const [showReceive, setShowReceive] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [confirmUnlink, setConfirmUnlink] = useState(false)
   const [unlinking, setUnlinking]   = useState(false)
@@ -656,6 +681,11 @@ export function HardwareDetailFullView({ initialAsset, teammates, onBack, onDele
         <Card>
           <div className="px-6 pt-5 pb-5">
             <div className="flex justify-end gap-1 mb-3">
+              {asset.status === 'OnOrder' && (
+                <button onClick={() => setShowReceive(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-emerald-600 hover:bg-emerald-50 transition-colors">
+                  <PackageCheck size={12} /> Ontvangen
+                </button>
+              )}
               <button onClick={() => setShowModal(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-500 hover:bg-slate-100 transition-colors">
                 <Pencil size={12} /> Wijzigen
               </button>
@@ -722,6 +752,12 @@ export function HardwareDetailFullView({ initialAsset, teammates, onBack, onDele
                   <div>
                     <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">Inleverdatum</p>
                     <p className="text-sm font-medium text-slate-800">{fmtDate(asset.returnedAt)}</p>
+                  </div>
+                )}
+                {asset.orderedAt && (
+                  <div>
+                    <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">Besteldatum</p>
+                    <p className="text-sm font-medium text-slate-800">{fmtDate(asset.orderedAt)}</p>
                   </div>
                 )}
               </div>
@@ -833,6 +869,13 @@ export function HardwareDetailFullView({ initialAsset, teammates, onBack, onDele
         onClose={() => setConfirmDelete(false)}
         onConfirm={() => { setConfirmDelete(false); handleDelete() }}
         itemName={`${asset.brand} ${asset.name}`}
+      />
+
+      <ReceiveHardwareModal
+        open={showReceive}
+        onClose={() => setShowReceive(false)}
+        onSuccess={async () => { setShowReceive(false); await refresh() }}
+        asset={asset}
       />
     </div>
   )

@@ -73,6 +73,7 @@ export interface HardwareAssetListItem {
   locationName: string | null
   issuedAt: string | null
   returnedAt: string | null
+  orderedAt: string | null
   createdAt: string
   specifications: HardwareSpecifications | null
 }
@@ -91,6 +92,7 @@ export const HARDWARE_STATUS_OPTIONS = [
   { value: 1, label: 'In gebruik' },
   { value: 2, label: 'Afgeschreven' },
   { value: 3, label: 'In reparatie' },
+  { value: 4, label: 'In bestelling' },
 ] as const
 
 export const HARDWARE_TYPE_LABEL: Record<string, string> = {
@@ -107,6 +109,7 @@ export const HARDWARE_STATUS_LABEL: Record<string, string> = {
   InUse: 'In gebruik',
   Decommissioned: 'Afgeschreven',
   UnderRepair: 'In reparatie',
+  OnOrder: 'In bestelling',
 }
 
 export const HARDWARE_STATUS_TONE: Record<string, string> = {
@@ -114,4 +117,5 @@ export const HARDWARE_STATUS_TONE: Record<string, string> = {
   InUse: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
   Decommissioned: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
   UnderRepair: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300',
+  OnOrder: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
 }

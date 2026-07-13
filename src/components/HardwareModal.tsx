@@ -29,6 +29,7 @@ const schema = z.object({
   assignedToUserId: z.string(),
   issuedAt:         z.string(),
   returnedAt:       z.string(),
+  orderedAt:        z.string(),
 })
 
 type FormValues = z.infer<typeof schema>
@@ -62,7 +63,7 @@ function typeNameToValue(typeName: string): number {
 }
 
 function statusNameToValue(statusName: string): number {
-  const map: Record<string, number> = { InStock: 0, InUse: 1, Decommissioned: 2, UnderRepair: 3 }
+  const map: Record<string, number> = { InStock: 0, InUse: 1, Decommissioned: 2, UnderRepair: 3, OnOrder: 4 }
   return map[statusName] ?? 0
 }
 
@@ -139,9 +140,17 @@ export function HardwareModal({ open, onClose, onSuccess, teammates, locations, 
   const showTabs    = !!lockedUser && !isEdit
 
   const {
-    register, handleSubmit, reset,
+    register, handleSubmit, reset, watch, setValue,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({ resolver: zodResolver(schema) })
+
+  const statusValue = watch('status')
+  const isOnOrder   = statusValue === '4'
+
+  // Serienummer is nog niet bekend zolang de hardware in bestelling staat
+  useEffect(() => {
+    if (isOnOrder) setValue('serialNumber', '')
+  }, [isOnOrder, setValue])
 
   // Reset form + state when modal opens
   useEffect(() => {
@@ -166,13 +175,14 @@ export function HardwareModal({ open, onClose, onSuccess, teammates, locations, 
           assignedToUserId: asset.assignedToUserId ?? '',
           issuedAt:         toDateInput(asset.issuedAt),
           returnedAt:       toDateInput(asset.returnedAt),
+          orderedAt:        toDateInput(asset.orderedAt),
         })
       } else {
         reset({
           name: '', brand: '', type: '0', assetNumber: '', serialNumber: '',
           status: lockedUser ? '1' : '0', locationId: '', purchaseValue: '',
           supplier: '',
-          assignedToUserId: lockedUser?.id ?? '', issuedAt: '', returnedAt: '',
+          assignedToUserId: lockedUser?.id ?? '', issuedAt: '', returnedAt: '', orderedAt: '',
         })
       }
     }
@@ -240,6 +250,7 @@ export function HardwareModal({ open, onClose, onSuccess, teammates, locations, 
         assignedToUserId: values.assignedToUserId || null,
         issuedAt:         values.issuedAt ? new Date(values.issuedAt).toISOString() : null,
         returnedAt:       values.returnedAt ? new Date(values.returnedAt).toISOString() : null,
+        orderedAt:        values.orderedAt ? new Date(values.orderedAt).toISOString() : null,
       }
       if (isEdit) {
         await api.put(`/portal/hardware/${asset!.id}`, payload)
@@ -394,7 +405,15 @@ export function HardwareModal({ open, onClose, onSuccess, teammates, locations, 
             </div>
             <div>
               <label className="block text-xs font-medium text-slate-600 mb-1">Serienummer</label>
-              <input {...register('serialNumber')} className={field} placeholder="SN1234567" />
+              <input
+                {...register('serialNumber')}
+                className={`${field} disabled:opacity-60 disabled:cursor-not-allowed disabled:bg-slate-100 dark:disabled:bg-slate-800`}
+                placeholder={isOnOrder ? 'Nog niet bekend' : 'SN1234567'}
+                disabled={isOnOrder}
+              />
+              {isOnOrder && (
+                <p className="mt-1 text-xs text-slate-400">Vul dit in zodra de hardware is ontvangen.</p>
+              )}
             </div>
           </div>
 
@@ -452,10 +471,17 @@ export function HardwareModal({ open, onClose, onSuccess, teammates, locations, 
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">Uitgiftedatum</label>
-              <input {...register('issuedAt')} type="date" className={field} />
-            </div>
+            {isOnOrder ? (
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">Besteldatum</label>
+                <input {...register('orderedAt')} type="date" className={field} />
+              </div>
+            ) : (
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">Uitgiftedatum</label>
+                <input {...register('issuedAt')} type="date" className={field} />
+              </div>
+            )}
             <div>
               <label className="block text-xs font-medium text-slate-600 mb-1">Inleverdatum</label>
               <input {...register('returnedAt')} type="date" className={field} />

@@ -629,7 +629,8 @@ export function UserDetailPanel({ user, canEdit, departments = [], managers = []
     status: h.status, location: h.location, purchaseValue: h.purchaseValue,
     supplier: null, locationId: null, locationName: null,
     assignedToUserId: user.id, assignedToName: `${user.firstName} ${user.lastName}`,
-    issuedAt: h.issuedAt, returnedAt: h.returnedAt, createdAt: '',
+    issuedAt: h.issuedAt, returnedAt: h.returnedAt, orderedAt: null, createdAt: '',
+    specifications: null,
   })
 
   const openUnlinkHardware = (h: typeof user.hardware[0]) => {
