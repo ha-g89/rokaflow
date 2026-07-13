@@ -890,7 +890,7 @@ export function UserDetailPanel({ user, canEdit, departments = [], managers = []
                 <div
                   key={h.id}
                   onClick={() => onHardwareClick?.(toHardwareListItem(h))}
-                  className={`rounded-xl border border-slate-200 dark:border-slate-700/60 bg-slate-50 dark:bg-slate-900/60 p-3 transition-colors ${onHardwareClick ? 'cursor-pointer hover:border-blue-200 dark:hover:border-blue-800/50 hover:bg-blue-50/30 dark:hover:bg-blue-900/10' : ''}`}
+                  className={`rounded-xl border border-slate-200 dark:border-slate-700/60 bg-slate-50 dark:bg-slate-900/60 p-3 transition-all duration-200 ease-out ${onHardwareClick ? 'cursor-pointer hover:border-blue-300 dark:hover:border-blue-700/60 hover:bg-blue-50/60 dark:hover:bg-blue-900/20 hover:shadow-[0_0_0_1px_rgba(37,99,235,0.08),0_4px_14px_-4px_rgba(37,99,235,0.35)] dark:hover:shadow-[0_0_0_1px_rgba(59,130,246,0.12),0_4px_16px_-4px_rgba(59,130,246,0.25)]' : ''}`}
                 >
                   <div className="flex items-center justify-between gap-3">
                     <div className="min-w-0">
@@ -929,7 +929,7 @@ export function UserDetailPanel({ user, canEdit, departments = [], managers = []
                 <div
                   key={p.id}
                   onClick={() => onPhoneClick?.(toPhoneListItem(p))}
-                  className={`rounded-xl border border-slate-200 dark:border-slate-700/60 bg-slate-50 dark:bg-slate-900/60 p-3 transition-colors ${onPhoneClick ? 'cursor-pointer hover:border-blue-200 dark:hover:border-blue-800/50 hover:bg-blue-50/30 dark:hover:bg-blue-900/10' : ''}`}
+                  className={`rounded-xl border border-slate-200 dark:border-slate-700/60 bg-slate-50 dark:bg-slate-900/60 p-3 transition-all duration-200 ease-out ${onPhoneClick ? 'cursor-pointer hover:border-blue-300 dark:hover:border-blue-700/60 hover:bg-blue-50/60 dark:hover:bg-blue-900/20 hover:shadow-[0_0_0_1px_rgba(37,99,235,0.08),0_4px_14px_-4px_rgba(37,99,235,0.35)] dark:hover:shadow-[0_0_0_1px_rgba(59,130,246,0.12),0_4px_16px_-4px_rgba(59,130,246,0.25)]' : ''}`}
                 >
                   <div className="flex items-center justify-between gap-3">
                     <div className="min-w-0">
@@ -984,7 +984,7 @@ export function UserDetailPanel({ user, canEdit, departments = [], managers = []
                       <div
                         key={s.key}
                         onClick={clickable ? () => handleCatalogClick(onSoftwareClick, s.licenseId!, s.key) : undefined}
-                        className={`rounded-xl border border-slate-200 dark:border-slate-700/60 bg-slate-50 dark:bg-slate-900/60 p-3 transition-colors ${clickable ? 'cursor-pointer hover:border-blue-200 dark:hover:border-blue-800/50 hover:bg-blue-50/30 dark:hover:bg-blue-900/10' : ''}`}
+                        className={`rounded-xl border border-slate-200 dark:border-slate-700/60 bg-slate-50 dark:bg-slate-900/60 p-3 transition-all duration-200 ease-out ${clickable ? 'cursor-pointer hover:border-blue-300 dark:hover:border-blue-700/60 hover:bg-blue-50/60 dark:hover:bg-blue-900/20 hover:shadow-[0_0_0_1px_rgba(37,99,235,0.08),0_4px_14px_-4px_rgba(37,99,235,0.35)] dark:hover:shadow-[0_0_0_1px_rgba(59,130,246,0.12),0_4px_16px_-4px_rgba(59,130,246,0.25)]' : ''}`}
                       >
                         <div className="flex items-center justify-between gap-3">
                           <div className="min-w-0">
@@ -1025,7 +1025,7 @@ export function UserDetailPanel({ user, canEdit, departments = [], managers = []
                       <div
                         key={l.userLicenseId}
                         onClick={clickable ? () => handleCatalogClick(onLicenseClick, l.licenseId, l.userLicenseId) : undefined}
-                        className={`rounded-xl border border-slate-200 dark:border-slate-700/60 bg-slate-50 dark:bg-slate-900/60 p-3 transition-colors ${clickable ? 'cursor-pointer hover:border-blue-200 dark:hover:border-blue-800/50 hover:bg-blue-50/30 dark:hover:bg-blue-900/10' : ''}`}
+                        className={`rounded-xl border border-slate-200 dark:border-slate-700/60 bg-slate-50 dark:bg-slate-900/60 p-3 transition-all duration-200 ease-out ${clickable ? 'cursor-pointer hover:border-blue-300 dark:hover:border-blue-700/60 hover:bg-blue-50/60 dark:hover:bg-blue-900/20 hover:shadow-[0_0_0_1px_rgba(37,99,235,0.08),0_4px_14px_-4px_rgba(37,99,235,0.35)] dark:hover:shadow-[0_0_0_1px_rgba(59,130,246,0.12),0_4px_16px_-4px_rgba(59,130,246,0.25)]' : ''}`}
                       >
                         <div className="flex items-center justify-between gap-3">
                           <div className="min-w-0">
