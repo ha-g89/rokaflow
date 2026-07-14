@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/Button'
 import api from '@/lib/axios'
 import type { ClientUserListItem } from '@/types/clientUser'
 import type { PhoneListItem } from '@/types/phone'
-import { PHONE_STATUS_OPTIONS } from '@/types/phone'
+import { PHONE_STATUS_OPTIONS, phoneStatusToValue } from '@/types/phone'
 
 const schema = z.object({
   brand: z.string().min(1, 'Merk is verplicht').max(200),
@@ -19,6 +19,7 @@ const schema = z.object({
   assignedToUserId: z.string(),
   issuedAt: z.string(),
   returnedAt: z.string(),
+  orderedAt: z.string(),
 })
 
 type FormValues = z.infer<typeof schema>
@@ -43,8 +44,20 @@ export function PhoneModal({ open, onClose, onSuccess, teammates, phone }: Props
     handleSubmit,
     reset,
     setValue,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({ resolver: zodResolver(schema) })
+
+  const statusValue = watch('status')
+  const isOnOrder   = statusValue === '4'
+
+  // Serienummer/IMEI zijn nog niet bekend zolang de telefoon in bestelling staat
+  useEffect(() => {
+    if (isOnOrder) {
+      setValue('serialNumber', '')
+      setValue('imeiNumber', '')
+    }
+  }, [isOnOrder, setValue])
 
   useEffect(() => {
     if (open) {
@@ -54,13 +67,14 @@ export function PhoneModal({ open, onClose, onSuccess, teammates, phone }: Props
         serialNumber: phone.serialNumber,
         imeiNumber: phone.imeiNumber,
         supplier: phone.supplier ?? '',
-        status: phone.status === 'InStock' ? '0' : phone.status === 'InUse' ? '1' : '2',
+        status: String(phoneStatusToValue(phone.status)),
         assignedToUserId: phone.assignedToUserId ?? '',
         issuedAt: phone.issuedAt ? phone.issuedAt.substring(0, 10) : '',
         returnedAt: phone.returnedAt ? phone.returnedAt.substring(0, 10) : '',
+        orderedAt: phone.orderedAt ? phone.orderedAt.substring(0, 10) : '',
       } : {
         brand: '', model: '', serialNumber: '', imeiNumber: '',
-        supplier: '', status: '0', assignedToUserId: '', issuedAt: '', returnedAt: '',
+        supplier: '', status: '0', assignedToUserId: '', issuedAt: '', returnedAt: '', orderedAt: '',
       })
       setApiError(null)
     }
@@ -81,6 +95,7 @@ export function PhoneModal({ open, onClose, onSuccess, teammates, phone }: Props
         assignedToUserId: values.assignedToUserId || null,
         issuedAt: values.issuedAt ? new Date(values.issuedAt).toISOString() : null,
         returnedAt: values.returnedAt ? new Date(values.returnedAt).toISOString() : null,
+        orderedAt: values.orderedAt ? new Date(values.orderedAt).toISOString() : null,
       }
 
       if (isEdit) {
@@ -120,13 +135,26 @@ export function PhoneModal({ open, onClose, onSuccess, teammates, phone }: Props
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="block text-xs font-medium text-slate-600 mb-1">Serienummer</label>
-            <input {...register('serialNumber')} className={field} placeholder="C02XY…" />
+            <input
+              {...register('serialNumber')}
+              className={`${field} disabled:opacity-60 disabled:cursor-not-allowed disabled:bg-slate-100 dark:disabled:bg-slate-800`}
+              placeholder={isOnOrder ? 'Nog niet bekend' : 'C02XY…'}
+              disabled={isOnOrder}
+            />
           </div>
           <div>
             <label className="block text-xs font-medium text-slate-600 mb-1">IMEI-nummer</label>
-            <input {...register('imeiNumber')} className={field} placeholder="35 123456…" />
+            <input
+              {...register('imeiNumber')}
+              className={`${field} disabled:opacity-60 disabled:cursor-not-allowed disabled:bg-slate-100 dark:disabled:bg-slate-800`}
+              placeholder={isOnOrder ? 'Nog niet bekend' : '35 123456…'}
+              disabled={isOnOrder}
+            />
           </div>
         </div>
+        {isOnOrder && (
+          <p className="-mt-2 text-xs text-slate-400">Vul dit in zodra de telefoon is ontvangen.</p>
+        )}
 
         <div>
           <label className="block text-xs font-medium text-slate-600 mb-1">Leverancier</label>
@@ -149,7 +177,8 @@ export function PhoneModal({ open, onClose, onSuccess, teammates, phone }: Props
               className={field}
               onChange={e => {
                 setValue('assignedToUserId', e.target.value)
-                setValue('status', e.target.value ? '1' : '0')
+                // Toewijzen zet status op In gebruik — maar niet bij een bestelling die nog onderweg is
+                if (!isOnOrder) setValue('status', e.target.value ? '1' : '0')
               }}
             >
               <option value="">— Niemand —</option>
@@ -161,10 +190,17 @@ export function PhoneModal({ open, onClose, onSuccess, teammates, phone }: Props
         </div>
 
         <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Uitgiftedatum</label>
-            <input {...register('issuedAt')} type="date" className={field} />
-          </div>
+          {isOnOrder ? (
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1">Besteldatum</label>
+              <input {...register('orderedAt')} type="date" className={field} />
+            </div>
+          ) : (
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1">Uitgiftedatum</label>
+              <input {...register('issuedAt')} type="date" className={field} />
+            </div>
+          )}
           <div>
             <label className="block text-xs font-medium text-slate-600 mb-1">Inleverdatum</label>
             <input {...register('returnedAt')} type="date" className={field} />

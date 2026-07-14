@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Phone as PhoneIcon, Layers, CreditCard, Wifi, Search, Plus, Pencil, Trash2, StickyNote, History, Maximize2, ArrowLeft, User, Link2Off, Unlink } from 'lucide-react'
+import { Phone as PhoneIcon, Layers, CreditCard, Wifi, Search, Plus, Pencil, Trash2, StickyNote, History, Maximize2, ArrowLeft, User, Link2Off, Unlink, PackageCheck } from 'lucide-react'
 import api from '@/lib/axios'
 import { Card, CardContent } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -8,6 +8,7 @@ import { ItemHistoryBlock } from '@/components/portal/AuditHistory'
 import { Modal } from '@/components/ui/Modal'
 import { ConfirmDeleteModal } from '@/components/ui/ConfirmDeleteModal'
 import { PhoneModal } from '@/components/PhoneModal'
+import { ReceivePhoneModal } from '@/components/ReceivePhoneModal'
 import { PhoneSetupWizard } from '@/components/PhoneSetupWizard'
 import { SimCardModal } from '@/components/SimCardModal'
 import { SubscriptionModal } from '@/components/SubscriptionModal'
@@ -45,6 +46,7 @@ function PhonesTab({ teammates, onExpand }: { teammates: ClientUserListItem[]; o
   const [unlinking, setUnlinking]               = useState(false)
   const [confirmUnlinkSim, setConfirmUnlinkSim] = useState(false)
   const [unlinkingSim, setUnlinkingSim]         = useState(false)
+  const [showReceive, setShowReceive]           = useState(false)
 
   const fetchPhones = useCallback(async () => {
     try {
@@ -86,8 +88,9 @@ function PhonesTab({ teammates, onExpand }: { teammates: ClientUserListItem[]; o
       await api.put(`/portal/phones/${p.id}`, {
         brand: p.brand, model: p.model || '',
         serialNumber: p.serialNumber || '', imeiNumber: p.imeiNumber || '',
-        status: 0, assignedToUserId: null,
+        status: p.status === 'OnOrder' ? 4 : 0, assignedToUserId: null,
         issuedAt: p.issuedAt ?? null, returnedAt: new Date().toISOString(),
+        orderedAt: p.orderedAt ?? null,
       })
       await fetchPhones()
       setHistoryKey(k => k + 1)
@@ -179,6 +182,11 @@ function PhonesTab({ teammates, onExpand }: { teammates: ClientUserListItem[]; o
                     <p className="text-xs text-slate-400 mt-0.5 truncate">{selected.simPhoneNumber || selected.serialNumber || '—'}</p>
                   </div>
                   <div className="flex items-center gap-1 flex-shrink-0">
+                    {selected.status === 'OnOrder' && (
+                      <button onClick={() => setShowReceive(true)} title="Ontvangen" className="p-1.5 rounded-lg text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 transition-colors">
+                        <PackageCheck size={13} />
+                      </button>
+                    )}
                     <button onClick={() => { setEditTarget(selected); setShowModal(true) }} className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors" title="Wijzigen">
                       <Pencil size={13} />
                     </button>
@@ -200,10 +208,13 @@ function PhonesTab({ teammates, onExpand }: { teammates: ClientUserListItem[]; o
                     <span className={`font-semibold ${
                       selected.status === 'InUse'          ? 'text-emerald-600' :
                       selected.status === 'InStock'        ? 'text-blue-600' :
+                      selected.status === 'UnderRepair'    ? 'text-orange-500' :
+                      selected.status === 'OnOrder'        ? 'text-amber-600' :
                       selected.status === 'Decommissioned' ? 'text-red-500' : 'text-slate-500'
                     }`}>{PHONE_STATUS_LABEL[selected.status] ?? selected.status}</span>
                   </p>
                   {selected.issuedAt && <p><span className="text-slate-400">Uitgiftedatum</span><br /><span className="font-medium text-slate-800">{fmt(selected.issuedAt)}</span></p>}
+                  {selected.orderedAt && <p><span className="text-slate-400">Besteldatum</span><br /><span className="font-medium text-slate-800">{fmt(selected.orderedAt)}</span></p>}
                   {selected.supplier     && <p className="col-span-2"><span className="text-slate-400">Leverancier</span><br /><span className="font-medium text-slate-800">{selected.supplier}</span></p>}
                   {selected.returnedAt && <p><span className="text-slate-400">Inleverdatum</span><br /><span className="font-medium text-slate-800">{fmt(selected.returnedAt)}</span></p>}
                 </div>
@@ -274,6 +285,12 @@ function PhonesTab({ teammates, onExpand }: { teammates: ClientUserListItem[]; o
                   onClose={() => setConfirmDelete(false)}
                   onConfirm={() => { setConfirmDelete(false); handleDelete(selected.id) }}
                   itemName={`${selected.brand} ${selected.model}`}
+                />
+                <ReceivePhoneModal
+                  open={showReceive}
+                  onClose={() => setShowReceive(false)}
+                  onSuccess={async () => { setShowReceive(false); await fetchPhones(); setHistoryKey(k => k + 1) }}
+                  phone={selected}
                 />
                 <ItemHistoryBlock
                   key={`${selected.id}-${historyKey}`}
@@ -735,6 +752,7 @@ export function PhoneDetailFullView({ initialPhone, teammates, onBack, onDeleted
   const [linking, setLinking]           = useState(false)
   const [historyKey, setHistoryKey]     = useState(0)
   const [activeTab, setActiveTab]       = useState<'notes' | 'history'>('notes')
+  const [showReceive, setShowReceive]   = useState(false)
 
   const refresh = async () => {
     const { data } = await api.get<PhoneListItem[]>('/portal/phones')
@@ -749,8 +767,9 @@ export function PhoneDetailFullView({ initialPhone, teammates, onBack, onDeleted
       await api.put(`/portal/phones/${phone.id}`, {
         brand: phone.brand, model: phone.model || '',
         serialNumber: phone.serialNumber || '', imeiNumber: phone.imeiNumber || '',
-        status: 0, assignedToUserId: null,
+        status: phone.status === 'OnOrder' ? 4 : 0, assignedToUserId: null,
         issuedAt: phone.issuedAt ?? null, returnedAt: new Date().toISOString(),
+        orderedAt: phone.orderedAt ?? null,
       })
       await refresh()
     } finally { setUnlinking(false); setConfirmUnlink(false) }
@@ -763,8 +782,9 @@ export function PhoneDetailFullView({ initialPhone, teammates, onBack, onDeleted
       await api.put(`/portal/phones/${phone.id}`, {
         brand: phone.brand, model: phone.model || '',
         serialNumber: phone.serialNumber || '', imeiNumber: phone.imeiNumber || '',
-        status: 1, assignedToUserId: linkUserId,
-        issuedAt: new Date().toISOString(), returnedAt: null,
+        status: phone.status === 'OnOrder' ? 4 : 1, assignedToUserId: linkUserId,
+        issuedAt: phone.status === 'OnOrder' ? (phone.issuedAt ?? null) : new Date().toISOString(), returnedAt: null,
+        orderedAt: phone.orderedAt ?? null,
       })
       await refresh()
     } finally { setLinking(false); setShowLinking(false); setLinkUserId('') }
@@ -803,6 +823,11 @@ export function PhoneDetailFullView({ initialPhone, teammates, onBack, onDeleted
             <p className="text-sm text-slate-400 mt-0.5 truncate">{phone.serialNumber || phone.imeiNumber || '—'}</p>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
+            {phone.status === 'OnOrder' && (
+              <button onClick={() => setShowReceive(true)} className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-white px-3 py-1.5 text-xs font-medium text-emerald-600 hover:bg-emerald-50 transition-colors">
+                <PackageCheck size={12} /> Ontvangen
+              </button>
+            )}
             <button onClick={() => setShowModal(true)} className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors">
               <Pencil size={12} /> Wijzigen
             </button>
@@ -829,6 +854,12 @@ export function PhoneDetailFullView({ initialPhone, teammates, onBack, onDeleted
               <div>
                 <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">Uitgiftedatum</p>
                 <p className="text-sm font-medium text-slate-800">{fmt(phone.issuedAt)}</p>
+              </div>
+            )}
+            {phone.orderedAt && (
+              <div>
+                <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">Besteldatum</p>
+                <p className="text-sm font-medium text-slate-800">{fmt(phone.orderedAt)}</p>
               </div>
             )}
             {phone.serialNumber && (
@@ -960,6 +991,7 @@ export function PhoneDetailFullView({ initialPhone, teammates, onBack, onDeleted
       </div>
 
       <PhoneModal open={showModal} onClose={() => setShowModal(false)} onSuccess={handleSaved} teammates={teammates} phone={phone} />
+      <ReceivePhoneModal open={showReceive} onClose={() => setShowReceive(false)} onSuccess={async () => { setShowReceive(false); await refresh() }} phone={phone} />
       <ConfirmDeleteModal open={confirmDelete} onClose={() => setConfirmDelete(false)} onConfirm={handleDelete} itemName={`${phone.brand} ${phone.model}`} />
       <Modal open={confirmUnlinkSim} onClose={() => setConfirmUnlinkSim(false)} title="Simkaart ontkoppelen" className="max-w-sm">
         <div className="flex flex-col items-center text-center mb-6">

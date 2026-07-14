@@ -651,7 +651,7 @@ export function UserDetailPanel({ user, canEdit, departments = [], managers = []
     supplier: null, status: p.status as PhoneListItem['status'],
     assignedToUserId: user.id, assignedToName: `${user.firstName} ${user.lastName}`,
     simCardId: null, simCardNumber: p.simCardNumber, simPhoneNumber: p.simPhoneNumber,
-    issuedAt: p.issuedAt, returnedAt: null, createdAt: '',
+    issuedAt: p.issuedAt, returnedAt: null, orderedAt: null, createdAt: '',
   })
 
   const toHardwareListItem = (h: typeof user.hardware[0]): HardwareAssetListItem => ({
