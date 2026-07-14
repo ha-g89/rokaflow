@@ -351,13 +351,6 @@ const CSS = `
     font-size: 13px; font-weight: 700;
     color: var(--sc-text); letter-spacing: 0.01em;
   }
-  .rf-app-badge-pill {
-    margin-left: 4px; font-size: 9px; font-weight: 700;
-    padding: 2px 7px; border-radius: 20px;
-    background: var(--sc-badge-b-bg); color: var(--sc-badge-b-tx);
-    letter-spacing: 0.06em; text-transform: uppercase;
-  }
-
   /* ── 3D Screens ──────────────────────────────────────────────── */
   .rf-screens-wrap {
     perspective: 1100px;
@@ -937,7 +930,6 @@ export default function LandingPage() {
             <div className="rf-app-badge">
               <img src={logo} alt="" className="rf-app-badge-logo" />
               <span className="rf-app-badge-label">RokaFlow</span>
-              <span className="rf-app-badge-pill">Platform</span>
             </div>
 
             {/* 3-D screen cluster */}
