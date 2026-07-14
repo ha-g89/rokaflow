@@ -1,75 +1,139 @@
 import { useState, useEffect } from 'react'
-import { Users, Laptop, CreditCard, Shield, Phone as PhoneIcon, Activity, Download } from 'lucide-react'
+import {
+  Users, Laptop, CreditCard, Phone as PhoneIcon, Download,
+  TrendingUp, TrendingDown, AlertTriangle,
+} from 'lucide-react'
 import api from '@/lib/axios'
 import { LoadingState } from '@/components/ui/LoadingState'
+import { HARDWARE_TYPE_LABEL } from '@/types/hardware'
 
 interface PortalOverview {
   employeeTotal: number; employeeInService: number; employeeLeavePlanned: number; employeeStartPlanned: number
-  hardwareTotal: number; hardwareInUse: number; hardwareInStock: number; hardwareUnderRepair: number; hardwareTotalValue: number
+  hardwareTotal: number; hardwareInUse: number; hardwareInStock: number; hardwareUnderRepair: number
+  hardwareOnOrder: number; hardwareTotalValue: number; hardwareByType: Record<string, number>
   licenseTotal: number; licenseActive: number; licenseExpired: number; licenseTotalSeats: number; licenseUsedSeats: number
   softwareTotal: number; softwarePaid: number; softwareFree: number
   phoneTotal: number; phoneInUse: number; simCardTotal: number; simCardInUse: number
   subscriptionTotal: number; subscriptionActive: number; subscriptionMonthlyCost: number
 }
 
-function OverviewCard({
-  title, icon, accentBar, iconCls,
-  primary, primarySub,
-  progress,
-  stats,
-}: {
-  title: string
-  icon: React.ReactNode
-  accentBar: string
-  iconCls: string
-  primary: React.ReactNode
-  primarySub: string
-  progress?: { used: number; total: number; label: string; bar: string }
-  stats: { label: string; value: React.ReactNode; tone?: string }[]
-}) {
-  const pct = progress && progress.total > 0
-    ? Math.min(100, Math.round((progress.used / progress.total) * 100))
-    : 0
+const fmtEur = (n: number) =>
+  n.toLocaleString('nl-NL', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })
 
+// ── KPI stat tile ─────────────────────────────────────────────────────────────
+
+function StatTile({ icon, label, value, sub }: {
+  icon: React.ReactNode
+  label: string
+  value: React.ReactNode
+  sub?: React.ReactNode
+}) {
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden flex flex-col">
-      <div className={`h-1 ${accentBar}`} />
-      <div className="p-5 flex flex-col flex-1 gap-4">
-        <div className="flex items-center justify-between">
-          <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.12em]">{title}</p>
-          <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${iconCls}`}>{icon}</div>
-        </div>
-        <div>
-          <p className="text-3xl font-black text-slate-900 dark:text-slate-100 tabular-nums leading-none">{primary}</p>
-          <p className="text-xs text-slate-400 mt-1 leading-snug">{primarySub}</p>
-        </div>
-        {progress && (
-          <div>
-            <div className="flex justify-between text-xs text-slate-400 mb-1.5">
-              <span>{progress.label}</span>
-              <span className="tabular-nums font-semibold">{progress.used} / {progress.total} <span className="font-normal">({pct}%)</span></span>
-            </div>
-            <div className="h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
-              <div
-                className={`h-1.5 rounded-full transition-all duration-700 ${progress.bar}`}
-                style={{ width: `${pct}%` }}
-              />
-            </div>
+    <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-5">
+      <div className="flex items-center gap-2 mb-3">
+        <span className="text-slate-400 dark:text-slate-500">{icon}</span>
+        <p className="text-xs font-medium text-slate-500 dark:text-slate-400">{label}</p>
+      </div>
+      <p className="text-3xl font-semibold text-slate-900 dark:text-slate-100 leading-none">{value}</p>
+      {sub && <div className="text-xs text-slate-400 dark:text-slate-500 mt-2 leading-snug">{sub}</div>}
+    </div>
+  )
+}
+
+// ── Kaart-omhulsel voor grafieken ─────────────────────────────────────────────
+
+function ChartCard({ title, children, className = '' }: {
+  title: string
+  children: React.ReactNode
+  className?: string
+}) {
+  return (
+    <div className={`bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-5 ${className}`}>
+      <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-4">{title}</p>
+      {children}
+    </div>
+  )
+}
+
+// ── Horizontale staafgrafiek (één reeks, sequentieel blauw) ──────────────────
+
+function HBarChart({ items }: { items: { label: string; value: number }[] }) {
+  const max = Math.max(1, ...items.map(i => i.value))
+  return (
+    <div className="space-y-2.5">
+      {items.map(i => (
+        <div key={i.label} className="group flex items-center gap-3">
+          <span className="w-20 flex-shrink-0 text-xs text-slate-500 dark:text-slate-400 truncate">{i.label}</span>
+          <div className="flex-1 flex items-center gap-2 min-w-0">
+            <div
+              className="h-4 rounded-r bg-[#2563eb] dark:bg-[#3b82f6] transition-all duration-500 group-hover:opacity-80"
+              style={{ width: `${Math.max(2, (i.value / max) * 100)}%` }}
+              title={`${i.label}: ${i.value}`}
+            />
+            <span className="text-xs font-semibold text-slate-700 dark:text-slate-200 flex-shrink-0">{i.value}</span>
           </div>
-        )}
-        <div className="mt-auto pt-3 border-t border-slate-100 dark:border-slate-700 grid gap-3"
-          style={{ gridTemplateColumns: `repeat(${stats.length}, 1fr)` }}>
-          {stats.map(s => (
-            <div key={s.label}>
-              <p className={`text-base font-bold tabular-nums leading-none ${s.tone ?? 'text-slate-800 dark:text-slate-200'}`}>{s.value}</p>
-              <p className="text-[11px] text-slate-400 mt-1 leading-tight">{s.label}</p>
-            </div>
-          ))}
         </div>
+      ))}
+      {items.length === 0 && <p className="text-xs text-slate-400">Nog geen hardware.</p>}
+    </div>
+  )
+}
+
+// ── 100%-gestapelde balk met legenda ─────────────────────────────────────────
+// Kleuren gevalideerd (CVD/contrast) in licht én donker; amber heeft in licht
+// een contrast-waarschuwing → de legenda met labels+aantallen is de verplichte
+// secundaire encoding.
+
+function StackedBar({ segments, total }: {
+  segments: { label: string; value: number; light: string; dark?: string }[]
+  total: number
+}) {
+  const visible = segments.filter(s => s.value > 0)
+  return (
+    <div>
+      <div className="flex h-4 rounded-full overflow-hidden gap-[2px] bg-slate-100 dark:bg-slate-700">
+        {visible.map(s => (
+          <div
+            key={s.label}
+            className="h-full first:rounded-l-full last:rounded-r-full transition-all duration-500"
+            style={{ width: `${(s.value / Math.max(1, total)) * 100}%` }}
+            title={`${s.label}: ${s.value}`}
+          >
+            <div className={`h-full w-full ${s.light} ${s.dark ?? ''}`} title={`${s.label}: ${s.value}`} />
+          </div>
+        ))}
+      </div>
+      <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5">
+        {segments.map(s => (
+          <span key={s.label} className="inline-flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+            <span className={`w-2 h-2 rounded-full ${s.light} ${s.dark ?? ''}`} />
+            {s.label} <span className="font-semibold text-slate-700 dark:text-slate-200">{s.value}</span>
+          </span>
+        ))}
       </div>
     </div>
   )
 }
+
+// ── Meter (ratio tegen een limiet) ────────────────────────────────────────────
+
+function Meter({ label, used, total }: { label: string; used: number; total: number }) {
+  const pct = total > 0 ? Math.min(100, Math.round((used / total) * 100)) : 0
+  const fill = pct >= 90 ? 'bg-red-500' : pct >= 75 ? 'bg-amber-500 dark:bg-[#d97706]' : 'bg-[#2563eb] dark:bg-[#3b82f6]'
+  return (
+    <div>
+      <div className="flex justify-between text-xs mb-1.5">
+        <span className="text-slate-500 dark:text-slate-400">{label}</span>
+        <span className="text-slate-700 dark:text-slate-200 font-semibold">{used} / {total} <span className="font-normal text-slate-400">({pct}%)</span></span>
+      </div>
+      <div className="h-2 rounded-full bg-blue-100 dark:bg-blue-950/60 overflow-hidden">
+        <div className={`h-full rounded-full transition-all duration-700 ${fill}`} style={{ width: `${pct}%` }} />
+      </div>
+    </div>
+  )
+}
+
+// ── View ──────────────────────────────────────────────────────────────────────
 
 export function OverviewView() {
   const [data, setData]           = useState<PortalOverview | null>(null)
@@ -111,11 +175,13 @@ export function OverviewView() {
   }
   if (!data) return null
 
-  const fmt = (n: number) =>
-    n.toLocaleString('nl-NL', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })
+  // ?? 0: een backend van vóór deze release stuurt hardwareOnOrder/hardwareByType nog niet mee
+  const hardwareOnOrder = data.hardwareOnOrder ?? 0
+  const decommissioned = Math.max(0,
+    data.hardwareTotal - data.hardwareInUse - data.hardwareInStock - data.hardwareUnderRepair - hardwareOnOrder)
 
-  const hwPct  = data.hardwareTotal > 0 ? Math.round((data.hardwareInUse  / data.hardwareTotal)   * 100) : 0
-  const licPct = data.licenseTotalSeats > 0 ? Math.round((data.licenseUsedSeats / data.licenseTotalSeats) * 100) : 0
+  const hardwareByType = Object.entries(data.hardwareByType ?? {})
+    .map(([type, value]) => ({ label: HARDWARE_TYPE_LABEL[type] ?? type, value }))
 
   return (
     <div className="h-full overflow-y-auto pb-2">
@@ -136,98 +202,117 @@ export function OverviewView() {
         </button>
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
-        <OverviewCard
-          title="Medewerkers"
-          icon={<Users size={15} />}
-          accentBar="bg-emerald-500"
-          iconCls="bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400"
-          primary={data.employeeTotal}
-          primarySub="actieve medewerkers"
-          stats={[
-            { label: 'In dienst',       value: data.employeeInService },
-            { label: 'Vertrek gepland', value: data.employeeLeavePlanned,
-              tone: data.employeeLeavePlanned > 0 ? 'text-amber-600 dark:text-amber-400' : undefined },
-            { label: 'Startend',        value: data.employeeStartPlanned,
-              tone: data.employeeStartPlanned > 0 ? 'text-emerald-600 dark:text-emerald-400' : undefined },
-          ]}
-        />
-        <OverviewCard
-          title="Hardware"
-          icon={<Laptop size={15} />}
-          accentBar="bg-amber-500"
-          iconCls="bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-400"
-          primary={data.hardwareTotal}
-          primarySub={`assets · ${fmt(data.hardwareTotalValue)} totale waarde`}
-          progress={{
-            used: data.hardwareInUse, total: data.hardwareTotal,
-            label: 'In gebruik',
-            bar: hwPct >= 90 ? 'bg-red-500' : hwPct >= 70 ? 'bg-amber-400' : 'bg-amber-500',
-          }}
-          stats={[
-            { label: 'In gebruik',   value: data.hardwareInUse },
-            { label: 'Op voorraad',  value: data.hardwareInStock },
-            { label: 'In reparatie', value: data.hardwareUnderRepair,
-              tone: data.hardwareUnderRepair > 0 ? 'text-orange-600 dark:text-orange-400' : undefined },
-          ]}
-        />
-        <OverviewCard
-          title="Licenties"
-          icon={<CreditCard size={15} />}
-          accentBar="bg-blue-500"
-          iconCls="bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400"
-          primary={data.licenseTotal}
-          primarySub={`licenties · ${data.licenseTotalSeats} seats totaal`}
-          progress={{
-            used: data.licenseUsedSeats, total: data.licenseTotalSeats,
-            label: 'Seats in gebruik',
-            bar: licPct >= 90 ? 'bg-red-500' : licPct >= 75 ? 'bg-amber-400' : 'bg-blue-500',
-          }}
-          stats={[
-            { label: 'Actief',    value: data.licenseActive,  tone: 'text-emerald-600 dark:text-emerald-400' },
-            { label: 'Verlopen', value: data.licenseExpired,  tone: data.licenseExpired > 0 ? 'text-red-600 dark:text-red-400' : undefined },
-            { label: 'Seats vrij', value: Math.max(0, data.licenseTotalSeats - data.licenseUsedSeats) },
-          ]}
-        />
-        <OverviewCard
-          title="Software"
-          icon={<Shield size={15} />}
-          accentBar="bg-indigo-500"
-          iconCls="bg-indigo-100 text-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-400"
-          primary={data.softwareTotal}
-          primarySub="softwaretitels in de catalogus"
-          stats={[
-            { label: 'Betaald', value: data.softwarePaid,  tone: 'text-blue-600 dark:text-blue-400' },
-            { label: 'Gratis',  value: data.softwareFree,  tone: 'text-emerald-600 dark:text-emerald-400' },
-          ]}
-        />
-        <OverviewCard
-          title="Telefonie"
-          icon={<PhoneIcon size={15} />}
-          accentBar="bg-violet-500"
-          iconCls="bg-violet-100 text-violet-600 dark:bg-violet-900/40 dark:text-violet-400"
-          primary={data.phoneTotal + data.simCardTotal}
-          primarySub={`${data.phoneTotal} telefoons · ${data.simCardTotal} SIM-kaarten`}
-          stats={[
-            { label: 'Telefoons in gebruik', value: data.phoneInUse },
-            { label: "SIM's in gebruik",     value: data.simCardInUse },
-            { label: 'Op voorraad',          value: (data.phoneTotal - data.phoneInUse) + (data.simCardTotal - data.simCardInUse) },
-          ]}
-        />
-        <OverviewCard
-          title="Abonnementen"
-          icon={<Activity size={15} />}
-          accentBar="bg-orange-500"
-          iconCls="bg-orange-100 text-orange-600 dark:bg-orange-900/40 dark:text-orange-400"
-          primary={fmt(data.subscriptionMonthlyCost)}
-          primarySub="maandelijkse kosten (actieve abonnementen)"
-          stats={[
-            { label: 'Totaal',   value: data.subscriptionTotal },
-            { label: 'Actief',   value: data.subscriptionActive, tone: 'text-emerald-600 dark:text-emerald-400' },
-            { label: 'Inactief', value: data.subscriptionTotal - data.subscriptionActive,
-              tone: (data.subscriptionTotal - data.subscriptionActive) > 0 ? 'text-slate-500' : undefined },
-          ]}
-        />
+      <div className="space-y-4">
+        {/* ── KPI-strip ── */}
+        <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+          <StatTile
+            icon={<Users size={15} />}
+            label="Medewerkers"
+            value={data.employeeTotal}
+            sub={
+              (data.employeeStartPlanned > 0 || data.employeeLeavePlanned > 0) ? (
+                <span className="flex items-center gap-3">
+                  {data.employeeStartPlanned > 0 && (
+                    <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+                      <TrendingUp size={11} /> {data.employeeStartPlanned} starten
+                    </span>
+                  )}
+                  {data.employeeLeavePlanned > 0 && (
+                    <span className="inline-flex items-center gap-1 text-amber-600 dark:text-amber-400">
+                      <TrendingDown size={11} /> {data.employeeLeavePlanned} vertrekken
+                    </span>
+                  )}
+                </span>
+              ) : `${data.employeeInService} in dienst`
+            }
+          />
+          <StatTile
+            icon={<Laptop size={15} />}
+            label="Hardware-assets"
+            value={data.hardwareTotal}
+            sub={`${fmtEur(data.hardwareTotalValue)} totale waarde`}
+          />
+          <StatTile
+            icon={<PhoneIcon size={15} />}
+            label="Telefonie"
+            value={data.phoneTotal + data.simCardTotal}
+            sub={`${data.phoneTotal} telefoons · ${data.simCardTotal} SIM-kaarten`}
+          />
+          <StatTile
+            icon={<CreditCard size={15} />}
+            label="Maandkosten abonnementen"
+            value={fmtEur(data.subscriptionMonthlyCost)}
+            sub={`${data.subscriptionActive} van ${data.subscriptionTotal} abonnementen actief`}
+          />
+        </div>
+
+        {/* ── Grafieken rij 1 ── */}
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+          <ChartCard title="Hardware per type" className="xl:col-span-2">
+            <HBarChart items={hardwareByType} />
+          </ChartCard>
+
+          <ChartCard title="Licenties">
+            <div className="space-y-4">
+              <Meter label="Seats in gebruik" used={data.licenseUsedSeats} total={data.licenseTotalSeats} />
+              <div className="pt-3 border-t border-slate-100 dark:border-slate-700 grid grid-cols-3 gap-3">
+                <div>
+                  <p className="text-base font-semibold text-slate-800 dark:text-slate-200 leading-none">{data.licenseTotal}</p>
+                  <p className="text-[11px] text-slate-400 mt-1">Licenties</p>
+                </div>
+                <div>
+                  <p className="text-base font-semibold text-slate-800 dark:text-slate-200 leading-none">{data.licenseActive}</p>
+                  <p className="text-[11px] text-slate-400 mt-1">Actief</p>
+                </div>
+                <div>
+                  <p className="text-base font-semibold text-slate-800 dark:text-slate-200 leading-none">{data.licenseExpired}</p>
+                  <p className="text-[11px] text-slate-400 mt-1">Verlopen</p>
+                </div>
+              </div>
+              {data.licenseExpired > 0 && (
+                <p className="flex items-center gap-1.5 text-xs text-red-600 dark:text-red-400">
+                  <AlertTriangle size={12} /> {data.licenseExpired} verlopen licentie{data.licenseExpired !== 1 ? 's' : ''} vraagt aandacht
+                </p>
+              )}
+            </div>
+          </ChartCard>
+        </div>
+
+        {/* ── Grafieken rij 2 ── */}
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+          <ChartCard title="Hardwarestatus">
+            <StackedBar
+              total={data.hardwareTotal}
+              segments={[
+                { label: 'In gebruik',    value: data.hardwareInUse,       light: 'bg-[#059669]' },
+                { label: 'In reparatie',  value: data.hardwareUnderRepair, light: 'bg-[#ea580c]' },
+                { label: 'Op voorraad',   value: data.hardwareInStock,     light: 'bg-[#2563eb]', dark: 'dark:bg-[#3b82f6]' },
+                { label: 'In bestelling', value: hardwareOnOrder,          light: 'bg-[#f59e0b]', dark: 'dark:bg-[#d97706]' },
+                { label: 'Afgeschreven',  value: decommissioned,           light: 'bg-slate-300', dark: 'dark:bg-slate-500' },
+              ]}
+            />
+          </ChartCard>
+
+          <ChartCard title="Telefonie-bezetting">
+            <div className="space-y-4">
+              <Meter label="Telefoons in gebruik" used={data.phoneInUse} total={data.phoneTotal} />
+              <Meter label="SIM-kaarten in gebruik" used={data.simCardInUse} total={data.simCardTotal} />
+            </div>
+          </ChartCard>
+
+          <ChartCard title="Softwarecatalogus">
+            <div className="space-y-4">
+              <p className="text-3xl font-semibold text-slate-900 dark:text-slate-100 leading-none">{data.softwareTotal}</p>
+              <StackedBar
+                total={data.softwareTotal}
+                segments={[
+                  { label: 'Betaald', value: data.softwarePaid, light: 'bg-[#2563eb]', dark: 'dark:bg-[#3b82f6]' },
+                  { label: 'Gratis',  value: data.softwareFree, light: 'bg-blue-300', dark: 'dark:bg-blue-800' },
+                ]}
+              />
+            </div>
+          </ChartCard>
+        </div>
       </div>
     </div>
   )
