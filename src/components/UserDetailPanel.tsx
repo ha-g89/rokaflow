@@ -51,8 +51,50 @@ function auditLabel(entry: AuditLogEntry): string {
     case 'LicenseRevoked':  return `Licentie ingetrokken: ${c.LicenseName ?? ''}`
     case 'SoftwareAssigned': return `Software toegewezen: ${c.Name ?? ''}`
     case 'SoftwareRevoked': return `Software verwijderd: ${c.Name ?? ''}`
+    case 'PortalAccessGranted': return 'Portaaltoegang gegeven'
+    case 'PortalAccessRevoked': return 'Portaaltoegang ingetrokken'
     default:                return entry.action
   }
+}
+
+const USER_FIELD_LABEL: Record<string, string> = {
+  FirstName: 'Voornaam', Tussenvoegsel: 'Tussenvoegsel', LastName: 'Achternaam',
+  Email: 'E-mail', JobTitle: 'Functie', Phone: 'Telefoon', Department: 'Afdeling',
+  Status: 'Status', ContractType: 'Contract', StartDate: 'Startdatum',
+  LeaveDate: 'Vertrekdatum', ManagerId: 'Manager', LocationId: 'Locatie', IsActive: 'Actief',
+}
+
+const USER_STATUS_NL: Record<string, string> = {
+  InService: 'In dienst', StartPlanned: 'In dienst gepland',
+  LeavePlanned: 'Uit dienst gepland', Left: 'Uit dienst',
+}
+
+// Korte detailregels voor een profiel-update: "Functie: Analist → Consultant"
+function auditDetailLines(entry: AuditLogEntry): string[] {
+  if (entry.action !== 'Updated') return []
+  const c = parseChanges(entry.changes)
+  const lines: string[] = []
+  const isGuid = (v: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v)
+  const fmtVal = (field: string, raw: unknown): string | null => {
+    if (raw === null || raw === undefined || raw === '') return '—'
+    const s = String(raw)
+    if (isGuid(s)) return null
+    if (field === 'Status') return USER_STATUS_NL[s] ?? s
+    if (field === 'StartDate' || field === 'LeaveDate') {
+      const d = new Date(s)
+      return isNaN(d.getTime()) ? s : d.toLocaleDateString('nl-NL', { day: '2-digit', month: '2-digit', year: 'numeric' })
+    }
+    return s
+  }
+  for (const [k, v] of Object.entries(c)) {
+    if (k.startsWith('_') || !Array.isArray(v)) continue
+    const label = USER_FIELD_LABEL[k] ?? k
+    const oldStr = fmtVal(k, v[0])
+    const newStr = fmtVal(k, v[1])
+    if (oldStr === null || newStr === null) { lines.push(`${label} gewijzigd`); continue }
+    if (oldStr !== newStr) lines.push(`${label}: ${oldStr} → ${newStr}`)
+  }
+  return lines
 }
 
 function AuditIcon({ action }: { action: string }) {
@@ -61,6 +103,7 @@ function AuditIcon({ action }: { action: string }) {
   if (action.startsWith('Phone'))    return <Smartphone size={16} className={`${cls} text-blue-500`} />
   if (action.startsWith('License'))  return <KeyRound size={16} className={`${cls} text-amber-500`} />
   if (action.startsWith('Software')) return <ShieldCheck size={16} className={`${cls} text-emerald-500`} />
+  if (action.startsWith('PortalAccess')) return <KeyRound size={16} className={`${cls} text-blue-500`} />
   if (action === 'Created')          return <User size={16} className={`${cls} text-slate-500`} />
   return <RotateCcw size={16} className={`${cls} text-slate-400`} />
 }
@@ -1234,6 +1277,9 @@ export function UserDetailPanel({ user, canEdit, departments = [], managers = []
                       <AuditIcon action={a.action} />
                       <div className="min-w-0">
                         <p className="text-sm font-medium text-slate-800 dark:text-slate-100">{auditLabel(a)}</p>
+                        {auditDetailLines(a).slice(0, 3).map((line, i) => (
+                          <p key={i} className="text-xs text-slate-500 dark:text-slate-400 truncate">{line}</p>
+                        ))}
                         <p className="text-xs text-slate-400">
                           {fmt(a.createdAt)}{a.userName ? ` • door ${a.userName}` : ''}
                         </p>

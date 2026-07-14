@@ -33,12 +33,14 @@ export function hardwareAuditLabel(entry: AuditEntry): string {
 // ── License ───────────────────────────────────────────────────────────────────
 
 export function licenseAuditLabel(entry: AuditEntry): string {
+  const c = parseAuditChanges(entry.changes)
+  const who = typeof c.UserName === 'string' && c.UserName ? `: ${c.UserName}` : ''
   switch (entry.action) {
     case 'Created':      return 'Licentie aangemaakt'
     case 'Deleted':      return 'Licentie verwijderd'
     case 'Updated':      return 'Licentie bijgewerkt'
-    case 'UserAssigned': return 'Gebruiker toegewezen'
-    case 'UserRevoked':  return 'Gebruiker ingetrokken'
+    case 'UserAssigned': return `Gebruiker toegewezen${who}`
+    case 'UserRevoked':  return `Gebruiker ingetrokken${who}`
     default: return entry.action
   }
 }
@@ -87,10 +89,14 @@ export function licenseDescriptionFn(entry: AuditEntry): string {
 // ── Software ──────────────────────────────────────────────────────────────────
 
 export function softwareAuditLabel(entry: AuditEntry): string {
+  const c = parseAuditChanges(entry.changes)
+  const who = typeof c.UserName === 'string' && c.UserName ? `: ${c.UserName}` : ''
   switch (entry.action) {
-    case 'Created': return 'Software aangemaakt'
-    case 'Deleted': return 'Software verwijderd'
-    case 'Updated': return 'Software bijgewerkt'
+    case 'Created':      return 'Software aangemaakt'
+    case 'Deleted':      return 'Software verwijderd'
+    case 'Updated':      return 'Software bijgewerkt'
+    case 'UserAssigned': return `Toegewezen aan gebruiker${who}`
+    case 'UserRevoked':  return `Ingetrokken van gebruiker${who}`
     default: return entry.action
   }
 }
@@ -178,6 +184,10 @@ export function HistoryBlock({ entityType, entityId, labelFn, descriptionFn }: {
                 className="w-full text-left rounded-lg bg-slate-50 hover:bg-blue-50 px-3 py-2 transition-colors cursor-pointer group"
               >
                 <p className="text-xs font-medium text-slate-700 group-hover:text-blue-700">{labelFn(e)}</p>
+                {(() => {
+                  const first = descriptionFn?.(e)?.split('\n')[0]
+                  return first ? <p className="text-xs text-slate-500 truncate">{first}</p> : null
+                })()}
                 <p className="text-xs text-slate-400">{fmtAuditDate(e.createdAt)}{e.userName ? ` · ${e.userName}` : ''}</p>
               </button>
             ))}
@@ -304,6 +314,9 @@ export function ItemHistoryBlock({ url, subtitle }: { url: string; subtitle?: st
                 className="w-full text-left rounded-lg bg-slate-50 hover:bg-blue-50 px-3 py-2 transition-colors cursor-pointer group"
               >
                 <p className="text-xs font-medium text-slate-700 group-hover:text-blue-700">{e.summary}</p>
+                {e.description && e.description.split('\n')[0] !== e.summary && (
+                  <p className="text-xs text-slate-500 truncate">{e.description.split('\n')[0]}</p>
+                )}
                 <p className="text-xs text-slate-400 mt-0.5">{fmtDT(e.occurredAt)}{e.performedBy ? ` · ${e.performedBy}` : ''}</p>
               </button>
             ))}
