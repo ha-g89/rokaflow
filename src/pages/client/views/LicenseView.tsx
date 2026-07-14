@@ -1,3 +1,5 @@
+import { FilterSelect } from '@/components/ui/FilterSelect'
+import { useSort, SortHeader } from '@/components/ui/SortHeader'
 import { useState, useEffect, useCallback } from 'react'
 import { CreditCard, Search, Plus, CheckCircle2, Clock, Users, Pencil, Trash2, StickyNote, History, Maximize2, ArrowLeft } from 'lucide-react'
 import api from '@/lib/axios'
@@ -424,9 +426,25 @@ export function LicenseView({ teammates, tabBar, onExpand }: { teammates: Client
     }
   }, [licenses])
 
-  const filtered = licenses.filter(l =>
-    `${l.name} ${l.vendor} ${l.type}`.toLowerCase().includes(search.toLowerCase())
-  )
+  const [statusFilter, setStatusFilter] = useState('')
+
+  const filtered = licenses.filter(l => {
+    if (statusFilter) {
+      const verlopen = !!l.expiresAt && new Date(l.expiresAt) < new Date()
+      const st = verlopen ? 'verlopen' : l.isActive ? 'actief' : 'inactief'
+      if (st !== statusFilter) return false
+    }
+    return `${l.name} ${l.vendor} ${l.type}`.toLowerCase().includes(search.toLowerCase())
+  })
+
+  const { sorted, sortKey, sortDir, toggleSort } = useSort(filtered, {
+    naam:        l => l.name,
+    leverancier: l => l.supplier || null,
+    seats:       l => l.maxUsers === 0 ? -1 : (l.maxUsers ? l.assignedUsers / l.maxUsers : 0),
+    beschikbaar: l => l.maxUsers === 0 ? Number.MAX_SAFE_INTEGER : l.maxUsers - l.assignedUsers,
+    vervaldatum: l => l.expiresAt || null,
+    status:      l => (l.expiresAt && new Date(l.expiresAt) < new Date()) ? 2 : (l.isActive ? 0 : 1),
+  })
 
   const totaal      = licenses.length
   const actief      = licenses.filter(l => l.isActive).length
@@ -475,7 +493,13 @@ export function LicenseView({ teammates, tabBar, onExpand }: { teammates: Client
               className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900/60 dark:shadow-[inset_0_1px_3px_0_rgba(0,0,0,0.4)] dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-blue-400 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-500/25"
             />
           </div>
-          <Button size="sm" onClick={handleOpenAdd}>
+          <FilterSelect label="Status" value={statusFilter} onChange={setStatusFilter}
+            options={[
+              { value: 'actief', label: 'Actief' },
+              { value: 'verlopen', label: 'Verlopen' },
+              { value: 'inactief', label: 'Inactief' },
+            ]} />
+          <Button size="sm" className="py-2" onClick={handleOpenAdd}>
             <Plus size={13} /> Toevoegen
           </Button>
         </div>
@@ -483,8 +507,15 @@ export function LicenseView({ teammates, tabBar, onExpand }: { teammates: Client
 
         <Card className="overflow-hidden flex flex-col min-h-0">
           <div className="grid grid-cols-[2fr_1fr_1.5fr_0.8fr_1fr_0.7fr] gap-3 px-4 py-2.5 bg-slate-50 border-b border-slate-100 flex-shrink-0">
-            {['Naam', 'Leverancier', 'Seats', 'Beschikbaar', 'Vervaldatum', 'Status'].map(h => (
-              <span key={h} className="text-xs font-semibold text-slate-500 uppercase tracking-wider truncate">{h}</span>
+            {([
+              { label: 'Naam', key: 'naam' },
+              { label: 'Leverancier', key: 'leverancier' },
+              { label: 'Seats', key: 'seats' },
+              { label: 'Beschikbaar', key: 'beschikbaar' },
+              { label: 'Vervaldatum', key: 'vervaldatum' },
+              { label: 'Status', key: 'status' },
+            ] as { label: string; key?: string }[]).map((h, i) => (
+              <SortHeader key={i} label={h.label} sortKey={h.key} activeKey={sortKey} dir={sortDir} onToggle={toggleSort} />
             ))}
           </div>
           <div className="flex-1 overflow-y-auto">
@@ -499,7 +530,7 @@ export function LicenseView({ teammates, tabBar, onExpand }: { teammates: Client
               </div>
             ) : (
               <ul className="divide-y divide-slate-100">
-                {filtered.map(l => {
+                {sorted.map(l => {
                   const isExpired   = l.expiresAt ? new Date(l.expiresAt) < new Date() : false
                   const isUnlimited = l.maxUsers === 0
                   const seatsLeft   = isUnlimited ? null : l.maxUsers - l.assignedUsers

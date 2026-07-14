@@ -1,3 +1,5 @@
+import { FilterSelect } from '@/components/ui/FilterSelect'
+import { useSort, SortHeader } from '@/components/ui/SortHeader'
 import { useState, useEffect, useCallback } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -972,9 +974,20 @@ function SoftwareCatalogTab({ teammates, tabBar, onExpand }: { teammates: Client
     }
   }, [software])
 
+  const [typeFilter, setTypeFilter] = useState('')
+
   const filtered = software.filter(s =>
+    (!typeFilter || (typeFilter === 'paid') === s.isPaid) &&
     `${s.name} ${s.publisher} ${s.vendor ?? ''}`.toLowerCase().includes(search.toLowerCase())
   )
+
+  const { sorted, sortKey, sortDir, toggleSort } = useSort(filtered, {
+    software:    s => s.name,
+    uitgever:    s => s.publisher || null,
+    leverancier: s => s.vendor || null,
+    type:        s => s.isPaid ? 'Betaald' : 'Gratis',
+    seats:       s => s.licenseId ? (s.assignedUsers ?? 0) : null,
+  })
 
   const handleDelete = async (id: string) => {
     await api.delete(`/portal/software/${id}`)
@@ -1005,7 +1018,12 @@ function SoftwareCatalogTab({ teammates, tabBar, onExpand }: { teammates: Client
               className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900/60 dark:shadow-[inset_0_1px_3px_0_rgba(0,0,0,0.4)] dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-blue-400 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-500/25"
             />
           </div>
-          <Button size="sm" onClick={() => { setEditTarget(null); setShowModal(true) }}>
+          <FilterSelect label="Type" value={typeFilter} onChange={setTypeFilter}
+            options={[
+              { value: 'paid', label: 'Betaald' },
+              { value: 'free', label: 'Gratis' },
+            ]} />
+          <Button size="sm" className="py-2" onClick={() => { setEditTarget(null); setShowModal(true) }}>
             <Plus size={13} /> Software toevoegen
           </Button>
         </div>
@@ -1013,8 +1031,14 @@ function SoftwareCatalogTab({ teammates, tabBar, onExpand }: { teammates: Client
 
         <Card className="overflow-hidden flex flex-col min-h-0">
           <div className={`grid ${cols} gap-3 px-5 py-3 bg-slate-50 dark:bg-slate-900 border-b border-slate-100 dark:border-slate-700 flex-shrink-0`}>
-            {['Software', 'Uitgever', 'Leverancier', 'Type', 'Seats'].map(h => (
-              <span key={h} className="text-xs font-semibold text-slate-500 uppercase tracking-wider truncate">{h}</span>
+            {([
+              { label: 'Software', key: 'software' },
+              { label: 'Uitgever', key: 'uitgever' },
+              { label: 'Leverancier', key: 'leverancier' },
+              { label: 'Type', key: 'type' },
+              { label: 'Seats', key: 'seats' },
+            ] as { label: string; key?: string }[]).map((h, i) => (
+              <SortHeader key={i} label={h.label} sortKey={h.key} activeKey={sortKey} dir={sortDir} onToggle={toggleSort} />
             ))}
           </div>
           <div className="flex-1 overflow-y-auto">
@@ -1029,7 +1053,7 @@ function SoftwareCatalogTab({ teammates, tabBar, onExpand }: { teammates: Client
               </div>
             ) : (
               <ul className="divide-y divide-slate-100 dark:divide-slate-700">
-                {filtered.map(s => (
+                {sorted.map(s => (
                   <li
                     key={s.id}
                     onClick={() => setSelected(s)}

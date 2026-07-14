@@ -1,3 +1,4 @@
+import { useSort, SortHeader } from '@/components/ui/SortHeader'
 import { useState } from 'react'
 import { ArrowLeftRight, RefreshCw, XCircle, Loader2, Building2, Calendar, Clock } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
@@ -50,6 +51,14 @@ export function TransfersView({ transfers, cancellingId, onCancel, onRefresh, on
   const visible = activeFilter === 'all'
     ? transfers
     : transfers.filter(t => t.status === activeFilter)
+
+  const { sorted, sortKey, sortDir, toggleSort } = useSort(visible, {
+    client:      t => t.tenantName,
+    van:         t => t.fromMspName || null,
+    naar:        t => t.toMspName,
+    status:      t => TRANSFER_STATUS_LABEL[t.status] ?? t.status,
+    aangevraagd: t => t.requestedAt,
+  })
 
   return (
     <div className="flex flex-col gap-4">
@@ -133,13 +142,20 @@ export function TransfersView({ transfers, cancellingId, onCancel, onRefresh, on
         <Card className="overflow-hidden">
           {/* Table header */}
           <div className="grid grid-cols-[1fr_1fr_1fr_120px_120px_48px] gap-3 px-4 py-2.5 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
-            {['Client', 'Van MSP', 'Naar MSP', 'Status', 'Aangevraagd', ''].map(h => (
-              <span key={h} className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">{h}</span>
+            {([
+              { label: 'Client', key: 'client' },
+              { label: 'Van MSP', key: 'van' },
+              { label: 'Naar MSP', key: 'naar' },
+              { label: 'Status', key: 'status' },
+              { label: 'Aangevraagd', key: 'aangevraagd' },
+              { label: '' },
+            ] as { label: string; key?: string }[]).map((h, i) => (
+              <SortHeader key={i} label={h.label} sortKey={h.key} activeKey={sortKey} dir={sortDir} onToggle={toggleSort} />
             ))}
           </div>
 
           <div className="divide-y divide-slate-100 dark:divide-slate-700/60">
-            {visible.map(t => (
+            {sorted.map(t => (
               <div
                 key={t.id}
                 className={`grid grid-cols-[1fr_1fr_1fr_120px_120px_48px] gap-3 px-4 py-3 items-center transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/40 ${

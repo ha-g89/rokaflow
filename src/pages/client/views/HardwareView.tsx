@@ -1,3 +1,5 @@
+import { FilterSelect } from '@/components/ui/FilterSelect'
+import { useSort, SortHeader } from '@/components/ui/SortHeader'
 import { useState, useEffect, useCallback } from 'react'
 import {
   Laptop, Search, Plus, Package, Activity, Archive, XCircle,
@@ -326,13 +328,28 @@ export function HardwareView({ teammates, onExpand }: { teammates: ClientUserLis
     }
   }, [assets]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  const [typeFilter, setTypeFilter]     = useState('')
+  const [statusFilter, setStatusFilter] = useState('')
+
   const filtered = assets.filter(a => {
+    if (typeFilter && a.type !== typeFilter) return false
+    if (statusFilter && a.status !== statusFilter) return false
     const spec = a.specifications
     const specText = spec
       ? `${spec.operatingSystem ?? ''} ${spec.processor ?? ''} ${spec.buildYear ?? ''}`
       : ''
     return `${a.name} ${a.brand} ${a.assetNumber} ${a.serialNumber} ${a.assignedToName ?? ''} ${a.location} ${specText}`
       .toLowerCase().includes(search.toLowerCase())
+  })
+
+  const { sorted, sortKey, sortDir, toggleSort } = useSort(filtered, {
+    type:       a => HARDWARE_TYPE_LABEL[a.type] ?? a.type,
+    merk:       a => a.brand || null,
+    naam:       a => a.name,
+    serie:      a => a.serialNumber || null,
+    leverancier: a => a.supplier || null,
+    toegewezen: a => a.assignedToName || null,
+    status:     a => HARDWARE_STATUS_LABEL[a.status] ?? a.status,
   })
 
   const totaal       = assets.length
@@ -411,7 +428,11 @@ export function HardwareView({ teammates, onExpand }: { teammates: ClientUserLis
               className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900/60 dark:shadow-[inset_0_1px_3px_0_rgba(0,0,0,0.4)] dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-blue-400 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-500/25"
             />
           </div>
-          <Button size="sm" onClick={handleOpenAdd}>
+          <FilterSelect label="Type" value={typeFilter} onChange={setTypeFilter}
+            options={Object.entries(HARDWARE_TYPE_LABEL).map(([value, label]) => ({ value, label }))} />
+          <FilterSelect label="Status" value={statusFilter} onChange={setStatusFilter}
+            options={Object.entries(HARDWARE_STATUS_LABEL).map(([value, label]) => ({ value, label }))} />
+          <Button size="sm" className="py-2" onClick={handleOpenAdd}>
             <Plus size={13} /> Toevoegen
           </Button>
         </div>
@@ -419,8 +440,16 @@ export function HardwareView({ teammates, onExpand }: { teammates: ClientUserLis
 
         <Card className="overflow-hidden flex flex-col min-h-0">
           <div className="grid grid-cols-[1fr_1.2fr_2fr_1.2fr_1fr_1.5fr_0.9fr] gap-3 px-4 py-2.5 bg-slate-50 border-b border-slate-100 flex-shrink-0">
-            {['Type', 'Merk', 'Naam', 'Serienummer', 'Leverancier', 'Toegewezen aan', 'Status'].map(h => (
-              <span key={h} className="text-xs font-semibold text-slate-500 uppercase tracking-wider truncate">{h}</span>
+            {([
+              { label: 'Type', key: 'type' },
+              { label: 'Merk', key: 'merk' },
+              { label: 'Naam', key: 'naam' },
+              { label: 'Serienummer', key: 'serie' },
+              { label: 'Leverancier', key: 'leverancier' },
+              { label: 'Toegewezen aan', key: 'toegewezen' },
+              { label: 'Status', key: 'status' },
+            ] as { label: string; key?: string }[]).map((h, i) => (
+              <SortHeader key={i} label={h.label} sortKey={h.key} activeKey={sortKey} dir={sortDir} onToggle={toggleSort} />
             ))}
           </div>
           <div className="flex-1 overflow-y-auto">
@@ -435,7 +464,7 @@ export function HardwareView({ teammates, onExpand }: { teammates: ClientUserLis
               </div>
             ) : (
               <ul className="divide-y divide-slate-100">
-                {filtered.map(a => (
+                {sorted.map(a => (
                   <li
                     key={a.id}
                     onClick={() => setSelected(a)}

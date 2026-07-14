@@ -1,3 +1,5 @@
+import { FilterSelect } from '@/components/ui/FilterSelect'
+import { useSort, SortHeader } from '@/components/ui/SortHeader'
 import { useState, useEffect } from 'react'
 import {
   Users, ArrowLeft, Laptop, CreditCard, Smartphone,
@@ -202,11 +204,27 @@ export function EmployeeListView({ teammates, loading, search, currentUserId, on
   onDelete: (id: string, name: string) => void
 }) {
   const [openMenu, setOpenMenu] = useState<string | null>(null)
+  const [statusFilter, setStatusFilter]     = useState('')
+  const [afdelingFilter, setAfdelingFilter] = useState('')
+
+  const afdelingen = [...new Set(teammates.map(t => t.departmentName).filter(Boolean))].sort()
 
   const filtered = teammates.filter(t =>
+    (!statusFilter || t.status === statusFilter) &&
+    (!afdelingFilter || t.departmentName === afdelingFilter) &&
     `${t.firstName} ${t.lastName} ${t.email} ${t.departmentName} ${t.jobTitle}`
       .toLowerCase().includes(search.toLowerCase())
   )
+
+  const { sorted, sortKey, sortDir, toggleSort } = useSort(filtered, {
+    naam:      u => `${u.firstName} ${u.lastName}`,
+    manager:   u => u.managerName || null,
+    afdeling:  u => u.departmentName || null,
+    functie:   u => u.jobTitle || null,
+    status:    u => STATUS_LABEL[u.status] ?? u.status,
+    assets:    u => u.hardwareCount,
+    licenties: u => u.licenseCount,
+  })
 
   const cols = 'grid-cols-[2.5fr_1fr_1fr_1fr_1.6fr_80px_90px_40px]'
 
@@ -234,16 +252,29 @@ export function EmployeeListView({ teammates, loading, search, currentUserId, on
             className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900/60 dark:shadow-[inset_0_1px_3px_0_rgba(0,0,0,0.4)] dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-blue-400 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-500/25"
           />
         </div>
+        <FilterSelect label="Status" value={statusFilter} onChange={setStatusFilter}
+          options={Object.entries(STATUS_LABEL).map(([value, label]) => ({ value, label }))} />
+        <FilterSelect label="Afdeling" value={afdelingFilter} onChange={setAfdelingFilter}
+          options={afdelingen.map(a => ({ value: a, label: a }))} />
         <span className="text-xs text-slate-400 flex-1">{filtered.length} medewerker{filtered.length !== 1 ? 's' : ''}</span>
-        <Button size="sm" onClick={onAddEmployee}>
+        <Button size="sm" className="py-2" onClick={onAddEmployee}>
           <UserPlus size={13} /> Medewerker toevoegen
         </Button>
       </div>
 
       <Card className="flex-1 overflow-hidden flex flex-col">
         <div className={`grid ${cols} gap-3 px-5 py-3 bg-slate-50 border-b border-slate-100`}>
-          {['Naam', 'Manager', 'Afdeling', 'Functie', 'Status', 'Assets', 'Licenties', ''].map(h => (
-            <span key={h} className="text-xs font-semibold text-slate-500 uppercase tracking-wider truncate">{h}</span>
+          {([
+            { label: 'Naam', key: 'naam' },
+            { label: 'Manager', key: 'manager' },
+            { label: 'Afdeling', key: 'afdeling' },
+            { label: 'Functie', key: 'functie' },
+            { label: 'Status', key: 'status' },
+            { label: 'Assets', key: 'assets' },
+            { label: 'Licenties', key: 'licenties' },
+            { label: '' },
+          ] as { label: string; key?: string }[]).map((h, i) => (
+            <SortHeader key={i} label={h.label} sortKey={h.key} activeKey={sortKey} dir={sortDir} onToggle={toggleSort} />
           ))}
         </div>
         <div className="flex-1 overflow-y-auto">
@@ -258,7 +289,7 @@ export function EmployeeListView({ teammates, loading, search, currentUserId, on
             </div>
           ) : (
             <ul className="divide-y divide-slate-100">
-              {filtered.map(u => (
+              {sorted.map(u => (
                 <li key={u.id} className={`grid ${cols} gap-3 px-5 py-3.5 hover:bg-slate-100 transition-colors items-center`}>
                   <button className="flex items-center gap-3 min-w-0 text-left" onClick={() => onSelect(u.id)}>
                     <Avatar first={u.firstName} last={u.lastName} size={48} />

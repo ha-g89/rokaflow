@@ -1,3 +1,5 @@
+import { FilterSelect } from '@/components/ui/FilterSelect'
+import { useSort, SortHeader } from '@/components/ui/SortHeader'
 import { useState, useEffect, useCallback } from 'react'
 import { Phone as PhoneIcon, Layers, CreditCard, Wifi, Search, Plus, Pencil, Trash2, StickyNote, History, Maximize2, ArrowLeft, User, Link2Off, Unlink, PackageCheck } from 'lucide-react'
 import api from '@/lib/axios'
@@ -64,10 +66,24 @@ function PhonesTab({ teammates, onExpand }: { teammates: ClientUserListItem[]; o
     }
   }, [phones])
 
+  const [statusFilter, setStatusFilter] = useState('')
+
   const filtered = phones.filter(p =>
+    (!statusFilter || p.status === statusFilter) &&
     `${p.brand} ${p.model} ${p.serialNumber} ${p.imeiNumber} ${p.assignedToName ?? ''}`
       .toLowerCase().includes(search.toLowerCase())
   )
+
+  const { sorted, sortKey, sortDir, toggleSort } = useSort(filtered, {
+    merk:       p => p.brand || null,
+    model:      p => p.model || null,
+    imei:       p => p.imeiNumber || null,
+    leverancier: p => p.supplier || null,
+    telnr:      p => p.simPhoneNumber || null,
+    toegewezen: p => p.assignedToName || null,
+    uitgifte:   p => p.issuedAt || null,
+    status:     p => PHONE_STATUS_LABEL[p.status] ?? p.status,
+  })
 
   const handleDelete = async (id: string) => {
     await api.delete(`/portal/phones/${id}`)
@@ -124,10 +140,12 @@ function PhonesTab({ teammates, onExpand }: { teammates: ClientUserListItem[]; o
               className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900/60 dark:shadow-[inset_0_1px_3px_0_rgba(0,0,0,0.4)] dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-blue-400 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-500/25"
             />
           </div>
-          <Button size="sm" onClick={() => { setEditTarget(null); setShowModal(true) }}>
+          <FilterSelect label="Status" value={statusFilter} onChange={setStatusFilter}
+            options={Object.entries(PHONE_STATUS_LABEL).map(([value, label]) => ({ value, label }))} />
+          <Button size="sm" className="py-2" onClick={() => { setEditTarget(null); setShowModal(true) }}>
             <Plus size={13} /> Toevoegen
           </Button>
-          <Button size="sm" variant="secondary" onClick={() => setShowWizard(true)}>
+          <Button size="sm" variant="secondary" className="py-2" onClick={() => setShowWizard(true)}>
             <Layers size={13} /> Setup
           </Button>
         </div>
@@ -135,8 +153,17 @@ function PhonesTab({ teammates, onExpand }: { teammates: ClientUserListItem[]; o
 
         <Card className="overflow-hidden flex flex-col min-h-0">
           <div className="grid grid-cols-[1fr_1.2fr_1.3fr_1fr_1.2fr_1.5fr_1fr_0.9fr] gap-3 px-4 py-2.5 bg-slate-50 border-b border-slate-100 flex-shrink-0">
-            {['Merk', 'Model', 'IMEI-nummer', 'Leverancier', 'Telefoonnummer', 'Toegewezen aan', 'Uitgiftedatum', 'Status'].map(h => (
-              <span key={h} className="text-xs font-semibold text-slate-500 uppercase tracking-wider truncate">{h}</span>
+            {([
+              { label: 'Merk', key: 'merk' },
+              { label: 'Model', key: 'model' },
+              { label: 'IMEI-nummer', key: 'imei' },
+              { label: 'Leverancier', key: 'leverancier' },
+              { label: 'Telefoonnummer', key: 'telnr' },
+              { label: 'Toegewezen aan', key: 'toegewezen' },
+              { label: 'Uitgiftedatum', key: 'uitgifte' },
+              { label: 'Status', key: 'status' },
+            ] as { label: string; key?: string }[]).map((h, i) => (
+              <SortHeader key={i} label={h.label} sortKey={h.key} activeKey={sortKey} dir={sortDir} onToggle={toggleSort} />
             ))}
           </div>
           <div className="flex-1 overflow-y-auto">
@@ -149,7 +176,7 @@ function PhonesTab({ teammates, onExpand }: { teammates: ClientUserListItem[]; o
               </div>
             ) : (
               <ul className="divide-y divide-slate-100">
-                {filtered.map(p => (
+                {sorted.map(p => (
                   <li
                     key={p.id}
                     onClick={() => { setSelected(p); setConfirmDelete(false); setConfirmUnlink(false) }}
@@ -363,10 +390,24 @@ function SimCardsTab({ teammates }: { teammates: ClientUserListItem[] }) {
     }
   }, [simCards])
 
+  const [typeFilter, setTypeFilter]     = useState('')
+  const [statusFilter, setStatusFilter] = useState('')
+
   const filtered = simCards.filter(s =>
+    (!typeFilter || s.type === typeFilter) &&
+    (!statusFilter || s.status === statusFilter) &&
     `${s.kaartNummer} ${s.phoneNumber} ${s.provider} ${s.assignedToName ?? ''} ${s.phoneName ?? ''}`
       .toLowerCase().includes(search.toLowerCase())
   )
+
+  const { sorted, sortKey, sortDir, toggleSort } = useSort(filtered, {
+    kaartnummer: s => s.kaartNummer,
+    telnr:       s => s.phoneNumber || null,
+    type:        s => SIM_TYPE_LABEL[s.type] ?? s.type,
+    toegewezen:  s => s.assignedToName || null,
+    telefoon:    s => s.phoneName || null,
+    status:      s => SIM_STATUS_LABEL[s.status] ?? s.status,
+  })
 
   const handleDelete = async (id: string) => {
     await api.delete(`/portal/simcards/${id}`)
@@ -389,7 +430,11 @@ function SimCardsTab({ teammates }: { teammates: ClientUserListItem[] }) {
             className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900/60 dark:shadow-[inset_0_1px_3px_0_rgba(0,0,0,0.4)] dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-blue-400 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-500/25"
           />
         </div>
-        <Button size="sm" onClick={() => { setEditTarget(null); setShowModal(true) }}>
+        <FilterSelect label="Type" value={typeFilter} onChange={setTypeFilter}
+          options={Object.entries(SIM_TYPE_LABEL).map(([value, label]) => ({ value, label }))} />
+        <FilterSelect label="Status" value={statusFilter} onChange={setStatusFilter}
+          options={Object.entries(SIM_STATUS_LABEL).map(([value, label]) => ({ value, label }))} />
+        <Button size="sm" className="py-2" onClick={() => { setEditTarget(null); setShowModal(true) }}>
           <Plus size={13} /> Toevoegen
         </Button>
       </div>
@@ -397,8 +442,15 @@ function SimCardsTab({ teammates }: { teammates: ClientUserListItem[] }) {
 
       <Card className="overflow-hidden flex flex-col min-h-0">
         <div className="grid grid-cols-[1.5fr_1.2fr_1fr_1.5fr_1.3fr_0.9fr] gap-3 px-4 py-2.5 bg-slate-50 border-b border-slate-100 flex-shrink-0">
-          {['Kaartnummer', 'Telefoonnummer', 'Type', 'Toegewezen aan', 'Gekoppelde telefoon', 'Status'].map(h => (
-            <span key={h} className="text-xs font-semibold text-slate-500 uppercase tracking-wider truncate">{h}</span>
+          {([
+            { label: 'Kaartnummer', key: 'kaartnummer' },
+            { label: 'Telefoonnummer', key: 'telnr' },
+            { label: 'Type', key: 'type' },
+            { label: 'Toegewezen aan', key: 'toegewezen' },
+            { label: 'Gekoppelde telefoon', key: 'telefoon' },
+            { label: 'Status', key: 'status' },
+          ] as { label: string; key?: string }[]).map((h, i) => (
+            <SortHeader key={i} label={h.label} sortKey={h.key} activeKey={sortKey} dir={sortDir} onToggle={toggleSort} />
           ))}
         </div>
         <div className="flex-1 overflow-y-auto">
@@ -411,7 +463,7 @@ function SimCardsTab({ teammates }: { teammates: ClientUserListItem[] }) {
             </div>
           ) : (
             <ul className="divide-y divide-slate-100">
-              {filtered.map(s => (
+              {sorted.map(s => (
                 <li
                   key={s.id}
                   onClick={() => { setSelected(s); setConfirmDelete(false) }}
@@ -549,10 +601,26 @@ function SubscriptionsTab() {
     }
   }, [subscriptions])
 
+  const [typeFilter, setTypeFilter]     = useState('')
+  const [statusFilter, setStatusFilter] = useState('')
+
   const filtered = subscriptions.filter(s =>
+    (!typeFilter || s.type === typeFilter) &&
+    (!statusFilter || s.status === statusFilter) &&
     `${s.name} ${s.provider} ${s.bundle} ${s.simCardNumber ?? ''} ${s.assignedToName ?? ''}`
       .toLowerCase().includes(search.toLowerCase())
   )
+
+  const { sorted, sortKey, sortDir, toggleSort } = useSort(filtered, {
+    provider:   s => s.provider || null,
+    naam:       s => s.name,
+    type:       s => SUB_TYPE_LABEL[s.type] ?? s.type,
+    kosten:     s => s.monthlyCost ?? null,
+    leverancier: s => s.supplier || null,
+    toegewezen: s => s.assignedToName || null,
+    simkaart:   s => s.simPhoneNumber || s.simCardNumber || null,
+    status:     s => SUB_STATUS_LABEL[s.status] ?? s.status,
+  })
 
   const handleDelete = async (id: string) => {
     await api.delete(`/portal/subscriptions/${id}`)
@@ -580,7 +648,11 @@ function SubscriptionsTab() {
             className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900/60 dark:shadow-[inset_0_1px_3px_0_rgba(0,0,0,0.4)] dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-blue-400 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-500/25"
           />
         </div>
-        <Button size="sm" onClick={() => { setEditTarget(null); setShowModal(true) }}>
+        <FilterSelect label="Type" value={typeFilter} onChange={setTypeFilter}
+          options={Object.entries(SUB_TYPE_LABEL).map(([value, label]) => ({ value, label }))} />
+        <FilterSelect label="Status" value={statusFilter} onChange={setStatusFilter}
+          options={Object.entries(SUB_STATUS_LABEL).map(([value, label]) => ({ value, label }))} />
+        <Button size="sm" className="py-2" onClick={() => { setEditTarget(null); setShowModal(true) }}>
           <Plus size={13} /> Toevoegen
         </Button>
       </div>
@@ -588,8 +660,17 @@ function SubscriptionsTab() {
 
       <Card className="overflow-hidden flex flex-col min-h-0">
         <div className="grid grid-cols-[1.2fr_2fr_1fr_1fr_1fr_1.5fr_1.3fr_0.9fr] gap-3 px-4 py-2.5 bg-slate-50 border-b border-slate-100 flex-shrink-0">
-          {['Provider', 'Naam', 'Type', 'Kosten/mnd', 'Leverancier', 'Toegewezen aan', 'Simkaart', 'Status'].map(h => (
-            <span key={h} className="text-xs font-semibold text-slate-500 uppercase tracking-wider truncate">{h}</span>
+          {([
+            { label: 'Provider', key: 'provider' },
+            { label: 'Naam', key: 'naam' },
+            { label: 'Type', key: 'type' },
+            { label: 'Kosten/mnd', key: 'kosten' },
+            { label: 'Leverancier', key: 'leverancier' },
+            { label: 'Toegewezen aan', key: 'toegewezen' },
+            { label: 'Simkaart', key: 'simkaart' },
+            { label: 'Status', key: 'status' },
+          ] as { label: string; key?: string }[]).map((h, i) => (
+            <SortHeader key={i} label={h.label} sortKey={h.key} activeKey={sortKey} dir={sortDir} onToggle={toggleSort} />
           ))}
         </div>
         <div className="flex-1 overflow-y-auto">
@@ -602,7 +683,7 @@ function SubscriptionsTab() {
             </div>
           ) : (
             <ul className="divide-y divide-slate-100">
-              {filtered.map(s => (
+              {sorted.map(s => (
                 <li
                   key={s.id}
                   onClick={() => { setSelected(s); setConfirmDelete(false) }}

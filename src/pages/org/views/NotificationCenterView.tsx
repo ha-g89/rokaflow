@@ -1,3 +1,4 @@
+import { useSort, SortHeader } from '@/components/ui/SortHeader'
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AlertCircle, AlertTriangle, Info } from 'lucide-react'
@@ -49,6 +50,12 @@ export function NotificationCenterView() {
 
   const visible = activeFilter === 'all' ? notifications : notifications.filter(n => n.priority === activeFilter)
 
+  const { sorted, sortKey, sortDir, toggleSort } = useSort(visible, {
+    melding: n => n.title,
+    klant:   n => n.tenantName,
+    datum:   n => n.createdAt,
+  })
+
   const handleOpen = async (n: NotificationDto) => {
     setOpeningId(n.id)
     try {
@@ -96,12 +103,17 @@ export function NotificationCenterView() {
       {!loading && visible.length > 0 && (
         <Card className="overflow-hidden">
           <div className="grid grid-cols-[24px_1fr_1fr_100px] gap-3 px-4 py-2.5 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
-            {['', 'Melding', 'Klant', 'Datum'].map(h => (
-              <span key={h} className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">{h}</span>
+            {([
+              { label: '' },
+              { label: 'Melding', key: 'melding' },
+              { label: 'Klant', key: 'klant' },
+              { label: 'Datum', key: 'datum' },
+            ] as { label: string; key?: string }[]).map((h, i) => (
+              <SortHeader key={i} label={h.label} sortKey={h.key} activeKey={sortKey} dir={sortDir} onToggle={toggleSort} />
             ))}
           </div>
           <div className="divide-y divide-slate-100 dark:divide-slate-700/60">
-            {visible.map(n => (
+            {sorted.map(n => (
               <button
                 key={n.id}
                 onClick={() => handleOpen(n)}

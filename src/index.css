@@ -59,6 +59,14 @@ body {
   color: #64748b;
 }
 
+/* Uitklaplijst van selects: de browser rendert de popup zelf en erft
+   semi-transparante Tailwind-achtergronden niet — zonder expliciete,
+   dekkende kleuren wordt de lijst wit met lichte (onleesbare) tekst. */
+.dark select option {
+  background-color: #1e293b;
+  color: #f1f5f9;
+}
+
 /* Focus ring kleur behouden */
 .dark input:focus,
 .dark select:focus,
