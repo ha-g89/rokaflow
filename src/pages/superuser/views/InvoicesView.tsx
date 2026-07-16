@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import {
   Send, Download, ChevronDown, ChevronUp,
-  CheckCircle2, AlertTriangle, Settings,
+  CheckCircle2, AlertTriangle, Settings, Play,
 } from 'lucide-react'
 import api from '@/lib/axios'
 import { Modal } from '@/components/ui/Modal'
@@ -135,6 +135,86 @@ function TestPdfModal({ open, onClose }: { open: boolean; onClose: () => void })
             </Button>
           </div>
         </form>
+      )}
+    </Modal>
+  )
+}
+
+// ── Facturatierun modal (dev only) ──────────────────────────────────────────
+
+function RunBillingModal({
+  open, onClose, onRun,
+}: {
+  open: boolean
+  onClose: () => void
+  onRun: () => void
+}) {
+  const [date, setDate] = useState('')
+  const [running, setRunning] = useState(false)
+  const [result, setResult] = useState<string | null>(null)
+  const [apiError, setApiError] = useState<string | null>(null)
+
+  const handleClose = () => {
+    if (running) return
+    setDate('')
+    setResult(null)
+    setApiError(null)
+    onClose()
+  }
+
+  const handleRun = async () => {
+    setRunning(true)
+    setApiError(null)
+    try {
+      const { data } = await api.post('/billing/run', undefined, { params: date ? { today: date } : {} })
+      setResult(data.message)
+      onRun()
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail
+      setApiError(msg ?? 'Facturatierun mislukt.')
+    } finally { setRunning(false) }
+  }
+
+  return (
+    <Modal open={open} onClose={handleClose} title="Facturatierun uitvoeren">
+      {result ? (
+        <div className="flex flex-col items-center text-center gap-4 py-2">
+          <div className="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center">
+            <CheckCircle2 size={24} className="text-emerald-500" />
+          </div>
+          <p className="text-sm text-slate-700">{result}</p>
+          <Button className="w-full" onClick={handleClose}>Sluiten</Button>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          <p className="text-xs text-slate-500 leading-relaxed">
+            Draait de volledige facturatieketen (metering, generatie, verzending, herinneringen) direct uit,
+            zonder te wachten op de dagelijkse job.
+          </p>
+          <div>
+            <label className="block text-xs font-medium text-slate-600 mb-1">Gesimuleerde datum (optioneel)</label>
+            <input
+              type="date"
+              value={date}
+              onChange={e => setDate(e.target.value)}
+              className={inputField}
+            />
+            <p className="mt-1 text-xs text-slate-400">
+              Laat leeg voor vandaag. Kies de 1e van de volgende maand om een maandfactuur over de huidige maand te forceren.
+            </p>
+          </div>
+          {apiError && (
+            <p className="text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{apiError}</p>
+          )}
+          <div className="flex gap-3 pt-1">
+            <Button type="button" variant="secondary" className="flex-1" onClick={handleClose} disabled={running}>
+              Annuleren
+            </Button>
+            <Button type="button" className="flex-1" onClick={handleRun} disabled={running}>
+              {running ? 'Bezig…' : 'Uitvoeren'}
+            </Button>
+          </div>
+        </div>
       )}
     </Modal>
   )
@@ -386,6 +466,7 @@ export function InvoicesView() {
 
   const [confirmPayInvoice, setConfirmPayInvoice] = useState<InvoiceListItem | null>(null)
   const [showTestPdf, setShowTestPdf] = useState(false)
+  const [showRunBilling, setShowRunBilling] = useState(false)
   const [pdfError, setPdfError] = useState<string | null>(null)
 
   const { sorted, sortKey, sortDir, toggleSort } = useSort(invoices, sortAccessors)
@@ -445,13 +526,22 @@ export function InvoicesView() {
           <FilterSelect label="Jaar" value={year} options={YEAR_OPTIONS} onChange={setYear} />
           <FilterSelect label="Maand" value={month} options={MONTH_OPTIONS} onChange={setMonth} />
           {import.meta.env.DEV && (
-            <button
-              onClick={() => setShowTestPdf(true)}
-              className="ml-auto flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900/60 text-slate-600 dark:text-slate-300 hover:border-blue-300 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
-              title="Alleen zichtbaar in development"
-            >
-              <Send size={12} /> Verstuur test-PDF
-            </button>
+            <>
+              <button
+                onClick={() => setShowRunBilling(true)}
+                className="ml-auto flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900/60 text-slate-600 dark:text-slate-300 hover:border-blue-300 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
+                title="Alleen zichtbaar in development"
+              >
+                <Play size={12} /> Facturatierun uitvoeren
+              </button>
+              <button
+                onClick={() => setShowTestPdf(true)}
+                className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900/60 text-slate-600 dark:text-slate-300 hover:border-blue-300 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
+                title="Alleen zichtbaar in development"
+              >
+                <Send size={12} /> Verstuur test-PDF
+              </button>
+            </>
           )}
         </div>
 
@@ -559,6 +649,7 @@ export function InvoicesView() {
       </div>
 
       <TestPdfModal open={showTestPdf} onClose={() => setShowTestPdf(false)} />
+      <RunBillingModal open={showRunBilling} onClose={() => setShowRunBilling(false)} onRun={fetchInvoices} />
       <MarkPaidModal
         invoice={confirmPayInvoice}
         onClose={() => setConfirmPayInvoice(null)}
