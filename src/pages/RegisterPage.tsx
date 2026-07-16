@@ -16,12 +16,12 @@ const schema = z.object({
   password:        z.string().min(8, 'Minimaal 8 tekens'),
   confirmPassword: z.string().min(1, 'Bevestig uw wachtwoord'),
   companyName:     z.string().min(1, 'Bedrijfsnaam is verplicht').max(200),
-  kvkNumber:       z.string().max(50).optional(),
-  vatNumber:       z.string().max(50).optional(),
-  invoiceEmail:    z.string().optional(),
-  addressLine:     z.string().max(200).optional(),
-  postalCode:      z.string().max(20).optional(),
-  city:            z.string().max(100).optional(),
+  kvkNumber:       z.string().max(16, 'Maximaal 16 tekens').optional(),
+  vatNumber:       z.string().max(32, 'Maximaal 32 tekens').optional(),
+  invoiceEmail:    z.string().max(256, 'Maximaal 256 tekens').email('Ongeldig e-mailadres').optional().or(z.literal('')),
+  addressLine:     z.string().max(200, 'Maximaal 200 tekens').optional(),
+  postalCode:      z.string().max(16, 'Maximaal 16 tekens').optional(),
+  city:            z.string().max(100, 'Maximaal 100 tekens').optional(),
 }).refine(d => d.password === d.confirmPassword, {
   message: 'Wachtwoorden komen niet overeen',
   path: ['confirmPassword'],
@@ -30,6 +30,8 @@ const schema = z.object({
 type FormValues = z.infer<typeof schema>
 
 const STEP1_FIELDS = ['firstName', 'tussenvoegsel', 'lastName', 'email', 'password', 'confirmPassword'] as const
+
+const MAX_LOGO_BYTES = 2 * 1024 * 1024
 
 const CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap');
@@ -539,6 +541,7 @@ export default function RegisterPage() {
   const [showConfirm, setShowConfirm] = useState(false)
   const [logoFile,    setLogoFile]    = useState<File | null>(null)
   const [logoPreview, setLogoPreview] = useState<string | null>(null)
+  const [logoError,   setLogoError]   = useState<string | null>(null)
   const [step,        setStep]        = useState<1 | 2>(1)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { login }  = useAuthStore()
@@ -554,6 +557,14 @@ export default function RegisterPage() {
 
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] ?? null
+    setLogoError(null)
+    if (file && file.size > MAX_LOGO_BYTES) {
+      setLogoError('Bestand is te groot. Maximaal 2 MB toegestaan.')
+      setLogoFile(null)
+      setLogoPreview(null)
+      e.target.value = ''
+      return
+    }
     setLogoFile(file)
     if (file) {
       const reader = new FileReader()
@@ -586,14 +597,20 @@ export default function RegisterPage() {
       login(data.accessToken, data.refreshToken, data.user)
 
       if (logoFile) {
-        const form = new FormData()
-        form.append('file', logoFile)
-        await api.post('/portal/logo', form, {
-          headers: {
-            Authorization: `Bearer ${data.accessToken}`,
-            'Content-Type': undefined,
-          },
-        })
+        // Niet-fataal: registratie is al gelukt. Als de logo-upload mislukt,
+        // kan het logo later alsnog via Instellingen worden ingesteld.
+        try {
+          const form = new FormData()
+          form.append('file', logoFile)
+          await api.post('/portal/logo', form, {
+            headers: {
+              Authorization: `Bearer ${data.accessToken}`,
+              'Content-Type': undefined,
+            },
+          })
+        } catch {
+          // bewust genegeerd
+        }
       }
 
       navigate('/client', { replace: true })
@@ -763,6 +780,7 @@ export default function RegisterPage() {
                           <p className="rfr-logo-text-sub">PNG, JPEG, SVG of WebP · max 2 MB</p>
                         </div>
                       </div>
+                      {logoError && <p className="rfr-err-msg">{logoError}</p>}
                     </div>
 
                     <div className="rfr-field">
@@ -785,8 +803,9 @@ export default function RegisterPage() {
                         <input
                           placeholder="12345678"
                           {...register('kvkNumber')}
-                          className="rfr-input"
+                          className={`rfr-input${errors.kvkNumber ? ' rfr-err' : ''}`}
                         />
+                        {errors.kvkNumber && <p className="rfr-err-msg">{errors.kvkNumber.message}</p>}
                       </div>
                       <div className="rfr-field-inline">
                         <label className="rfr-label">
@@ -796,8 +815,9 @@ export default function RegisterPage() {
                         <input
                           placeholder="NL123456789B01"
                           {...register('vatNumber')}
-                          className="rfr-input"
+                          className={`rfr-input${errors.vatNumber ? ' rfr-err' : ''}`}
                         />
+                        {errors.vatNumber && <p className="rfr-err-msg">{errors.vatNumber.message}</p>}
                       </div>
                     </div>
 
@@ -810,8 +830,9 @@ export default function RegisterPage() {
                         type="email"
                         placeholder={watch('email') || 'facturatie@mijnbedrijf.nl'}
                         {...register('invoiceEmail')}
-                        className="rfr-input"
+                        className={`rfr-input${errors.invoiceEmail ? ' rfr-err' : ''}`}
                       />
+                      {errors.invoiceEmail && <p className="rfr-err-msg">{errors.invoiceEmail.message}</p>}
                       <p className="rfr-field-hint">Leeg laten = accountadres</p>
                     </div>
 
@@ -823,8 +844,9 @@ export default function RegisterPage() {
                       <input
                         placeholder="Hoofdstraat 1"
                         {...register('addressLine')}
-                        className="rfr-input"
+                        className={`rfr-input${errors.addressLine ? ' rfr-err' : ''}`}
                       />
+                      {errors.addressLine && <p className="rfr-err-msg">{errors.addressLine.message}</p>}
                     </div>
 
                     <div className="rfr-row-2">
@@ -836,8 +858,9 @@ export default function RegisterPage() {
                         <input
                           placeholder="1234 AB"
                           {...register('postalCode')}
-                          className="rfr-input"
+                          className={`rfr-input${errors.postalCode ? ' rfr-err' : ''}`}
                         />
+                        {errors.postalCode && <p className="rfr-err-msg">{errors.postalCode.message}</p>}
                       </div>
                       <div className="rfr-field-inline">
                         <label className="rfr-label">
@@ -847,8 +870,9 @@ export default function RegisterPage() {
                         <input
                           placeholder="Amsterdam"
                           {...register('city')}
-                          className="rfr-input"
+                          className={`rfr-input${errors.city ? ' rfr-err' : ''}`}
                         />
+                        {errors.city && <p className="rfr-err-msg">{errors.city.message}</p>}
                       </div>
                     </div>
 
