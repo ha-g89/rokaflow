@@ -594,11 +594,11 @@ export default function PricingPage() {
           <button
             className={`pr-toggle${annual ? ' pr-tog-on' : ''}`}
             onClick={() => setAnnual(v => !v)}
-            aria-label="Jaarlijks/Maandelijks"
+            aria-label="Jaarcontract/Maandelijks"
           >
             <span className="pr-toggle-knob" />
           </button>
-          <span className={`pr-toggle-label${annual ? ' pr-tl-on' : ''}`}>Jaarlijks</span>
+          <span className={`pr-toggle-label${annual ? ' pr-tl-on' : ''}`}>Jaarcontract</span>
           <span className={`pr-save-pill${annual ? ' pr-pill-on' : ''}`}>10% korting</span>
         </div>
 
@@ -612,7 +612,7 @@ export default function PricingPage() {
               <span className="pr-currency">€</span>
               <span className="pr-price-num"><AnimPrice value={p1} /></span>
             </div>
-            <p className="pr-price-period">per maand{annual ? ', jaarlijks gefactureerd' : ''}</p>
+            <p className="pr-price-period">per maand{annual ? ' — bij een jaarcontract' : ''}</p>
             <p className="pr-price-extra">
               {annual && <span className="pr-old-price">€12/mnd</span>}
               Tot 100 geregistreerde assets
@@ -639,7 +639,7 @@ export default function PricingPage() {
               <span className="pr-currency">€</span>
               <span className="pr-price-num"><AnimPrice value={p3} /></span>
             </div>
-            <p className="pr-price-period">per maand{annual ? ', jaarlijks gefactureerd' : ''}</p>
+            <p className="pr-price-period">per maand{annual ? ' — bij een jaarcontract' : ''}</p>
             <p className="pr-price-extra">
               {annual && <span className="pr-old-price">€60/mnd</span>}
               + <strong>€<AnimPrice value={pu} /></strong>/gebruiker/mnd
@@ -669,7 +669,7 @@ export default function PricingPage() {
               <span className="pr-currency">€</span>
               <span className="pr-price-num"><AnimPrice value={p2} /></span>
             </div>
-            <p className="pr-price-period">per maand{annual ? ', jaarlijks gefactureerd' : ''}</p>
+            <p className="pr-price-period">per maand{annual ? ' — bij een jaarcontract' : ''}</p>
             <p className="pr-price-extra">
               {annual && <span className="pr-old-price">€29/mnd</span>}
               100 tot 500 geregistreerde assets

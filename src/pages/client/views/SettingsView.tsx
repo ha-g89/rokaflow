@@ -295,7 +295,7 @@ export function SettingsView({ teammates, tenantName, onAddUser, mspStatus, onMs
               <h2 className="text-sm font-bold text-slate-800 dark:text-slate-100">Facturatie</h2>
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
-              Deze gegevens worden gebruikt voor de maandelijkse of jaarlijkse facturen van RokaFlow.
+              Deze gegevens worden gebruikt voor de facturen van RokaFlow.
             </p>
             <BillingProfileForm baseUrl="/portal/billing" mode="full" />
 
