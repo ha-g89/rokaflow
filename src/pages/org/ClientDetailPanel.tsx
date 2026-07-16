@@ -11,13 +11,26 @@ import { Button } from '@/components/ui/Button'
 import { LoadingState } from '@/components/ui/LoadingState'
 import type { ClientListItem } from '@/types/client'
 import type { ClientUserListItem, ClientUserDetailResponse } from '@/types/clientUser'
-import type { MyPlanDto, TenantPlanStatus } from '@/types/platformPlan'
+import type { MyPlanDto, TenantPlanDto, TenantPlanStatus } from '@/types/platformPlan'
+import { BillingInterval } from '@/types/billing'
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
 function fmt(d: string | null | undefined) {
   if (!d) return '—'
   return new Date(d).toLocaleDateString('nl-NL', { day: '2-digit', month: '2-digit', year: 'numeric' })
+}
+
+// Datum-only strings ("2026-07-01" of "...T00:00:00") component-gebaseerd parsen:
+// `new Date('YYYY-MM-DD')` interpreteert als UTC-middernacht, waardoor de weergave
+// op machines met negatieve UTC-offset een dag verschuift.
+function parseDateOnly(iso: string) {
+  const [y, m, d] = iso.split('T')[0].split('-').map(Number)
+  return new Date(y, m - 1, d)
+}
+
+function fmtDateOnly(iso: string) {
+  return parseDateOnly(iso).toLocaleDateString('nl-NL', { day: '2-digit', month: '2-digit', year: 'numeric' })
 }
 
 function trialDaysLeft(iso: string | null) {
@@ -264,17 +277,32 @@ function DetailsTab({ client, onSwitchToClient, switchingClientId, onEditClient 
 
 // ── AbonnementTab ─────────────────────────────────────────────────────────────
 
-function AbonnementTab({ plan }: { plan: MyPlanDto | null }) {
+function AbonnementTab({ plan, planDetail, onManageSubscription }: {
+  plan: MyPlanDto | null
+  planDetail: TenantPlanDto | null
+  onManageSubscription?: () => void
+}) {
   if (!plan) return (
     <div className="p-5 flex flex-col items-center justify-center gap-2 text-center min-h-[200px]">
       <CreditCard size={28} className="text-slate-300 dark:text-slate-600" />
       <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Geen abonnement gekoppeld</p>
       <p className="text-xs text-slate-400">Ga naar Abonnementen om een plan te koppelen.</p>
+      {onManageSubscription && (
+        <button
+          onClick={onManageSubscription}
+          className="mt-1 text-xs text-blue-500 hover:underline"
+        >
+          Naar Abonnementen
+        </button>
+      )}
     </div>
   )
 
   const meta = STATUS_META[plan.status]
   const days = plan.status === 'Trial' ? trialDaysLeft(plan.trialEndsAt) : plan.status === 'GracePeriod' ? trialDaysLeft(plan.graceEndsAt) : null
+  const intervalDisplay = !planDetail ? null : planDetail.interval === BillingInterval.Yearly
+    ? `Jaarlijks${planDetail.yearAnchorDate ? ` — periode vanaf ${fmtDateOnly(planDetail.yearAnchorDate)}` : ''}`
+    : 'Maandelijks'
 
   return (
     <div className="p-5 space-y-5">
@@ -302,6 +330,16 @@ function AbonnementTab({ plan }: { plan: MyPlanDto | null }) {
         </div>
       </div>
 
+      {onManageSubscription && (
+        <button
+          onClick={onManageSubscription}
+          className="flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+        >
+          <CreditCard size={13} />
+          Abonnement beheren
+        </button>
+      )}
+
       {/* Usage bars */}
       <div>
         <p className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-3">Verbruik</p>
@@ -317,6 +355,7 @@ function AbonnementTab({ plan }: { plan: MyPlanDto | null }) {
         <p className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-3">Datums</p>
         <div className="rounded-xl border border-slate-100 dark:border-slate-700 divide-y divide-slate-100 dark:divide-slate-700 overflow-hidden">
           {[
+            { label: 'Frequentie',      val: intervalDisplay ?? '',  show: !!intervalDisplay },
             { label: 'Trial verloopt',  val: fmt(plan.trialEndsAt),  show: !!plan.trialEndsAt },
             { label: 'Grace verloopt',  val: fmt(plan.graceEndsAt),  show: !!plan.graceEndsAt },
             { label: 'Geactiveerd op',  val: fmt(plan.activatedAt),  show: !!plan.activatedAt },
@@ -432,6 +471,7 @@ type DetailTab = 'details' | 'abonnement' | 'gebruikers'
 export interface ClientDetailPanelProps {
   client: ClientListItem
   plan: MyPlanDto | null
+  planDetail: TenantPlanDto | null
   users: ClientUserListItem[]
   loadingUsers: boolean
   selectedUser: ClientUserDetailResponse | null
@@ -442,6 +482,7 @@ export interface ClientDetailPanelProps {
   onUserUpdated: () => void
   onSwitchToClient: (clientId: string) => void
   onEditClient: () => void
+  onManageSubscription?: () => void
 }
 
 const TABS: { id: DetailTab; label: string; icon: React.ReactNode }[] = [
@@ -451,8 +492,9 @@ const TABS: { id: DetailTab; label: string; icon: React.ReactNode }[] = [
 ]
 
 export function ClientDetailPanel({
-  client, plan, users, loadingUsers, selectedUser, loadingDetail,
+  client, plan, planDetail, users, loadingUsers, selectedUser, loadingDetail,
   switchingClientId, onSelectUser, onAddUser, onUserUpdated, onSwitchToClient, onEditClient,
+  onManageSubscription,
 }: ClientDetailPanelProps) {
   const [activeTab, setActiveTab] = useState<DetailTab>('details')
   const portalUserCount = users.filter(u => u.isPortalUser).length
@@ -515,7 +557,9 @@ export function ClientDetailPanel({
             onEditClient={onEditClient}
           />
         )}
-        {activeTab === 'abonnement' && <AbonnementTab plan={plan} />}
+        {activeTab === 'abonnement' && (
+          <AbonnementTab plan={plan} planDetail={planDetail} onManageSubscription={onManageSubscription} />
+        )}
         {activeTab === 'gebruikers' && (
           <GebruikersTab
             client={client}

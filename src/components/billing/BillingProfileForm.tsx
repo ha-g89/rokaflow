@@ -65,7 +65,9 @@ function ViewRow({ label, value }: { label: string; value: string }) {
   )
 }
 
-export function BillingProfileForm({ baseUrl, mode = 'full' }: { baseUrl: string; mode?: 'full' | 'company' }) {
+const MSP_INTERVAL_NOTE = 'De facturatiefrequentie stelt u per klant in bij Abonnementen.'
+
+export function BillingProfileForm({ baseUrl, mode = 'full' }: { baseUrl: string; mode?: 'full' | 'company' | 'msp' }) {
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -187,6 +189,11 @@ export function BillingProfileForm({ baseUrl, mode = 'full' }: { baseUrl: string
     )
   }
 
+  // 'msp' toont, net als 'full', het factuur-e-mailadres van de MSP zelf — alleen
+  // de Frequentie-selector wordt vervangen door een informatieve regel, omdat de
+  // facturatiefrequentie bij MSP-beheerde omgevingen per klant wordt ingesteld
+  // (zie Abonnementen), niet meer op het eigen MSP-profiel.
+  const showEmail = mode !== 'company'
   const postalCity = [watchedPostalCode, watchedCity].filter(Boolean).join(' ')
   const intervalDisplay = watchedInterval === BillingInterval.Yearly
     ? `Jaarlijks${savedYearAnchorDate ? ` — periode vanaf ${fmtDate(savedYearAnchorDate)}` : ''}`
@@ -200,19 +207,17 @@ export function BillingProfileForm({ baseUrl, mode = 'full' }: { baseUrl: string
     { label: 'KvK-nummer', value: watchedKvkNumber },
     { label: 'BTW-nummer', value: watchedVatNumber },
     { label: 'IBAN', value: watchedIban },
-    ...(mode === 'full' ? [
-      { label: 'Factuur-e-mailadres', value: watchedEmail },
-      { label: 'Frequentie', value: intervalDisplay },
-    ] : []),
+    ...(showEmail ? [{ label: 'Factuur-e-mailadres', value: watchedEmail }] : []),
+    ...(mode === 'full' ? [{ label: 'Frequentie', value: intervalDisplay }] : []),
   ]
 
   const allEmpty = !watchedCompanyName && !watchedAddressLine && !watchedPostalCode && !watchedCity &&
     !watchedCountry && !watchedKvkNumber && !watchedVatNumber && !watchedIban &&
-    (mode !== 'full' || !watchedEmail)
+    (!showEmail || !watchedEmail)
 
   return (
     <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
-      {mode === 'full' && !watchedEmail && (
+      {showEmail && !watchedEmail && (
         <div className="px-5 py-3 border-b border-amber-200 dark:border-amber-800/40 bg-amber-50 dark:bg-amber-900/20 flex items-center gap-2">
           <AlertTriangle size={14} className="text-amber-600 dark:text-amber-400 flex-shrink-0" />
           <p className="text-xs text-amber-800 dark:text-amber-300">
@@ -244,9 +249,16 @@ export function BillingProfileForm({ baseUrl, mode = 'full' }: { baseUrl: string
               <Button size="sm" onClick={startEdit}>Gegevens invullen</Button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
-              {viewRows.map(row => <ViewRow key={row.label} label={row.label} value={row.value} />)}
-            </div>
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
+                {viewRows.map(row => <ViewRow key={row.label} label={row.label} value={row.value} />)}
+              </div>
+              {mode === 'msp' && (
+                <p className="mt-4 text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2">
+                  {MSP_INTERVAL_NOTE}
+                </p>
+              )}
+            </>
           )}
         </div>
       ) : (
@@ -292,6 +304,14 @@ export function BillingProfileForm({ baseUrl, mode = 'full' }: { baseUrl: string
                 </p>
               )}
             </div>
+          ) : mode === 'msp' ? (
+            <div>
+              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">Frequentie</label>
+              <p className="text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2">
+                {MSP_INTERVAL_NOTE}
+              </p>
+              <input type="hidden" {...register('interval')} />
+            </div>
           ) : (
             <input type="hidden" {...register('interval')} />
           )}
@@ -300,14 +320,14 @@ export function BillingProfileForm({ baseUrl, mode = 'full' }: { baseUrl: string
               geregistreerd (verzonden zoals geladen) maar wordt het niet getoond,
               omdat facturatie via de MSP verloopt. */}
           <div className="grid grid-cols-2 gap-4">
-            {TEXT_FIELDS.filter(f => mode === 'full' || f.key !== 'invoiceEmail').map(f => (
+            {TEXT_FIELDS.filter(f => showEmail || f.key !== 'invoiceEmail').map(f => (
               <div key={f.key}>
                 <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">{f.label}</label>
                 <input {...register(f.key)} type={f.type ?? 'text'} placeholder={f.placeholder} className={inputField} />
                 {errors[f.key] && <p className="mt-1 text-xs text-red-600">{errors[f.key]?.message}</p>}
               </div>
             ))}
-            {mode === 'company' && <input type="hidden" {...register('invoiceEmail')} />}
+            {!showEmail && <input type="hidden" {...register('invoiceEmail')} />}
           </div>
 
           {apiError && (

@@ -7,10 +7,12 @@ import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import api from '@/lib/axios'
 import type { PlatformPlanDto } from '@/types/platformPlan'
+import { BillingInterval } from '@/types/billing'
 
 const schemaWithOwnerInvite = z.object({
   name: z.string().min(1, 'Naam is verplicht').max(256),
   planId: z.string().min(1, 'Kies een abonnement'),
+  interval: z.string(),
   ownerName: z.string().min(1, 'Naam van de eigenaar is verplicht'),
   ownerEmail: z.string().email('Ongeldig e-mailadres'),
 })
@@ -22,6 +24,7 @@ const schemaSimple = z.object({
 interface FormValues {
   name: string
   planId: string
+  interval: string
   ownerName: string
   ownerEmail: string
 }
@@ -56,10 +59,15 @@ export function AddClientModal({ open, onClose, onSuccess, endpoint, requireOwne
     register,
     handleSubmit,
     reset,
+    watch,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(requireOwnerInvite ? schemaWithOwnerInvite : schemaSimple) as Resolver<FormValues>,
+    defaultValues: { interval: String(BillingInterval.Monthly) },
   })
+
+  const watchedInterval = watch('interval')
 
   useEffect(() => {
     if (!open || !requireOwnerInvite) return
@@ -95,7 +103,13 @@ export function AddClientModal({ open, onClose, onSuccess, endpoint, requireOwne
     setApiError(null)
     try {
       const body = requireOwnerInvite
-        ? { name: values.name, planId: values.planId, ownerName: values.ownerName, ownerEmail: values.ownerEmail }
+        ? {
+            name: values.name,
+            planId: values.planId,
+            interval: Number(values.interval),
+            ownerName: values.ownerName,
+            ownerEmail: values.ownerEmail,
+          }
         : { name: values.name }
       const { data } = await api.post<{ id: string }>(endpoint, body)
 
@@ -201,6 +215,39 @@ export function AddClientModal({ open, onClose, onSuccess, endpoint, requireOwne
                 ))}
               </select>
               {errors.planId && <p className="mt-1 text-xs text-red-600">{errors.planId.message}</p>}
+            </div>
+
+            {/* Frequentie */}
+            <div>
+              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Frequentie</label>
+              <div className="inline-flex rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
+                {[
+                  { value: String(BillingInterval.Monthly), label: 'Maandelijks' },
+                  { value: String(BillingInterval.Yearly), label: 'Jaarlijks (met jaarkorting)' },
+                ].map((opt, idx) => {
+                  const active = watchedInterval === opt.value
+                  return (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setValue('interval', opt.value, { shouldDirty: true })}
+                      className={`px-3.5 py-2 text-xs font-semibold transition-colors ${idx > 0 ? 'border-l border-slate-200 dark:border-slate-700' : ''} ${
+                        active
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-white dark:bg-slate-900/60 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  )
+                })}
+              </div>
+              <input type="hidden" {...register('interval')} />
+              {watchedInterval === String(BillingInterval.Yearly) && (
+                <p className="mt-2 text-xs text-slate-500 leading-relaxed">
+                  Jaarlijks wordt vooruit gefactureerd (met jaarkorting) vanaf het moment dat de eigenaar goedkeurt.
+                </p>
+              )}
             </div>
 
             <p className="text-xs text-slate-500 leading-relaxed bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">

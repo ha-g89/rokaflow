@@ -6,12 +6,25 @@ import {
 import api from '@/lib/axios'
 import { Card, CardContent } from '@/components/ui/Card'
 import type { TenantPlanDto, PlatformPlanDto, TenantPlanStatus } from '@/types/platformPlan'
+import { BillingInterval } from '@/types/billing'
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
 function fmt(d: string | null | undefined) {
   if (!d) return '—'
   return new Date(d).toLocaleDateString('nl-NL', { day: '2-digit', month: '2-digit', year: 'numeric' })
+}
+
+// Datum-only strings ("2026-07-01" of "...T00:00:00") component-gebaseerd parsen:
+// `new Date('YYYY-MM-DD')` interpreteert als UTC-middernacht, waardoor de weergave
+// op machines met negatieve UTC-offset een dag verschuift.
+function parseDateOnly(iso: string) {
+  const [y, m, d] = iso.split('T')[0].split('-').map(Number)
+  return new Date(y, m - 1, d)
+}
+
+function fmtDateOnly(iso: string) {
+  return parseDateOnly(iso).toLocaleDateString('nl-NL', { day: '2-digit', month: '2-digit', year: 'numeric' })
 }
 
 function trialDays(endsAt: string | null) {
@@ -34,6 +47,20 @@ function StatusBadge({ status }: { status: TenantPlanStatus }) {
   )
 }
 
+function IntervalDisplay({ interval, yearAnchorDate }: { interval: BillingInterval; yearAnchorDate: string | null }) {
+  if (interval === BillingInterval.Yearly) {
+    return (
+      <div>
+        <span className="text-xs text-slate-600 dark:text-slate-300">Jaarlijks</span>
+        {yearAnchorDate && (
+          <p className="text-[11px] text-slate-400 dark:text-slate-500">periode vanaf {fmtDateOnly(yearAnchorDate)}</p>
+        )}
+      </div>
+    )
+  }
+  return <span className="text-xs text-slate-600 dark:text-slate-300">Maandelijks</span>
+}
+
 // ── edit row ─────────────────────────────────────────────────────────────────
 
 interface EditRowProps {
@@ -48,6 +75,19 @@ const STATUS_LABELS: Record<TenantPlanStatus, string> = {
   Trial: 'Trial', GracePeriod: 'Grace period', Active: 'Actief', Blocked: 'Geblokkeerd',
 }
 
+const INTERVAL_OPTIONS: { value: BillingInterval; label: string }[] = [
+  { value: BillingInterval.Monthly, label: 'Maandelijks' },
+  { value: BillingInterval.Yearly, label: 'Jaarlijks (met jaarkorting)' },
+]
+
+// Backend UpdateMspClientPlanCommand.Interval verwacht een string ("Monthly" |
+// "Yearly", case-insensitief geparsed), terwijl de rest van de app het interval
+// als getal (BillingInterval.Monthly = 0 / Yearly = 1) representeert.
+const INTERVAL_WIRE: Record<BillingInterval, 'Monthly' | 'Yearly'> = {
+  [BillingInterval.Monthly]: 'Monthly',
+  [BillingInterval.Yearly]: 'Yearly',
+}
+
 function toDateInput(iso: string | null) {
   if (!iso) return ''
   return iso.slice(0, 10)
@@ -56,6 +96,7 @@ function toDateInput(iso: string | null) {
 function EditRow({ row, plans, onSave, onCancel }: EditRowProps) {
   const [planId,      setPlanId]      = useState<string>(row.planId ?? '')
   const [status,      setStatus]      = useState<TenantPlanStatus>(row.status)
+  const [interval,    setInterval_]   = useState<BillingInterval>(row.interval)
   const [trialEndsAt, setTrialEndsAt] = useState(toDateInput(row.trialEndsAt))
   const [graceEndsAt, setGraceEndsAt] = useState(toDateInput(row.graceEndsAt))
   const [saving,      setSaving]      = useState(false)
@@ -64,18 +105,22 @@ function EditRow({ row, plans, onSave, onCancel }: EditRowProps) {
   const sel = 'text-xs rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900/60 dark:shadow-[inset_0_1px_3px_0_rgba(0,0,0,0.4)] text-slate-900 dark:text-slate-100 px-2 py-1.5 focus:outline-none focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-500/25'
   const inp = `${sel} w-32`
 
+  const showActivateNotice = status === 'Active' && !!planId
+
   const handleSave = async () => {
     setSaving(true); setError(null)
     try {
       const { data } = await api.put<TenantPlanDto>(`/msp/subscriptions/${row.tenantId}`, {
         planId: planId || null,
         status,
+        interval: INTERVAL_WIRE[interval],
         trialEndsAt: trialEndsAt ? new Date(trialEndsAt).toISOString() : null,
         graceEndsAt: graceEndsAt ? new Date(graceEndsAt).toISOString() : null,
       })
       onSave(data)
-    } catch {
-      setError('Opslaan mislukt.')
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail
+      setError(msg ?? 'Opslaan mislukt.')
     } finally {
       setSaving(false)
     }
@@ -83,10 +128,10 @@ function EditRow({ row, plans, onSave, onCancel }: EditRowProps) {
 
   return (
     <tr className="bg-blue-50 dark:bg-blue-950/20">
-      <td className="px-4 py-2 text-xs font-semibold text-slate-800 dark:text-slate-100 whitespace-nowrap">
+      <td className="px-4 py-2 text-xs font-semibold text-slate-800 dark:text-slate-100 whitespace-nowrap align-top">
         {row.tenantName}
       </td>
-      <td className="px-4 py-2">
+      <td className="px-4 py-2 align-top">
         <select value={planId} onChange={e => setPlanId(e.target.value)} className={sel}>
           <option value="">— Geen plan —</option>
           {plans.filter(p => p.isActive).map(p => (
@@ -94,19 +139,30 @@ function EditRow({ row, plans, onSave, onCancel }: EditRowProps) {
           ))}
         </select>
       </td>
-      <td className="px-4 py-2">
+      <td className="px-4 py-2 align-top">
         <select value={status} onChange={e => setStatus(e.target.value as TenantPlanStatus)} className={sel}>
           {STATUSES.map(s => <option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
         </select>
       </td>
-      <td className="px-4 py-2">
+      <td className="px-4 py-2 align-top">
+        <select value={interval} onChange={e => setInterval_(Number(e.target.value) as BillingInterval)} className={sel}>
+          {INTERVAL_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </select>
+        {interval === BillingInterval.Yearly && row.yearAnchorDate && (
+          <p className="mt-1 text-[11px] text-slate-400 dark:text-slate-500">periode vanaf {fmtDateOnly(row.yearAnchorDate)}</p>
+        )}
+      </td>
+      <td className="px-4 py-2 align-top">
         <input type="date" value={trialEndsAt} onChange={e => setTrialEndsAt(e.target.value)} className={inp} />
       </td>
-      <td className="px-4 py-2">
+      <td className="px-4 py-2 align-top">
         <input type="date" value={graceEndsAt} onChange={e => setGraceEndsAt(e.target.value)} className={inp} />
       </td>
-      <td className="px-4 py-2">
-        {error && <span className="text-xs text-red-600 mr-2">{error}</span>}
+      <td className="px-4 py-2 align-top">
+        {showActivateNotice && (
+          <p className="text-xs text-blue-600 dark:text-blue-400 mb-1.5">Vanaf vandaag factureerbaar.</p>
+        )}
+        {error && <p className="text-xs text-red-600 dark:text-red-400 mb-1.5">{error}</p>}
         <div className="flex gap-2">
           <button
             onClick={handleSave}
@@ -220,6 +276,7 @@ export function MspSubscriptionsView() {
                     <th className="px-4 py-2.5 text-left font-semibold">Client</th>
                     <th className="px-4 py-2.5 text-left font-semibold">Plan</th>
                     <th className="px-4 py-2.5 text-left font-semibold">Status</th>
+                    <th className="px-4 py-2.5 text-left font-semibold">Frequentie</th>
                     <th className="px-4 py-2.5 text-left font-semibold">Trial tot</th>
                     <th className="px-4 py-2.5 text-left font-semibold">Grace tot</th>
                     <th className="px-4 py-2.5 text-left font-semibold"></th>
@@ -253,6 +310,9 @@ export function MspSubscriptionsView() {
                                 : null
                             })()}
                           </div>
+                        </td>
+                        <td className="px-4 py-3">
+                          <IntervalDisplay interval={row.interval} yearAnchorDate={row.yearAnchorDate} />
                         </td>
                         <td className="px-4 py-3 text-xs text-slate-500">{fmt(row.trialEndsAt)}</td>
                         <td className="px-4 py-3 text-xs text-slate-500">{fmt(row.graceEndsAt)}</td>

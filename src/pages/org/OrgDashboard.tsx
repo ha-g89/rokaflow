@@ -4,12 +4,13 @@ import {
   Building2, Search, ExternalLink, Loader2,
   MoreVertical, Pencil, X, ImagePlus,
   Moon, Sun, Settings, ChevronDown, ArrowLeftRight, Bell,
-  Clock, Send, XCircle, Check, AlertTriangle, Receipt,
+  Clock, Send, XCircle, Check, AlertTriangle, Receipt, CreditCard,
 } from 'lucide-react'
 import { ClientDetailPanel } from './ClientDetailPanel'
 import { TransfersView } from './views/TransfersView'
 import { NotificationCenterView } from './views/NotificationCenterView'
 import { MspBillingView } from './views/MspBillingView'
+import { MspSubscriptionsView } from './views/MspSubscriptionsView'
 import { NotificationBell } from '@/components/NotificationBell'
 import { LoadingState } from '@/components/ui/LoadingState'
 import { Modal } from '@/components/ui/Modal'
@@ -26,7 +27,7 @@ import { TakeoverClientModal } from '@/components/TakeoverClientModal'
 import type { ClientListItem } from '@/types/client'
 import type { ClientUserListItem, ClientUserDetailResponse } from '@/types/clientUser'
 import type { MspTransferRequestDto } from '@/types/mspTransfer'
-import type { MyPlanDto } from '@/types/platformPlan'
+import type { MyPlanDto, TenantPlanDto } from '@/types/platformPlan'
 import { TENANT_PLAN_STATUS_PENDING_APPROVAL } from '@/types/billing'
 
 // ── small components ──────────────────────────────────────────────────────────
@@ -70,7 +71,7 @@ function NavItem({ icon, label, active, onClick, badge }: {
 
 // ── main component ────────────────────────────────────────────────────────────
 
-type Section = 'clients' | 'transfers' | 'notifications' | 'billing'
+type Section = 'clients' | 'transfers' | 'notifications' | 'billing' | 'subscriptions'
 
 export default function OrgDashboard() {
   const { user, logout, switchToClient } = useAuthStore()
@@ -99,6 +100,7 @@ export default function OrgDashboard() {
   const [editLogoPreview, setEditLogoPreview] = useState<string | null>(null)
   const [editLogoDeleted, setEditLogoDeleted] = useState(false)
   const [clientPlan, setClientPlan]         = useState<MyPlanDto | null>(null)
+  const [subscriptions, setSubscriptions]   = useState<TenantPlanDto[]>([])
   const editLogoInputRef                    = useRef<HTMLInputElement>(null)
   const [showUserMenu, setShowUserMenu]     = useState(false)
   const userMenuRef                         = useRef<HTMLDivElement>(null)
@@ -169,6 +171,10 @@ export default function OrgDashboard() {
     fetchUsers(client.id)
     setClientPlan(null)
     api.get<MyPlanDto>(`/clients/${client.id}/plan`).then(r => setClientPlan(r.data)).catch(() => {})
+    // Herladen bij elke selectie (i.p.v. eenmalig bij mount) zodat wijzigingen
+    // gemaakt in de Abonnementen-view (interval/jaaranker) direct zichtbaar
+    // zijn in het detailpaneel — dat paneel houdt zelf geen abonnementen-state bij.
+    api.get<TenantPlanDto[]>('/msp/subscriptions').then(r => setSubscriptions(r.data)).catch(() => {})
   }
 
   const handleSelectUser = (userId: string) => {
@@ -286,6 +292,9 @@ export default function OrgDashboard() {
             badge={transfers.filter(t => t.status === 'Pending').length} />
           <NavItem icon={<Bell size={14} />} label="Berichtencentrum" active={activeSection === 'notifications'} onClick={() => setActiveSection('notifications')} />
           {user?.role === 'msp_admin' && (
+            <NavItem icon={<CreditCard size={14} />} label="Abonnementen" active={activeSection === 'subscriptions'} onClick={() => setActiveSection('subscriptions')} />
+          )}
+          {user?.role === 'msp_admin' && (
             <NavItem icon={<Receipt size={14} />} label="Facturatie" active={activeSection === 'billing'} onClick={() => setActiveSection('billing')} />
           )}
         </nav>
@@ -302,6 +311,7 @@ export default function OrgDashboard() {
           <h1 className="text-sm font-semibold text-slate-800 dark:text-slate-100">
             {activeSection === 'clients' ? 'Clients'
               : activeSection === 'transfers' ? 'Overdrachten'
+              : activeSection === 'subscriptions' ? 'Abonnementen'
               : activeSection === 'billing' ? 'Facturatie'
               : 'Berichtencentrum'}
           </h1>
@@ -390,6 +400,8 @@ export default function OrgDashboard() {
           <NotificationCenterView />
         ) : activeSection === 'billing' ? (
           <MspBillingView />
+        ) : activeSection === 'subscriptions' ? (
+          <MspSubscriptionsView />
         ) : (<>
 
         {/* Stats */}
@@ -538,6 +550,7 @@ export default function OrgDashboard() {
                 key={selectedClient.id}
                 client={selectedClient}
                 plan={clientPlan}
+                planDetail={subscriptions.find(s => s.tenantId === selectedClient.id) ?? null}
                 users={clientUsers}
                 loadingUsers={loadingUsers}
                 selectedUser={selectedUser}
@@ -548,6 +561,7 @@ export default function OrgDashboard() {
                 onUserUpdated={handleUserUpdated}
                 onSwitchToClient={handleSwitchToClient}
                 onEditClient={() => { setEditClient(selectedClient); setEditName(selectedClient.name) }}
+                onManageSubscription={user?.role === 'msp_admin' ? () => setActiveSection('subscriptions') : undefined}
               />
             )}
           </div>

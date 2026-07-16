@@ -11,7 +11,7 @@ export function MspBillingView() {
         <p className="text-xs text-slate-400 mt-0.5">Uw factuurgegevens en facturen van RokaFlow.</p>
       </div>
 
-      <BillingProfileForm baseUrl="/msp/billing" />
+      <BillingProfileForm baseUrl="/msp/billing" mode="msp" />
 
       <div>
         <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Facturen</h3>
