@@ -2,13 +2,15 @@ import { useState, useEffect } from 'react'
 import {
   Moon, Sun, Shield, CheckCircle2, ArrowLeftCircle,
   AlertTriangle, UserPlus, ArrowLeftRight, Copy,
-  Package, Users, CreditCard, Zap, Lock,
+  Package, Users, CreditCard, Zap, Lock, Receipt,
 } from 'lucide-react'
 import api from '@/lib/axios'
 import { useThemeStore } from '@/store/themeStore'
 import { Card, CardContent } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Avatar } from '@/components/portal/PortalUI'
+import { BillingProfileForm } from '@/components/billing/BillingProfileForm'
+import { InvoiceList } from '@/components/billing/InvoiceList'
 import type { ClientUserListItem } from '@/types/clientUser'
 import type { MyPlanDto } from '@/types/platformPlan'
 
@@ -188,6 +190,25 @@ export function SettingsView({ teammates, tenantName, onAddUser, mspStatus, onMs
                 )}
               </>
             )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Facturatie */}
+      {mspStatus !== null && !mspStatus.hasMspManager && (
+        <Card>
+          <CardContent className="p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <Receipt size={15} className="text-slate-400" />
+              <h2 className="text-sm font-bold text-slate-800 dark:text-slate-100">Facturatie</h2>
+            </div>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
+              Deze gegevens worden gebruikt voor de maandelijkse of jaarlijkse facturen van RokaFlow.
+            </p>
+            <BillingProfileForm baseUrl="/portal/billing" />
+
+            <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100 mt-6 mb-3">Facturen</h3>
+            <InvoiceList baseUrl="/portal/billing" />
           </CardContent>
         </Card>
       )}
