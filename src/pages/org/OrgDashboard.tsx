@@ -4,12 +4,14 @@ import {
   Building2, Search, ExternalLink, Loader2,
   MoreVertical, Pencil, X, ImagePlus,
   Moon, Sun, Settings, ChevronDown, ArrowLeftRight, Bell,
+  Clock, Send, XCircle, Check, AlertTriangle,
 } from 'lucide-react'
 import { ClientDetailPanel } from './ClientDetailPanel'
 import { TransfersView } from './views/TransfersView'
 import { NotificationCenterView } from './views/NotificationCenterView'
 import { NotificationBell } from '@/components/NotificationBell'
 import { LoadingState } from '@/components/ui/LoadingState'
+import { Modal } from '@/components/ui/Modal'
 import { useAuthStore } from '@/store/authStore'
 import { useThemeStore } from '@/store/themeStore'
 import { useNavigate } from 'react-router-dom'
@@ -24,6 +26,7 @@ import type { ClientListItem } from '@/types/client'
 import type { ClientUserListItem, ClientUserDetailResponse } from '@/types/clientUser'
 import type { MspTransferRequestDto } from '@/types/mspTransfer'
 import type { MyPlanDto } from '@/types/platformPlan'
+import { TENANT_PLAN_STATUS_PENDING_APPROVAL } from '@/types/billing'
 
 // ── small components ──────────────────────────────────────────────────────────
 
@@ -98,6 +101,10 @@ export default function OrgDashboard() {
   const editLogoInputRef                    = useRef<HTMLInputElement>(null)
   const [showUserMenu, setShowUserMenu]     = useState(false)
   const userMenuRef                         = useRef<HTMLDivElement>(null)
+  const [resendingId, setResendingId]       = useState<string | null>(null)
+  const [resentId, setResentId]             = useState<string | null>(null)
+  const [cancelPendingClient, setCancelPendingClient] = useState<ClientListItem | null>(null)
+  const [cancellingPending, setCancellingPending] = useState(false)
 
   useEffect(() => {
     if (!showUserMenu) return
@@ -227,6 +234,31 @@ export default function OrgDashboard() {
       // handled by global interceptor
     } finally {
       setSwitchingClientId(null)
+    }
+  }
+
+  const handleResendInvite = async (clientId: string) => {
+    setResendingId(clientId)
+    try {
+      await api.post(`/clients/${clientId}/onboarding/resend`)
+      setResentId(clientId)
+      setTimeout(() => setResentId(prev => (prev === clientId ? null : prev)), 2500)
+    } catch {
+      // handled by global interceptor
+    } finally {
+      setResendingId(null)
+    }
+  }
+
+  const handleConfirmCancelPending = async () => {
+    if (!cancelPendingClient) return
+    setCancellingPending(true)
+    try {
+      await api.delete(`/clients/${cancelPendingClient.id}/onboarding`)
+      setCancelPendingClient(null)
+      fetchClients()
+    } finally {
+      setCancellingPending(false)
     }
   }
 
@@ -389,15 +421,17 @@ export default function OrgDashboard() {
                   : filteredClients.length === 0
                     ? <div className="p-4 text-center text-xs text-slate-400">Geen clients.</div>
                     : <ul className="divide-y divide-slate-100">
-                        {filteredClients.map(c => (
+                        {filteredClients.map(c => {
+                          const isPending = c.planStatus === TENANT_PLAN_STATUS_PENDING_APPROVAL
+                          return (
                           <li key={c.id}>
                             {/* div i.p.v. button: de rij bevat zelf actie-knoppen, en geneste buttons zijn ongeldige HTML */}
                             <div
-                              role="button"
-                              tabIndex={0}
-                              onClick={() => handleSelectClient(c)}
-                              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSelectClient(c) } }}
-                              className={`w-full text-left px-3 py-2.5 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors flex items-center justify-between gap-2 ${
+                              role={isPending ? undefined : 'button'}
+                              tabIndex={isPending ? undefined : 0}
+                              onClick={() => { if (!isPending) handleSelectClient(c) }}
+                              onKeyDown={e => { if (!isPending && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); handleSelectClient(c) } }}
+                              className={`w-full text-left px-3 py-2.5 transition-colors flex items-center justify-between gap-2 ${isPending ? '' : 'cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700'} ${
                                 selectedClient?.id === c.id ? 'bg-blue-50 dark:bg-blue-950/40 border-l-2 border-blue-500' : ''}`}
                             >
                               {c.logoDataUrl
@@ -408,9 +442,38 @@ export default function OrgDashboard() {
                               }
                               <div className="min-w-0 flex-1">
                                 <p className="text-xs font-semibold text-slate-800 dark:text-slate-100 truncate">{c.name}</p>
-                                <p className="text-xs text-slate-400">{c.userCount} gebruikers</p>
+                                {isPending
+                                  ? <span className="inline-flex items-center gap-1 mt-0.5 px-2 py-0.5 rounded-full text-[11px] font-medium bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400">
+                                      <Clock size={11} /> In afwachting
+                                    </span>
+                                  : <p className="text-xs text-slate-400">{c.userCount} gebruikers</p>
+                                }
                               </div>
                               <div className="flex items-center gap-1 flex-shrink-0">
+                              {isPending ? (
+                                <>
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); handleResendInvite(c.id) }}
+                                    disabled={resendingId === c.id}
+                                    title="Uitnodiging opnieuw versturen"
+                                    className="p-1 rounded hover:bg-blue-100 dark:hover:bg-blue-900/40 text-blue-400 hover:text-blue-600 transition-colors disabled:opacity-50"
+                                  >
+                                    {resendingId === c.id
+                                      ? <Loader2 size={13} className="animate-spin" />
+                                      : resentId === c.id
+                                        ? <Check size={13} className="text-emerald-500" />
+                                        : <Send size={13} />
+                                    }
+                                  </button>
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); setCancelPendingClient(c) }}
+                                    title="Aanvraag annuleren"
+                                    className="p-1 rounded hover:bg-red-100 dark:hover:bg-red-900/40 text-red-400 hover:text-red-600 transition-colors"
+                                  >
+                                    <XCircle size={13} />
+                                  </button>
+                                </>
+                              ) : (<>
                                 <button
                                   onClick={(e) => { e.stopPropagation(); handleSwitchToClient(c.id) }}
                                   disabled={switchingClientId === c.id}
@@ -440,10 +503,12 @@ export default function OrgDashboard() {
                                     </div>
                                   )}
                                 </div>
+                              </>)}
                               </div>
                             </div>
                           </li>
-                        ))}
+                          )
+                        })}
                       </ul>
                 }
               </div>
@@ -504,6 +569,34 @@ export default function OrgDashboard() {
           clientName={selectedClient.name}
         />
       )}
+
+      {/* Cancel pending onboarding confirm modal */}
+      <Modal
+        open={!!cancelPendingClient}
+        onClose={() => { if (!cancellingPending) setCancelPendingClient(null) }}
+        title="Aanvraag annuleren"
+      >
+        <div className="flex flex-col items-center text-center gap-4 py-2">
+          <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center">
+            <AlertTriangle size={22} className="text-red-500" />
+          </div>
+          <div>
+            <p className="text-sm text-slate-700 leading-relaxed">
+              Weet je zeker dat je de aanvraag voor{' '}
+              <span className="font-semibold">"{cancelPendingClient?.name}"</span>{' '}
+              wilt annuleren? De omgeving wordt verwijderd.
+            </p>
+          </div>
+        </div>
+        <div className="flex gap-2 mt-6">
+          <Button variant="secondary" className="flex-1" onClick={() => setCancelPendingClient(null)} disabled={cancellingPending}>
+            Annuleren
+          </Button>
+          <Button variant="danger" className="flex-1" onClick={handleConfirmCancelPending} disabled={cancellingPending}>
+            {cancellingPending ? 'Bezig…' : 'Ja, annuleren'}
+          </Button>
+        </div>
+      </Modal>
 
       {/* Edit client modal */}
       {editClient && (

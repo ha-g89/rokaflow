@@ -743,6 +743,7 @@ export default function SuperUserDashboard() {
           onClose={() => setShowAddClient(false)}
           onSuccess={() => { fetchDetail(detail.id); fetchAllClients() }}
           endpoint={`/organisations/${detail.id}/clients`}
+          requireOwnerInvite={false}
         />
       )}
     </div>
