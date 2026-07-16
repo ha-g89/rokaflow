@@ -4,11 +4,12 @@ import {
   Building2, Search, ExternalLink, Loader2,
   MoreVertical, Pencil, X, ImagePlus,
   Moon, Sun, Settings, ChevronDown, ArrowLeftRight, Bell,
-  Clock, Send, XCircle, Check, AlertTriangle,
+  Clock, Send, XCircle, Check, AlertTriangle, Receipt,
 } from 'lucide-react'
 import { ClientDetailPanel } from './ClientDetailPanel'
 import { TransfersView } from './views/TransfersView'
 import { NotificationCenterView } from './views/NotificationCenterView'
+import { MspBillingView } from './views/MspBillingView'
 import { NotificationBell } from '@/components/NotificationBell'
 import { LoadingState } from '@/components/ui/LoadingState'
 import { Modal } from '@/components/ui/Modal'
@@ -69,7 +70,7 @@ function NavItem({ icon, label, active, onClick, badge }: {
 
 // ── main component ────────────────────────────────────────────────────────────
 
-type Section = 'clients' | 'transfers' | 'notifications'
+type Section = 'clients' | 'transfers' | 'notifications' | 'billing'
 
 export default function OrgDashboard() {
   const { user, logout, switchToClient } = useAuthStore()
@@ -284,6 +285,9 @@ export default function OrgDashboard() {
           <NavItem icon={<ArrowLeftRight size={14} />} label="Overdrachten" active={activeSection === 'transfers'} onClick={() => setActiveSection('transfers')}
             badge={transfers.filter(t => t.status === 'Pending').length} />
           <NavItem icon={<Bell size={14} />} label="Berichtencentrum" active={activeSection === 'notifications'} onClick={() => setActiveSection('notifications')} />
+          {user?.role === 'msp_admin' && (
+            <NavItem icon={<Receipt size={14} />} label="Facturatie" active={activeSection === 'billing'} onClick={() => setActiveSection('billing')} />
+          )}
         </nav>
         <div className="px-2 pb-3 flex-shrink-0 border-t border-slate-800 pt-2 space-y-1">
           <NavItem icon={<Settings size={14} />} label="Instellingen" active={false} onClick={() => navigate('/org/settings')} />
@@ -296,7 +300,10 @@ export default function OrgDashboard() {
         {/* Top bar */}
         <div className="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-6 flex items-center justify-between flex-shrink-0">
           <h1 className="text-sm font-semibold text-slate-800 dark:text-slate-100">
-            {activeSection === 'clients' ? 'Clients' : activeSection === 'transfers' ? 'Overdrachten' : 'Berichtencentrum'}
+            {activeSection === 'clients' ? 'Clients'
+              : activeSection === 'transfers' ? 'Overdrachten'
+              : activeSection === 'billing' ? 'Facturatie'
+              : 'Berichtencentrum'}
           </h1>
           <div className="flex items-center gap-1">
           <NotificationBell
@@ -381,6 +388,8 @@ export default function OrgDashboard() {
           />
         ) : activeSection === 'notifications' ? (
           <NotificationCenterView />
+        ) : activeSection === 'billing' ? (
+          <MspBillingView />
         ) : (<>
 
         {/* Stats */}
