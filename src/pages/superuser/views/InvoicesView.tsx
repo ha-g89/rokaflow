@@ -18,15 +18,32 @@ import {
 
 const currency = new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR' })
 
+const DATE_FMT: Intl.DateTimeFormatOptions = { day: '2-digit', month: '2-digit', year: 'numeric' }
+
+// Datum-only strings ("2026-07-01" of "...T00:00:00") component-gebaseerd parsen:
+// `new Date('YYYY-MM-DD')` interpreteert als UTC-middernacht, waardoor de weergave
+// op machines met negatieve UTC-offset een dag verschuift.
+function parseDateOnly(iso: string) {
+  const [y, m, d] = iso.split('T')[0].split('-').map(Number)
+  return new Date(y, m - 1, d)
+}
+
 function fmtDate(iso: string | null) {
   if (!iso) return '—'
-  return new Date(iso).toLocaleDateString('nl-NL', { day: '2-digit', month: '2-digit', year: 'numeric' })
+  return parseDateOnly(iso).toLocaleDateString('nl-NL', DATE_FMT)
+}
+
+// Voor echte timestamps (sentAt): wél via Date parsen zodat de tijdzone-offset
+// van de timestamp zelf meetelt in de lokale datumweergave.
+function fmtTimestampDate(iso: string | null) {
+  if (!iso) return '—'
+  return new Date(iso).toLocaleDateString('nl-NL', DATE_FMT)
 }
 
 function fmtDateMinusOneDay(iso: string) {
-  const d = new Date(iso)
+  const d = parseDateOnly(iso)
   d.setDate(d.getDate() - 1)
-  return fmtDate(d.toISOString())
+  return d.toLocaleDateString('nl-NL', DATE_FMT)
 }
 
 const KIND_LABEL: Record<InvoiceKind, string> = {
@@ -133,19 +150,29 @@ function MarkPaidModal({
   onConfirmed: (id: string) => void
 }) {
   const [saving, setSaving] = useState(false)
+  const [apiError, setApiError] = useState<string | null>(null)
+
+  const handleClose = () => {
+    setApiError(null)
+    onClose()
+  }
 
   const handleConfirm = async () => {
     if (!invoice) return
     setSaving(true)
+    setApiError(null)
     try {
       await api.put(`/billing/invoices/${invoice.id}/mark-paid`)
       onConfirmed(invoice.id)
-      onClose()
-    } catch { /* handled globally */ } finally { setSaving(false) }
+      handleClose()
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail
+      setApiError(msg ?? 'Markeren als betaald mislukt.')
+    } finally { setSaving(false) }
   }
 
   return (
-    <Modal open={!!invoice} onClose={() => !saving && onClose()} title="Betaald markeren">
+    <Modal open={!!invoice} onClose={() => !saving && handleClose()} title="Betaald markeren">
       <div className="flex flex-col items-center text-center gap-4 py-2">
         <div className="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center">
           <CheckCircle2 size={22} className="text-emerald-500" />
@@ -155,8 +182,11 @@ function MarkPaidModal({
           Eventueel geblokkeerde omgevingen worden weer geactiveerd.
         </p>
       </div>
+      {apiError && (
+        <p className="mt-4 text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{apiError}</p>
+      )}
       <div className="flex gap-2 mt-6">
-        <Button variant="secondary" className="flex-1" onClick={onClose} disabled={saving}>
+        <Button variant="secondary" className="flex-1" onClick={handleClose} disabled={saving}>
           Annuleren
         </Button>
         <Button
@@ -236,13 +266,14 @@ const configSchema = z.object({
 })
 type ConfigFormValues = z.infer<typeof configSchema>
 
-const CONFIG_FIELDS: { key: keyof ConfigFormValues; label: string; suffix: string }[] = [
-  { key: 'vatPct', label: 'BTW-percentage', suffix: '%' },
-  { key: 'yearlyDiscountPct', label: 'Jaarkorting', suffix: '%' },
-  { key: 'dueDays', label: 'Betaaltermijn', suffix: 'dagen' },
-  { key: 'reminderToGraceDays', label: 'Herinnering → beperkt', suffix: 'dagen' },
-  { key: 'graceToBlockedDays', label: 'Beperkt → geblokkeerd', suffix: 'dagen' },
-  { key: 'onboardingExpiryDays', label: 'Uitnodiging verloopt na', suffix: 'dagen' },
+// Alleen vatPct is server-side een decimaal; de overige velden zijn integers.
+const CONFIG_FIELDS: { key: keyof ConfigFormValues; label: string; suffix: string; step: string }[] = [
+  { key: 'vatPct', label: 'BTW-percentage', suffix: '%', step: '0.01' },
+  { key: 'yearlyDiscountPct', label: 'Jaarkorting', suffix: '%', step: '1' },
+  { key: 'dueDays', label: 'Betaaltermijn', suffix: 'dagen', step: '1' },
+  { key: 'reminderToGraceDays', label: 'Herinnering → beperkt', suffix: 'dagen', step: '1' },
+  { key: 'graceToBlockedDays', label: 'Beperkt → geblokkeerd', suffix: 'dagen', step: '1' },
+  { key: 'onboardingExpiryDays', label: 'Uitnodiging verloopt na', suffix: 'dagen', step: '1' },
 ]
 
 function BillingConfigCard() {
@@ -273,11 +304,11 @@ function BillingConfigCard() {
     try {
       await api.put<BillingConfig>('/billing/config', {
         vatPct: Number(values.vatPct),
-        yearlyDiscountPct: Number(values.yearlyDiscountPct),
-        dueDays: Number(values.dueDays),
-        reminderToGraceDays: Number(values.reminderToGraceDays),
-        graceToBlockedDays: Number(values.graceToBlockedDays),
-        onboardingExpiryDays: Number(values.onboardingExpiryDays),
+        yearlyDiscountPct: Math.round(Number(values.yearlyDiscountPct)),
+        dueDays: Math.round(Number(values.dueDays)),
+        reminderToGraceDays: Math.round(Number(values.reminderToGraceDays)),
+        graceToBlockedDays: Math.round(Number(values.graceToBlockedDays)),
+        onboardingExpiryDays: Math.round(Number(values.onboardingExpiryDays)),
       })
       setSaved(true)
       setTimeout(() => setSaved(false), 2500)
@@ -305,7 +336,7 @@ function BillingConfigCard() {
                   <input
                     {...register(f.key)}
                     type="number"
-                    step="any"
+                    step={f.step}
                     className={inputField}
                   />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 pointer-events-none">{f.suffix}</span>
@@ -355,6 +386,7 @@ export function InvoicesView() {
 
   const [confirmPayInvoice, setConfirmPayInvoice] = useState<InvoiceListItem | null>(null)
   const [showTestPdf, setShowTestPdf] = useState(false)
+  const [pdfError, setPdfError] = useState<string | null>(null)
 
   const { sorted, sortKey, sortDir, toggleSort } = useSort(invoices, sortAccessors)
 
@@ -383,6 +415,7 @@ export function InvoicesView() {
   }
 
   const handleDownloadPdf = async (inv: InvoiceListItem) => {
+    setPdfError(null)
     try {
       const res = await api.get(`/billing/invoices/${inv.id}/pdf`, { responseType: 'blob' })
       const url = URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }))
@@ -393,7 +426,10 @@ export function InvoicesView() {
       a.click()
       a.remove()
       URL.revokeObjectURL(url)
-    } catch { /* handled globally */ }
+    } catch {
+      setPdfError(`PDF van factuur ${inv.invoiceNumber} kon niet worden gedownload.`)
+      setTimeout(() => setPdfError(null), 5000)
+    }
   }
 
   const handleMarkedPaid = (id: string) => {
@@ -418,6 +454,12 @@ export function InvoicesView() {
             </button>
           )}
         </div>
+
+        {pdfError && (
+          <p className="text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2 dark:bg-red-900/20 dark:text-red-300 dark:border-red-800/40">
+            {pdfError}
+          </p>
+        )}
 
         {/* Invoice table */}
         <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
@@ -466,7 +508,7 @@ export function InvoicesView() {
                             )}
                           </div>
                         </td>
-                        <td className="px-4 py-3 text-xs text-slate-500 dark:text-slate-400">{fmtDate(inv.sentAt)}</td>
+                        <td className="px-4 py-3 text-xs text-slate-500 dark:text-slate-400">{fmtTimestampDate(inv.sentAt)}</td>
                         <td className="px-4 py-3">
                           <div className="flex items-center justify-end gap-1">
                             {inv.sentAt !== null && (
