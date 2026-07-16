@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { AlertTriangle, CheckCircle2 } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, RefreshCw } from 'lucide-react'
 import api from '@/lib/axios'
 import { Button } from '@/components/ui/Button'
 import { BillingInterval, type BillingProfile } from '@/types/billing'
@@ -54,6 +54,7 @@ const emptyValues: ProfileFormValues = {
 
 export function BillingProfileForm({ baseUrl }: { baseUrl: string }) {
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(false)
   const [saved, setSaved] = useState(false)
   const [apiError, setApiError] = useState<string | null>(null)
   const [savedInterval, setSavedInterval] = useState<number>(BillingInterval.Monthly)
@@ -63,27 +64,37 @@ export function BillingProfileForm({ baseUrl }: { baseUrl: string }) {
     register, handleSubmit, reset, watch, setValue, formState: { errors, isSubmitting },
   } = useForm<ProfileFormValues>({ resolver: zodResolver(profileSchema), defaultValues: emptyValues })
 
-  useEffect(() => {
-    let cancelled = false
-    api.get<BillingProfile>(`${baseUrl}/profile`).then(({ data }) => {
-      if (cancelled) return
-      reset({
-        interval: String(data.interval),
-        invoiceEmail: data.invoiceEmail ?? '',
-        companyName: data.companyName ?? '',
-        addressLine: data.addressLine ?? '',
-        postalCode: data.postalCode ?? '',
-        city: data.city ?? '',
-        country: data.country ?? '',
-        vatNumber: data.vatNumber ?? '',
-        kvkNumber: data.kvkNumber ?? '',
-      })
-      setSavedInterval(data.interval)
-      setSavedYearAnchorDate(data.yearAnchorDate)
-    }).catch(() => {}).finally(() => setLoading(false))
-    return () => { cancelled = true }
+  // Haalt het profiel op en zet zowel de form-waarden als de saved-state.
+  // Ook na PUT gebruikt: de server antwoordt 204 NoContent (geen body), dus de
+  // actuele waarden — o.a. de server-berekende yearAnchorDate bij een switch
+  // naar Jaarlijks — moeten opnieuw opgehaald worden.
+  const fetchProfile = useCallback(async () => {
+    const { data } = await api.get<BillingProfile>(`${baseUrl}/profile`)
+    reset({
+      interval: String(data.interval),
+      invoiceEmail: data.invoiceEmail ?? '',
+      companyName: data.companyName ?? '',
+      addressLine: data.addressLine ?? '',
+      postalCode: data.postalCode ?? '',
+      city: data.city ?? '',
+      country: data.country ?? '',
+      vatNumber: data.vatNumber ?? '',
+      kvkNumber: data.kvkNumber ?? '',
+    })
+    setSavedInterval(data.interval)
+    setSavedYearAnchorDate(data.yearAnchorDate)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [baseUrl])
+
+  const loadProfile = useCallback(() => {
+    setLoading(true)
+    setLoadError(false)
+    fetchProfile()
+      .catch(() => setLoadError(true))
+      .finally(() => setLoading(false))
+  }, [fetchProfile])
+
+  useEffect(() => { loadProfile() }, [loadProfile])
 
   const watchedInterval = Number(watch('interval'))
   const watchedEmail = watch('invoiceEmail')
@@ -92,7 +103,7 @@ export function BillingProfileForm({ baseUrl }: { baseUrl: string }) {
     setApiError(null)
     setSaved(false)
     try {
-      const { data } = await api.put<BillingProfile>(`${baseUrl}/profile`, {
+      await api.put(`${baseUrl}/profile`, {
         interval: Number(values.interval),
         invoiceEmail: values.invoiceEmail || null,
         companyName: values.companyName || null,
@@ -103,8 +114,13 @@ export function BillingProfileForm({ baseUrl }: { baseUrl: string }) {
         vatNumber: values.vatNumber || null,
         kvkNumber: values.kvkNumber || null,
       })
-      setSavedInterval(data.interval)
-      setSavedYearAnchorDate(data.yearAnchorDate)
+      // PUT geeft 204 NoContent terug: profiel opnieuw ophalen voor de
+      // actuele saved-state (interval + yearAnchorDate).
+      try {
+        await fetchProfile()
+      } catch {
+        // Opslaan zelf is gelukt; alleen het verversen faalde.
+      }
       setSaved(true)
       setTimeout(() => setSaved(false), 2500)
     } catch (err: unknown) {
@@ -117,6 +133,19 @@ export function BillingProfileForm({ baseUrl }: { baseUrl: string }) {
     return (
       <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 text-center text-xs text-slate-400">
         Laden…
+      </div>
+    )
+  }
+
+  if (loadError) {
+    return (
+      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 flex flex-col items-center gap-3 text-center">
+        <p className="text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2 dark:bg-red-900/20 dark:text-red-300 dark:border-red-800/40 flex items-center gap-1.5">
+          <AlertTriangle size={12} className="flex-shrink-0" /> Factuurgegevens konden niet worden geladen.
+        </p>
+        <Button size="sm" variant="secondary" onClick={loadProfile}>
+          <RefreshCw size={13} /> Opnieuw proberen
+        </Button>
       </div>
     )
   }
