@@ -165,6 +165,25 @@ export default function OrgDashboard() {
   // instead of leaving the client's stale list/transfers on screen.
   useEffect(() => { fetchClients(); fetchTransfers() }, [fetchClients, fetchTransfers, user?.tenantId])
 
+  // Bij het verlaten van de Abonnementen-sectie de abonnementen (en het plan
+  // van de nog geselecteerde client) opnieuw ophalen: wijzigingen die daar
+  // zijn opgeslagen (plan/status/interval) moeten direct zichtbaar zijn in het
+  // Abonnement-tabblad van het klantpaneel, ook zonder de rij opnieuw aan te
+  // klikken. planDetail is afgeleid van `subscriptions` (render-time lookup),
+  // dus het bijwerken van die state volstaat voor de frequentie-weergave.
+  const prevSectionRef = useRef<Section>(activeSection)
+  useEffect(() => {
+    const prev = prevSectionRef.current
+    prevSectionRef.current = activeSection
+    if (prev !== 'subscriptions' || activeSection === 'subscriptions') return
+    api.get<TenantPlanDto[]>('/msp/subscriptions').then(r => setSubscriptions(r.data)).catch(() => {})
+    if (selectedClient)
+      api.get<MyPlanDto>(`/clients/${selectedClient.id}/plan`).then(r => setClientPlan(r.data)).catch(() => {})
+    // selectedClient bewust niet als dep: alleen sectie-overgangen mogen dit
+    // effect triggeren, niet een klantselectie (die haalt zelf al vers op).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeSection])
+
   const handleSelectClient = (client: ClientListItem) => {
     setSelectedClient(client)
     setSelectedUser(null)
