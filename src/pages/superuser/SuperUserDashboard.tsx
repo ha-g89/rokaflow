@@ -1,10 +1,11 @@
 ﻿import { useEffect, useState, useCallback, useRef } from 'react'
 import {
   Building2, Users, Plus, LogOut, Shield,
-  Briefcase, Search, Moon, Sun, Upload, Trash2, CreditCard, Bell,
+  Briefcase, Search, Moon, Sun, Upload, Trash2, CreditCard, Bell, Receipt,
 } from 'lucide-react'
 import { SubscriptionsView } from './views/SubscriptionsView'
 import { NotificationsView } from './views/NotificationsView'
+import { InvoicesView } from './views/InvoicesView'
 import { useAuthStore } from '@/store/authStore'
 import { useThemeStore } from '@/store/themeStore'
 import { useNavigate } from 'react-router-dom'
@@ -166,7 +167,7 @@ export default function SuperUserDashboard() {
   const { darkMode, toggleDarkMode } = useThemeStore()
   const navigate = useNavigate()
 
-  const [activeSection, setActiveSection] = useState<'organisations' | 'subscriptions' | 'notifications'>('organisations')
+  const [activeSection, setActiveSection] = useState<'organisations' | 'subscriptions' | 'invoices' | 'notifications'>('organisations')
 
   const [orgs, setOrgs]                               = useState<OrganisationListItem[]>([])
   const [allClients, setAllClients]                   = useState<ClientListItem[]>([])
@@ -278,6 +279,7 @@ export default function SuperUserDashboard() {
             {([
               ['organisations', Building2, 'Organisaties'],
               ['subscriptions', CreditCard, 'Abonnementen'],
+              ['invoices', Receipt, 'Facturen'],
               ['notifications', Bell, 'Notificaties'],
             ] as const).map(([key, Icon, label]) => (
               <button key={key} onClick={() => setActiveSection(key)}
@@ -322,6 +324,7 @@ export default function SuperUserDashboard() {
 
       {/* ── Body ── */}
       {activeSection === 'subscriptions' && <SubscriptionsView />}
+      {activeSection === 'invoices' && <InvoicesView />}
       {activeSection === 'notifications' && <NotificationsView />}
 
       {/* ── Three columns (organisations) ── */}
