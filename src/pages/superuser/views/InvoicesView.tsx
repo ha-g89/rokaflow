@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import {
   Send, Download, ChevronDown, ChevronUp,
-  CheckCircle2, AlertTriangle, Settings, Play,
+  CheckCircle2, AlertTriangle, Settings, Play, Pencil,
 } from 'lucide-react'
 import api from '@/lib/axios'
 import { Modal } from '@/components/ui/Modal'
@@ -360,8 +360,11 @@ function BillingConfigCard() {
   const [loading, setLoading] = useState(true)
   const [saved, setSaved] = useState(false)
   const [apiError, setApiError] = useState<string | null>(null)
+  // View/edit-toggle: na het laden start de kaart in view-mode (samenvatting);
+  // "Wijzigen" schakelt om naar het bewerkbare formulier.
+  const [isEditing, setIsEditing] = useState(false)
   const {
-    register, handleSubmit, reset, formState: { errors, isSubmitting },
+    register, handleSubmit, reset, watch, formState: { errors, isSubmitting },
   } = useForm<ConfigFormValues>({ resolver: zodResolver(configSchema) })
 
   useEffect(() => {
@@ -390,6 +393,10 @@ function BillingConfigCard() {
         graceToBlockedDays: Math.round(Number(values.graceToBlockedDays)),
         onboardingExpiryDays: Math.round(Number(values.onboardingExpiryDays)),
       })
+      // defaultValues bijwerken naar de zojuist opgeslagen waarden, zodat een
+      // latere Annuleren (reset zonder argumenten) hierop terugvalt.
+      reset(values)
+      setIsEditing(false)
       setSaved(true)
       setTimeout(() => setSaved(false), 2500)
     } catch (err: unknown) {
@@ -398,14 +405,48 @@ function BillingConfigCard() {
     }
   }
 
+  const handleCancel = () => {
+    // Terug naar de laatst geladen/opgeslagen waarden zonder API-call.
+    reset()
+    setApiError(null)
+    setIsEditing(false)
+  }
+
+  const watchedValues = watch()
+
   return (
     <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
       <div className="px-5 py-3 border-b border-slate-100 dark:border-slate-800 flex items-center gap-2">
         <Settings size={14} className="text-slate-400" />
         <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Facturatie-instellingen</h2>
+        {!loading && !isEditing && (
+          <div className="ml-auto flex items-center gap-3">
+            {saved && (
+              <span className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                <CheckCircle2 size={13} /> Opgeslagen
+              </span>
+            )}
+            <Button variant="secondary" size="sm" onClick={() => setIsEditing(true)}>
+              <Pencil size={14} /> Wijzigen
+            </Button>
+          </div>
+        )}
       </div>
       {loading ? (
         <div className="p-6 text-center text-xs text-slate-400">Laden…</div>
+      ) : !isEditing ? (
+        <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
+          {CONFIG_FIELDS.map(f => (
+            <div key={f.key}>
+              <div className="text-xs text-slate-500 dark:text-slate-400">{f.label}</div>
+              <div className="text-sm text-slate-800 dark:text-slate-100">
+                {watchedValues[f.key]
+                  ? `${watchedValues[f.key]}${f.suffix === '%' ? '%' : ` ${f.suffix}`}`
+                  : <span className="text-slate-400 dark:text-slate-500">—</span>}
+              </div>
+            </div>
+          ))}
+        </div>
       ) : (
         <form onSubmit={handleSubmit(onSubmit)} className="p-5">
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -432,11 +473,9 @@ function BillingConfigCard() {
             <Button type="submit" size="sm" disabled={isSubmitting}>
               {isSubmitting ? 'Opslaan…' : 'Opslaan'}
             </Button>
-            {saved && (
-              <span className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-                <CheckCircle2 size={13} /> Opgeslagen
-              </span>
-            )}
+            <Button type="button" size="sm" variant="secondary" onClick={handleCancel} disabled={isSubmitting}>
+              Annuleren
+            </Button>
           </div>
         </form>
       )}
