@@ -32,6 +32,16 @@ function trialDays(endsAt: string | null) {
   return Math.ceil((new Date(endsAt).getTime() - Date.now()) / 86400000)
 }
 
+const currencyFormatter = new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR' })
+
+function fmtCurrency(amount: number | null | undefined) {
+  return amount === null || amount === undefined ? '—' : currencyFormatter.format(amount)
+}
+
+function fmtNextBilling(d: string | null) {
+  return d ? fmtDateOnly(d) : '—'
+}
+
 function StatusBadge({ status }: { status: TenantPlanStatus }) {
   const map: Record<TenantPlanStatus, { cls: string; icon: React.ReactNode; label: string }> = {
     Trial:       { cls: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',     icon: <Zap size={11} />,           label: 'Trial' },
@@ -71,10 +81,11 @@ interface EditRowProps {
   onCancel: () => void
 }
 
-// 'None' is niet opneembaar in het edit-formulier — die status bestaat alleen
-// zolang er geen plan gekoppeld is, en wordt door de backend niet geparsed als
-// geldige input. Zodra een plan gekoppeld wordt, moet een echte status gekozen zijn.
-const STATUSES: TenantPlanStatus[] = ['Trial', 'GracePeriod', 'Active', 'Blocked']
+// Trial/GracePeriod zijn systeembeheerde statussen (afgehandeld door de dagelijkse
+// evaluatie-job) — de MSP kiest bij het bewerken alleen nog tussen Actief en
+// Geblokkeerd. 'None' is evenmin opneembaar: die status bestaat alleen zolang er
+// geen plan gekoppeld is, en wordt door de backend niet geparsed als geldige input.
+const STATUSES: TenantPlanStatus[] = ['Active', 'Blocked']
 const STATUS_LABELS: Record<TenantPlanStatus, string> = {
   Trial: 'Trial', GracePeriod: 'Grace period', Active: 'Actief', Blocked: 'Geblokkeerd', None: 'Geen abonnement',
 }
@@ -92,26 +103,19 @@ const INTERVAL_WIRE: Record<BillingInterval, 'Monthly' | 'Yearly'> = {
   [BillingInterval.Yearly]: 'Yearly',
 }
 
-function toDateInput(iso: string | null) {
-  if (!iso) return ''
-  return iso.slice(0, 10)
-}
-
 function EditRow({ row, plans, onSave, onCancel }: EditRowProps) {
   const isUnassigned = row.status === 'None'
   const [planId,      setPlanId]      = useState<string>(row.planId ?? '')
-  // 'None' is geen keuzeoptie in het formulier (de backend accepteert die status
-  // niet als input) — bij een nog-niet-gekoppelde omgeving starten we daarom op
-  // Actief, zodat "Opslaan" altijd een geldige status verstuurt.
-  const [status,      setStatus]      = useState<TenantPlanStatus>(isUnassigned ? 'Active' : row.status)
+  // 'Trial'/'GracePeriod'/'None' zijn geen keuzeopties in het formulier (de MSP
+  // beheert die niet meer, en de backend accepteert 'None' sowieso niet als input)
+  // — bij zo'n rij starten we daarom op Actief, zodat "Opslaan" altijd een geldige
+  // status verstuurt.
+  const [status,      setStatus]      = useState<TenantPlanStatus>(row.status === 'Blocked' ? 'Blocked' : 'Active')
   const [interval,    setInterval_]   = useState<BillingInterval>(row.interval)
-  const [trialEndsAt, setTrialEndsAt] = useState(toDateInput(row.trialEndsAt))
-  const [graceEndsAt, setGraceEndsAt] = useState(toDateInput(row.graceEndsAt))
   const [saving,      setSaving]      = useState(false)
   const [error,       setError]       = useState<string | null>(null)
 
   const sel = 'text-xs rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900/60 dark:shadow-[inset_0_1px_3px_0_rgba(0,0,0,0.4)] text-slate-900 dark:text-slate-100 px-2 py-1.5 focus:outline-none focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-500/25'
-  const inp = `${sel} w-32`
 
   const showActivateNotice = status === 'Active' && !!planId
 
@@ -122,8 +126,6 @@ function EditRow({ row, plans, onSave, onCancel }: EditRowProps) {
         planId: planId || null,
         status,
         interval: INTERVAL_WIRE[interval],
-        trialEndsAt: trialEndsAt ? new Date(trialEndsAt).toISOString() : null,
-        graceEndsAt: graceEndsAt ? new Date(graceEndsAt).toISOString() : null,
       })
       onSave(data)
     } catch (err: unknown) {
@@ -165,11 +167,11 @@ function EditRow({ row, plans, onSave, onCancel }: EditRowProps) {
           <p className="mt-1 text-[11px] text-slate-400 dark:text-slate-500">contract loopt vanaf {fmtDateOnly(row.yearAnchorDate)}</p>
         )}
       </td>
-      <td className="px-4 py-2 align-top">
-        <input type="date" value={trialEndsAt} onChange={e => setTrialEndsAt(e.target.value)} className={inp} />
+      <td className="px-4 py-2 align-top text-xs text-slate-400 dark:text-slate-500">
+        {fmtNextBilling(row.nextBillingDate)}
       </td>
-      <td className="px-4 py-2 align-top">
-        <input type="date" value={graceEndsAt} onChange={e => setGraceEndsAt(e.target.value)} className={inp} />
+      <td className="px-4 py-2 align-top text-xs text-slate-400 dark:text-slate-500">
+        {fmtCurrency(row.monthlyAmount)}
       </td>
       <td className="px-4 py-2 align-top">
         {showActivateNotice && (
@@ -234,25 +236,38 @@ export function MspSubscriptionsView() {
     return acc
   }, {} as Record<string, number>)
 
+  const totalMonthly = subscriptions
+    .filter(s => s.status === 'Active')
+    .reduce((sum, s) => sum + (s.monthlyAmount ?? 0), 0)
+
   return (
     <div className="flex flex-col gap-5">
 
       {/* Header stats */}
-      <div className="grid grid-cols-5 gap-3">
-        {(['Trial', 'GracePeriod', 'Active', 'Blocked', 'None'] as TenantPlanStatus[]).map(s => (
-          <button
-            key={s}
-            onClick={() => setStatusFilter(prev => prev === s ? 'all' : s)}
-            className={`rounded-xl p-3 text-left border transition-all ${
-              statusFilter === s
-                ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/30'
-                : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-blue-300'
-            }`}
-          >
-            <StatusBadge status={s} />
-            <p className="mt-1.5 text-2xl font-bold text-slate-900 dark:text-slate-100">{statusCounts[s] ?? 0}</p>
-          </button>
-        ))}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="grid grid-cols-5 gap-3 flex-1">
+          {(['Trial', 'GracePeriod', 'Active', 'Blocked', 'None'] as TenantPlanStatus[]).map(s => (
+            <button
+              key={s}
+              onClick={() => setStatusFilter(prev => prev === s ? 'all' : s)}
+              className={`rounded-xl p-3 text-left border transition-all ${
+                statusFilter === s
+                  ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/30'
+                  : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-blue-300'
+              }`}
+            >
+              <StatusBadge status={s} />
+              <p className="mt-1.5 text-2xl font-bold text-slate-900 dark:text-slate-100">{statusCounts[s] ?? 0}</p>
+            </button>
+          ))}
+        </div>
+        <div className="rounded-xl p-3 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 sm:w-56 flex flex-col justify-center">
+          <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+            Totaal per maand
+          </span>
+          <p className="mt-1.5 text-2xl font-bold text-slate-900 dark:text-slate-100">{fmtCurrency(totalMonthly)}</p>
+          <p className="text-[11px] text-slate-400 dark:text-slate-500">o.b.v. actieve abonnementen</p>
+        </div>
       </div>
 
       {/* Table */}
@@ -290,8 +305,8 @@ export function MspSubscriptionsView() {
                     <th className="px-4 py-2.5 text-left font-semibold">Plan</th>
                     <th className="px-4 py-2.5 text-left font-semibold">Status</th>
                     <th className="px-4 py-2.5 text-left font-semibold">Frequentie</th>
-                    <th className="px-4 py-2.5 text-left font-semibold">Trial tot</th>
-                    <th className="px-4 py-2.5 text-left font-semibold">Grace tot</th>
+                    <th className="px-4 py-2.5 text-left font-semibold">Volgende facturatie</th>
+                    <th className="px-4 py-2.5 text-left font-semibold">Per maand</th>
                     <th className="px-4 py-2.5 text-left font-semibold"></th>
                   </tr>
                 </thead>
@@ -323,12 +338,18 @@ export function MspSubscriptionsView() {
                                 : null
                             })()}
                           </div>
+                          {row.status === 'Trial' && row.trialEndsAt && (
+                            <p className="mt-0.5 text-[11px] text-slate-400 dark:text-slate-500">tot {fmt(row.trialEndsAt)}</p>
+                          )}
+                          {row.status === 'GracePeriod' && row.graceEndsAt && (
+                            <p className="mt-0.5 text-[11px] text-slate-400 dark:text-slate-500">tot {fmt(row.graceEndsAt)}</p>
+                          )}
                         </td>
                         <td className="px-4 py-3">
                           <IntervalDisplay interval={row.interval} yearAnchorDate={row.yearAnchorDate} />
                         </td>
-                        <td className="px-4 py-3 text-xs text-slate-500">{fmt(row.trialEndsAt)}</td>
-                        <td className="px-4 py-3 text-xs text-slate-500">{fmt(row.graceEndsAt)}</td>
+                        <td className="px-4 py-3 text-xs text-slate-500">{fmtNextBilling(row.nextBillingDate)}</td>
+                        <td className="px-4 py-3 text-xs text-slate-500">{fmtCurrency(row.monthlyAmount)}</td>
                         <td className="px-4 py-3">
                           <button
                             onClick={() => setEditingId(row.tenantId)}

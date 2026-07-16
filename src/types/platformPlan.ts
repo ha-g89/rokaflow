@@ -27,6 +27,8 @@ export interface TenantPlanDto {
   graceEndsAt: string | null
   activatedAt: string | null
   createdAt: string
+  monthlyAmount: number | null
+  nextBillingDate: string | null
 }
 
 export interface MyPlanDto {
