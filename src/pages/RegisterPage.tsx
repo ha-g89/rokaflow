@@ -9,19 +9,27 @@ import type { LoginResponse } from '@/types/auth'
 import logo from '@/assets/RokaFlow_icon_dark_transparent.png'
 
 const schema = z.object({
-  companyName:     z.string().min(1, 'Bedrijfsnaam is verplicht').max(200),
   firstName:       z.string().min(1, 'Voornaam is verplicht').max(100),
   tussenvoegsel:   z.string().max(50).optional(),
   lastName:        z.string().min(1, 'Achternaam is verplicht').max(100),
   email:           z.string().email('Voer een geldig e-mailadres in'),
   password:        z.string().min(8, 'Minimaal 8 tekens'),
   confirmPassword: z.string().min(1, 'Bevestig uw wachtwoord'),
+  companyName:     z.string().min(1, 'Bedrijfsnaam is verplicht').max(200),
+  kvkNumber:       z.string().max(50).optional(),
+  vatNumber:       z.string().max(50).optional(),
+  invoiceEmail:    z.string().optional(),
+  addressLine:     z.string().max(200).optional(),
+  postalCode:      z.string().max(20).optional(),
+  city:            z.string().max(100).optional(),
 }).refine(d => d.password === d.confirmPassword, {
   message: 'Wachtwoorden komen niet overeen',
   path: ['confirmPassword'],
 })
 
 type FormValues = z.infer<typeof schema>
+
+const STEP1_FIELDS = ['firstName', 'tussenvoegsel', 'lastName', 'email', 'password', 'confirmPassword'] as const
 
 const CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap');
@@ -150,8 +158,42 @@ const CSS = `
     margin-bottom: 18px;
   }
 
+  .rfr-row-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+
   .rfr-field { margin-bottom: 18px; }
   .rfr-field-inline { margin-bottom: 0; }
+  .rfr-field-hint {
+    margin-top: 5px;
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  /* ── Step indicator ── */
+  .rfr-step-indicator {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  .rfr-step-dots { display: flex; gap: 5px; }
+  .rfr-step-dot {
+    width: 22px;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--line-md);
+    transition: background 0.2s;
+  }
+  .rfr-step-dot.rfr-step-dot-active { background: var(--accent); }
+  .rfr-step-text {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+  }
 
   .rfr-label {
     display: block;
@@ -298,6 +340,31 @@ const CSS = `
     transition: transform 0.16s;
   }
   .rfr-submit:hover:not(:disabled) .rfr-btn-arr { transform: translateX(3px); }
+
+  .rfr-btn-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 6px;
+  }
+  .rfr-submit-flex { margin-top: 0; flex: 1; }
+
+  .rfr-btn-secondary {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 20px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-2);
+    background: var(--field-bg);
+    border: 1.5px solid var(--field-bd);
+    border-radius: 9px;
+    cursor: pointer;
+    transition: background 0.18s, border-color 0.18s;
+  }
+  .rfr-btn-secondary:hover { background: var(--line); }
 
   @keyframes rfrSpin { to { transform: rotate(360deg); } }
   .rfr-spin {
@@ -448,6 +515,8 @@ const CSS = `
   html.dark .rfr-logo-upload { background: rgba(238,240,246,0.04); border-color: rgba(238,240,246,0.12); }
   html.dark .rfr-logo-upload:hover { background: rgba(37,99,235,0.1); border-color: rgba(37,99,235,0.35); }
   html.dark .rfr-section-label { border-bottom-color: rgba(238,240,246,0.08); }
+  html.dark .rfr-btn-secondary { background: rgba(238,240,246,0.04); border-color: rgba(238,240,246,0.12); color: var(--text-2); }
+  html.dark .rfr-btn-secondary:hover { background: rgba(238,240,246,0.08); }
   html.dark .rfr-brand { color: rgba(238,240,246,0.28); }
   html.dark .rfr-tagline { color: rgba(238,240,246,0.45); }
 `
@@ -470,12 +539,18 @@ export default function RegisterPage() {
   const [showConfirm, setShowConfirm] = useState(false)
   const [logoFile,    setLogoFile]    = useState<File | null>(null)
   const [logoPreview, setLogoPreview] = useState<string | null>(null)
+  const [step,        setStep]        = useState<1 | 2>(1)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { login }  = useAuthStore()
   const navigate   = useNavigate()
 
-  const { register, handleSubmit, formState: { errors, isSubmitting } } =
+  const { register, handleSubmit, trigger, watch, formState: { errors, isSubmitting } } =
     useForm<FormValues>({ resolver: zodResolver(schema) })
+
+  const handleNext = async () => {
+    const valid = await trigger(STEP1_FIELDS as unknown as Array<keyof FormValues>)
+    if (valid) setStep(2)
+  }
 
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] ?? null
@@ -499,6 +574,12 @@ export default function RegisterPage() {
         lastName:      values.lastName,
         email:         values.email,
         password:      values.password,
+        kvkNumber:     values.kvkNumber || undefined,
+        vatNumber:     values.vatNumber || undefined,
+        invoiceEmail:  values.invoiceEmail || undefined,
+        addressLine:   values.addressLine || undefined,
+        postalCode:    values.postalCode || undefined,
+        city:          values.city || undefined,
       }, {
         headers: { Authorization: undefined },
       })
@@ -538,146 +619,254 @@ export default function RegisterPage() {
 
           <div className="rfr-form-wrap">
             <div className="rfr-card">
-              <h1 className="rfr-heading">Account aanmaken</h1>
-              <p className="rfr-sub">Start gratis met RokaFlow voor uw organisatie.</p>
+              <h1 className="rfr-heading">{step === 1 ? 'Account aanmaken' : 'Bedrijfsgegevens'}</h1>
+              <p className="rfr-sub">
+                {step === 1
+                  ? 'Start gratis met RokaFlow voor uw organisatie.'
+                  : 'Vertel ons iets over uw organisatie voor facturatie en branding.'}
+              </p>
 
               <form onSubmit={handleSubmit(onSubmit)} noValidate>
                 {apiError && <div className="rfr-api-err">{apiError}</div>}
 
-                {/* Bedrijf */}
-                <p className="rfr-section-label">Organisatie</p>
-
-                <div className="rfr-field">
-                  <label className="rfr-label">Bedrijfsnaam</label>
-                  <input
-                    autoFocus
-                    placeholder="Mijn Bedrijf B.V."
-                    {...register('companyName')}
-                    className={`rfr-input${errors.companyName ? ' rfr-err' : ''}`}
-                  />
-                  {errors.companyName && <p className="rfr-err-msg">{errors.companyName.message}</p>}
+                <div className="rfr-step-indicator">
+                  <div className="rfr-step-dots">
+                    <span className={`rfr-step-dot${step >= 1 ? ' rfr-step-dot-active' : ''}`} />
+                    <span className={`rfr-step-dot${step >= 2 ? ' rfr-step-dot-active' : ''}`} />
+                  </div>
+                  <span className="rfr-step-text">Stap {step} van 2</span>
                 </div>
 
-                <div className="rfr-field">
-                  <label className="rfr-label">
-                    Bedrijfslogo{' '}
-                    <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0, color: 'var(--muted)', fontSize: 11 }}>(optioneel)</span>
-                  </label>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/png,image/jpeg,image/svg+xml,image/webp"
-                    style={{ display: 'none' }}
-                    onChange={handleLogoChange}
-                  />
-                  <div className="rfr-logo-upload" onClick={() => fileInputRef.current?.click()}>
-                    {logoPreview ? (
-                      <img src={logoPreview} alt="Logo preview" className="rfr-logo-preview" />
-                    ) : (
-                      <div className="rfr-logo-placeholder">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                          <circle cx="8.5" cy="8.5" r="1.5" />
-                          <polyline points="21 15 16 10 5 21" />
-                        </svg>
+                {step === 1 && (
+                  <>
+                    {/* Persoon */}
+                    <p className="rfr-section-label">Uw gegevens</p>
+
+                    {/* Voornaam + Tussenvoegsel + Achternaam */}
+                    <div className="rfr-row-3">
+                      <div className="rfr-field-inline">
+                        <label className="rfr-label">Voornaam</label>
+                        <input
+                          autoFocus
+                          placeholder="Jan"
+                          {...register('firstName')}
+                          className={`rfr-input${errors.firstName ? ' rfr-err' : ''}`}
+                        />
+                        {errors.firstName && <p className="rfr-err-msg">{errors.firstName.message}</p>}
                       </div>
-                    )}
-                    <div className="rfr-logo-text">
-                      <p className="rfr-logo-text-main">{logoFile ? logoFile.name : 'Klik om een logo te uploaden'}</p>
-                      <p className="rfr-logo-text-sub">PNG, JPEG, SVG of WebP · max 2 MB</p>
+                      <div className="rfr-field-inline">
+                        <label className="rfr-label">Tussen</label>
+                        <input
+                          placeholder="de"
+                          {...register('tussenvoegsel')}
+                          className="rfr-input"
+                        />
+                      </div>
+                      <div className="rfr-field-inline">
+                        <label className="rfr-label">Achternaam</label>
+                        <input
+                          placeholder="Vries"
+                          {...register('lastName')}
+                          className={`rfr-input${errors.lastName ? ' rfr-err' : ''}`}
+                        />
+                        {errors.lastName && <p className="rfr-err-msg">{errors.lastName.message}</p>}
+                      </div>
                     </div>
-                  </div>
-                </div>
 
-                {/* Persoon */}
-                <p className="rfr-section-label">Uw gegevens</p>
+                    <div className="rfr-field">
+                      <label className="rfr-label">E-mailadres</label>
+                      <input
+                        type="email"
+                        autoComplete="email"
+                        placeholder="jan@mijnbedrijf.nl"
+                        {...register('email')}
+                        className={`rfr-input${errors.email ? ' rfr-err' : ''}`}
+                      />
+                      {errors.email && <p className="rfr-err-msg">{errors.email.message}</p>}
+                    </div>
 
-                {/* Voornaam + Tussenvoegsel + Achternaam */}
-                <div className="rfr-row-3">
-                  <div className="rfr-field-inline">
-                    <label className="rfr-label">Voornaam</label>
-                    <input
-                      placeholder="Jan"
-                      {...register('firstName')}
-                      className={`rfr-input${errors.firstName ? ' rfr-err' : ''}`}
-                    />
-                    {errors.firstName && <p className="rfr-err-msg">{errors.firstName.message}</p>}
-                  </div>
-                  <div className="rfr-field-inline">
-                    <label className="rfr-label">Tussen</label>
-                    <input
-                      placeholder="de"
-                      {...register('tussenvoegsel')}
-                      className="rfr-input"
-                    />
-                  </div>
-                  <div className="rfr-field-inline">
-                    <label className="rfr-label">Achternaam</label>
-                    <input
-                      placeholder="Vries"
-                      {...register('lastName')}
-                      className={`rfr-input${errors.lastName ? ' rfr-err' : ''}`}
-                    />
-                    {errors.lastName && <p className="rfr-err-msg">{errors.lastName.message}</p>}
-                  </div>
-                </div>
+                    <div className="rfr-field">
+                      <label className="rfr-label">Wachtwoord</label>
+                      <div className="rfr-input-wrap">
+                        <input
+                          type={showPass ? 'text' : 'password'}
+                          autoComplete="new-password"
+                          placeholder="Minimaal 8 tekens"
+                          {...register('password')}
+                          className={`rfr-input${errors.password ? ' rfr-err' : ''}`}
+                          style={{ paddingRight: '42px' }}
+                        />
+                        <button type="button" tabIndex={-1} className="rfr-eye" onClick={() => setShowPass(p => !p)}>
+                          <EyeIcon open={showPass} />
+                        </button>
+                      </div>
+                      {errors.password && <p className="rfr-err-msg">{errors.password.message}</p>}
+                    </div>
 
-                <div className="rfr-field">
-                  <label className="rfr-label">E-mailadres</label>
-                  <input
-                    type="email"
-                    autoComplete="email"
-                    placeholder="jan@mijnbedrijf.nl"
-                    {...register('email')}
-                    className={`rfr-input${errors.email ? ' rfr-err' : ''}`}
-                  />
-                  {errors.email && <p className="rfr-err-msg">{errors.email.message}</p>}
-                </div>
+                    <div className="rfr-field">
+                      <label className="rfr-label">Wachtwoord bevestigen</label>
+                      <div className="rfr-input-wrap">
+                        <input
+                          type={showConfirm ? 'text' : 'password'}
+                          autoComplete="new-password"
+                          placeholder="••••••••"
+                          {...register('confirmPassword')}
+                          className={`rfr-input${errors.confirmPassword ? ' rfr-err' : ''}`}
+                          style={{ paddingRight: '42px' }}
+                        />
+                        <button type="button" tabIndex={-1} className="rfr-eye" onClick={() => setShowConfirm(p => !p)}>
+                          <EyeIcon open={showConfirm} />
+                        </button>
+                      </div>
+                      {errors.confirmPassword && <p className="rfr-err-msg">{errors.confirmPassword.message}</p>}
+                    </div>
 
-                <div className="rfr-field">
-                  <label className="rfr-label">Wachtwoord</label>
-                  <div className="rfr-input-wrap">
-                    <input
-                      type={showPass ? 'text' : 'password'}
-                      autoComplete="new-password"
-                      placeholder="Minimaal 8 tekens"
-                      {...register('password')}
-                      className={`rfr-input${errors.password ? ' rfr-err' : ''}`}
-                      style={{ paddingRight: '42px' }}
-                    />
-                    <button type="button" tabIndex={-1} className="rfr-eye" onClick={() => setShowPass(p => !p)}>
-                      <EyeIcon open={showPass} />
+                    <button type="button" className="rfr-submit" onClick={handleNext}>
+                      <span className="rfr-submit-inner">
+                        Bedrijfsgegevens toevoegen <i className="rfr-btn-arr">→</i>
+                      </span>
                     </button>
-                  </div>
-                  {errors.password && <p className="rfr-err-msg">{errors.password.message}</p>}
-                </div>
+                  </>
+                )}
 
-                <div className="rfr-field">
-                  <label className="rfr-label">Wachtwoord bevestigen</label>
-                  <div className="rfr-input-wrap">
-                    <input
-                      type={showConfirm ? 'text' : 'password'}
-                      autoComplete="new-password"
-                      placeholder="••••••••"
-                      {...register('confirmPassword')}
-                      className={`rfr-input${errors.confirmPassword ? ' rfr-err' : ''}`}
-                      style={{ paddingRight: '42px' }}
-                    />
-                    <button type="button" tabIndex={-1} className="rfr-eye" onClick={() => setShowConfirm(p => !p)}>
-                      <EyeIcon open={showConfirm} />
-                    </button>
-                  </div>
-                  {errors.confirmPassword && <p className="rfr-err-msg">{errors.confirmPassword.message}</p>}
-                </div>
+                {step === 2 && (
+                  <>
+                    {/* Bedrijf */}
+                    <p className="rfr-section-label">Organisatie</p>
 
-                <button type="submit" disabled={isSubmitting} className="rfr-submit">
-                  <span className="rfr-submit-inner">
-                    {isSubmitting
-                      ? <><div className="rfr-spin" /> Bezig…</>
-                      : <>Account aanmaken <i className="rfr-btn-arr">→</i></>
-                    }
-                  </span>
-                </button>
+                    <div className="rfr-field">
+                      <label className="rfr-label">
+                        Bedrijfslogo{' '}
+                        <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0, color: 'var(--muted)', fontSize: 11 }}>(optioneel)</span>
+                      </label>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/png,image/jpeg,image/svg+xml,image/webp"
+                        style={{ display: 'none' }}
+                        onChange={handleLogoChange}
+                      />
+                      <div className="rfr-logo-upload" onClick={() => fileInputRef.current?.click()}>
+                        {logoPreview ? (
+                          <img src={logoPreview} alt="Logo preview" className="rfr-logo-preview" />
+                        ) : (
+                          <div className="rfr-logo-placeholder">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                              <circle cx="8.5" cy="8.5" r="1.5" />
+                              <polyline points="21 15 16 10 5 21" />
+                            </svg>
+                          </div>
+                        )}
+                        <div className="rfr-logo-text">
+                          <p className="rfr-logo-text-main">{logoFile ? logoFile.name : 'Klik om een logo te uploaden'}</p>
+                          <p className="rfr-logo-text-sub">PNG, JPEG, SVG of WebP · max 2 MB</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="rfr-field">
+                      <label className="rfr-label">Bedrijfsnaam</label>
+                      <input
+                        autoFocus
+                        placeholder="Mijn Bedrijf B.V."
+                        {...register('companyName')}
+                        className={`rfr-input${errors.companyName ? ' rfr-err' : ''}`}
+                      />
+                      {errors.companyName && <p className="rfr-err-msg">{errors.companyName.message}</p>}
+                    </div>
+
+                    <div className="rfr-row-2">
+                      <div className="rfr-field-inline">
+                        <label className="rfr-label">
+                          KvK-nummer{' '}
+                          <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0, color: 'var(--muted)', fontSize: 11 }}>(optioneel)</span>
+                        </label>
+                        <input
+                          placeholder="12345678"
+                          {...register('kvkNumber')}
+                          className="rfr-input"
+                        />
+                      </div>
+                      <div className="rfr-field-inline">
+                        <label className="rfr-label">
+                          BTW-nummer{' '}
+                          <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0, color: 'var(--muted)', fontSize: 11 }}>(optioneel)</span>
+                        </label>
+                        <input
+                          placeholder="NL123456789B01"
+                          {...register('vatNumber')}
+                          className="rfr-input"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="rfr-field">
+                      <label className="rfr-label">
+                        Factuur-e-mailadres{' '}
+                        <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0, color: 'var(--muted)', fontSize: 11 }}>(optioneel)</span>
+                      </label>
+                      <input
+                        type="email"
+                        placeholder={watch('email') || 'facturatie@mijnbedrijf.nl'}
+                        {...register('invoiceEmail')}
+                        className="rfr-input"
+                      />
+                      <p className="rfr-field-hint">Leeg laten = accountadres</p>
+                    </div>
+
+                    <div className="rfr-field">
+                      <label className="rfr-label">
+                        Adres{' '}
+                        <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0, color: 'var(--muted)', fontSize: 11 }}>(optioneel)</span>
+                      </label>
+                      <input
+                        placeholder="Hoofdstraat 1"
+                        {...register('addressLine')}
+                        className="rfr-input"
+                      />
+                    </div>
+
+                    <div className="rfr-row-2">
+                      <div className="rfr-field-inline">
+                        <label className="rfr-label">
+                          Postcode{' '}
+                          <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0, color: 'var(--muted)', fontSize: 11 }}>(optioneel)</span>
+                        </label>
+                        <input
+                          placeholder="1234 AB"
+                          {...register('postalCode')}
+                          className="rfr-input"
+                        />
+                      </div>
+                      <div className="rfr-field-inline">
+                        <label className="rfr-label">
+                          Plaats{' '}
+                          <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0, color: 'var(--muted)', fontSize: 11 }}>(optioneel)</span>
+                        </label>
+                        <input
+                          placeholder="Amsterdam"
+                          {...register('city')}
+                          className="rfr-input"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="rfr-btn-row">
+                      <button type="button" className="rfr-btn-secondary" onClick={() => setStep(1)}>
+                        ← Terug
+                      </button>
+                      <button type="submit" disabled={isSubmitting} className="rfr-submit rfr-submit-flex">
+                        <span className="rfr-submit-inner">
+                          {isSubmitting
+                            ? <><div className="rfr-spin" /> Bezig…</>
+                            : <>Account aanmaken <i className="rfr-btn-arr">→</i></>
+                          }
+                        </span>
+                      </button>
+                    </div>
+                  </>
+                )}
 
                 <p className="rfr-footer">
                   Al een account?{' '}

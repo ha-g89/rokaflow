@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
   Moon, Sun, Shield, CheckCircle2, ArrowLeftCircle,
   AlertTriangle, UserPlus, ArrowLeftRight, Copy,
   Package, Users, CreditCard, Zap, Lock, Receipt,
+  Building2, Upload,
 } from 'lucide-react'
 import api from '@/lib/axios'
 import { useThemeStore } from '@/store/themeStore'
@@ -31,6 +32,94 @@ interface Props {
   onMspStatusRefresh: () => void
   onSwitchToMsp: () => void
   mspSwitching: boolean
+  onLogoChanged?: () => void
+}
+
+const MAX_LOGO_BYTES = 2 * 1024 * 1024
+
+function LogoCard({ onLogoChanged }: { onLogoChanged?: () => void }) {
+  const [logoDataUrl, setLogoDataUrl] = useState<string | null>(null)
+  const [logoLoading, setLogoLoading] = useState(true)
+  const [uploading, setUploading]     = useState(false)
+  const [error, setError]             = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const fetchLogo = () => {
+    setLogoLoading(true)
+    api.get<{ logoDataUrl: string | null }>('/portal/logo')
+      .then(r => setLogoDataUrl(r.data.logoDataUrl))
+      .catch(() => {})
+      .finally(() => setLogoLoading(false))
+  }
+
+  useEffect(() => { fetchLogo() }, [])
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+
+    setError(null)
+    if (file.size > MAX_LOGO_BYTES) {
+      setError('Bestand is te groot. Maximaal 2 MB toegestaan.')
+      return
+    }
+
+    setUploading(true)
+    try {
+      const form = new FormData()
+      form.append('file', file)
+      await api.post('/portal/logo', form, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      fetchLogo()
+      onLogoChanged?.()
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail
+      setError(msg ?? 'Uploaden mislukt. Probeer het opnieuw.')
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  return (
+    <Card>
+      <CardContent className="p-5">
+        <div className="flex items-center gap-2 mb-4">
+          <Building2 size={15} className="text-slate-400" />
+          <h2 className="text-sm font-bold text-slate-800 dark:text-slate-100">Bedrijfslogo</h2>
+        </div>
+        <div className="flex items-center gap-4">
+          <div className="w-14 h-14 rounded-xl bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 flex items-center justify-center flex-shrink-0 overflow-hidden">
+            {logoLoading ? (
+              <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+            ) : logoDataUrl ? (
+              <img src={logoDataUrl} alt="Bedrijfslogo" className="w-full h-full object-contain p-1" />
+            ) : (
+              <Building2 size={20} className="text-slate-300 dark:text-slate-500" />
+            )}
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">
+              Dit logo wordt getoond in het portaal en op documenten.
+            </p>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/png,image/jpeg,image/svg+xml,image/webp"
+              className="hidden"
+              onChange={handleFileChange}
+            />
+            <Button size="sm" variant="secondary" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
+              <Upload size={13} /> {uploading ? 'Bezig…' : 'Logo wijzigen'}
+            </Button>
+            {error && <p className="text-xs text-red-600 dark:text-red-400 mt-2">{error}</p>}
+            <p className="text-xs text-slate-400 mt-2">PNG, JPEG, SVG of WebP · max 2 MB</p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
 }
 
 function UsageBar({ used, max, label, icon }: { used: number; max: number | null; label: string; icon: React.ReactNode }) {
@@ -62,7 +151,7 @@ function UsageBar({ used, max, label, icon }: { used: number; max: number | null
   )
 }
 
-export function SettingsView({ teammates, tenantName, onAddUser, mspStatus, onMspStatusRefresh, onSwitchToMsp, mspSwitching }: Props) {
+export function SettingsView({ teammates, tenantName, onAddUser, mspStatus, onMspStatusRefresh, onSwitchToMsp, mspSwitching, onLogoChanged }: Props) {
   const { darkMode, toggleDarkMode } = useThemeStore()
 
   const [plan, setPlan] = useState<MyPlanDto | null>(null)
@@ -104,6 +193,9 @@ export function SettingsView({ teammates, tenantName, onAddUser, mspStatus, onMs
           </div>
         </div>
       )}
+
+      {/* Bedrijfslogo */}
+      <LogoCard onLogoChanged={onLogoChanged} />
 
       {/* Abonnement */}
       {plan && (

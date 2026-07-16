@@ -1,8 +1,9 @@
-﻿import type { ReactNode } from 'react'
+﻿import { useState, useEffect, useRef, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Building2, Moon, Sun, User, Shield, Briefcase } from 'lucide-react'
+import { ArrowLeft, Building2, Moon, Sun, User, Shield, Briefcase, Upload } from 'lucide-react'
 import { useThemeStore } from '@/store/themeStore'
 import { useAuthStore } from '@/store/authStore'
+import api from '@/lib/axios'
 
 const ROLE_META: Record<string, { label: string; badge: string; icon: ReactNode; description: string }> = {
   msp_admin:    {
@@ -29,6 +30,92 @@ const ROLE_META: Record<string, { label: string; badge: string; icon: ReactNode;
     icon: <Briefcase size={15} />,
     description: 'Medewerker zonder inlogrechten op het portaal',
   },
+}
+
+const MAX_LOGO_BYTES = 2 * 1024 * 1024
+
+function LogoCard() {
+  const [logoDataUrl, setLogoDataUrl] = useState<string | null>(null)
+  const [logoLoading, setLogoLoading] = useState(true)
+  const [uploading, setUploading]     = useState(false)
+  const [error, setError]             = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const fetchLogo = () => {
+    setLogoLoading(true)
+    api.get<{ logoDataUrl: string | null }>('/msp/logo')
+      .then(r => setLogoDataUrl(r.data.logoDataUrl))
+      .catch(() => {})
+      .finally(() => setLogoLoading(false))
+  }
+
+  useEffect(() => { fetchLogo() }, [])
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+
+    setError(null)
+    if (file.size > MAX_LOGO_BYTES) {
+      setError('Bestand is te groot. Maximaal 2 MB toegestaan.')
+      return
+    }
+
+    setUploading(true)
+    try {
+      const form = new FormData()
+      form.append('file', file)
+      await api.post('/msp/logo', form, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      fetchLogo()
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail
+      setError(msg ?? 'Uploaden mislukt. Probeer het opnieuw.')
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  return (
+    <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm">
+      <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-700">
+        <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Bedrijfslogo</h2>
+        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Dit logo wordt getoond in het MSP-portaal en op documenten</p>
+      </div>
+
+      <div className="px-5 py-5 flex items-center gap-4">
+        <div className="w-14 h-14 rounded-xl bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 flex items-center justify-center flex-shrink-0 overflow-hidden">
+          {logoLoading ? (
+            <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+          ) : logoDataUrl ? (
+            <img src={logoDataUrl} alt="Bedrijfslogo" className="w-full h-full object-contain p-1" />
+          ) : (
+            <Building2 size={20} className="text-slate-300 dark:text-slate-500" />
+          )}
+        </div>
+        <div className="flex-1 min-w-0">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/png,image/jpeg,image/svg+xml,image/webp"
+            className="hidden"
+            onChange={handleFileChange}
+          />
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading}
+            className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-slate-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Upload size={13} /> {uploading ? 'Bezig…' : 'Logo wijzigen'}
+          </button>
+          {error && <p className="text-xs text-red-600 dark:text-red-400 mt-2">{error}</p>}
+          <p className="text-xs text-slate-400 mt-2">PNG, JPEG, SVG of WebP · max 2 MB</p>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 export default function OrgSettings() {
@@ -121,6 +208,9 @@ export default function OrgSettings() {
             )}
           </div>
         </div>
+
+        {/* Logo card */}
+        <LogoCard />
 
         {/* Appearance card */}
         <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm">

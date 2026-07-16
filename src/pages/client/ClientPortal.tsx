@@ -176,11 +176,13 @@ export default function ClientPortal() {
   useEffect(() => { fetchDepartmentOptions() }, [fetchDepartmentOptions])
   useEffect(() => { fetchManagers() },          [fetchManagers])
   useEffect(() => { fetchLocationOptions() },   [fetchLocationOptions])
-  useEffect(() => {
+  const fetchLogo = useCallback(() => {
     api.get<{ logoDataUrl: string | null }>('/portal/logo')
       .then(r => setClientLogoUrl(r.data.logoDataUrl))
       .catch(() => {})
   }, [])
+
+  useEffect(() => { fetchLogo() }, [fetchLogo])
 
   // ── Handlers ──────────────────────────────────────────────────────────────
 
@@ -532,6 +534,7 @@ export default function ClientPortal() {
                 onMspStatusRefresh={fetchMspStatus}
                 onSwitchToMsp={handleSwitchToMsp}
                 mspSwitching={mspSwitching}
+                onLogoChanged={fetchLogo}
               />
             )}
 
