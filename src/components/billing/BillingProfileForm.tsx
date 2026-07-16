@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { AlertTriangle, CheckCircle2, RefreshCw } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, Pencil, RefreshCw } from 'lucide-react'
 import api from '@/lib/axios'
 import { Button } from '@/components/ui/Button'
 import { BillingInterval, type BillingProfile } from '@/types/billing'
@@ -54,6 +54,17 @@ const emptyValues: ProfileFormValues = {
   city: '', country: '', vatNumber: '', kvkNumber: '', iban: '',
 }
 
+function ViewRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <div className="text-xs text-slate-500 dark:text-slate-400">{label}</div>
+      <div className="text-sm text-slate-800 dark:text-slate-100">
+        {value ? value : <span className="text-slate-400 dark:text-slate-500">—</span>}
+      </div>
+    </div>
+  )
+}
+
 export function BillingProfileForm({ baseUrl, mode = 'full' }: { baseUrl: string; mode?: 'full' | 'company' }) {
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState(false)
@@ -61,6 +72,9 @@ export function BillingProfileForm({ baseUrl, mode = 'full' }: { baseUrl: string
   const [apiError, setApiError] = useState<string | null>(null)
   const [savedInterval, setSavedInterval] = useState<number>(BillingInterval.Monthly)
   const [savedYearAnchorDate, setSavedYearAnchorDate] = useState<string | null>(null)
+  // View/edit-toggle: na het laden start het formulier altijd in view-mode
+  // (nette samenvatting); "Wijzigen" schakelt om naar het bewerkbare formulier.
+  const [isEditing, setIsEditing] = useState(false)
 
   const {
     register, handleSubmit, reset, watch, setValue, formState: { errors, isSubmitting },
@@ -101,6 +115,24 @@ export function BillingProfileForm({ baseUrl, mode = 'full' }: { baseUrl: string
 
   const watchedInterval = Number(watch('interval'))
   const watchedEmail = watch('invoiceEmail')
+  const watchedCompanyName = watch('companyName')
+  const watchedAddressLine = watch('addressLine')
+  const watchedPostalCode = watch('postalCode')
+  const watchedCity = watch('city')
+  const watchedCountry = watch('country')
+  const watchedVatNumber = watch('vatNumber')
+  const watchedKvkNumber = watch('kvkNumber')
+  const watchedIban = watch('iban')
+
+  const startEdit = () => setIsEditing(true)
+
+  const handleCancel = () => {
+    // Terug naar de laatst geladen waarden (reset() zonder argumenten valt
+    // terug op de defaultValues die fetchProfile() bij het laden/opslaan zette).
+    reset()
+    setApiError(null)
+    setIsEditing(false)
+  }
 
   const onSubmit = async (values: ProfileFormValues) => {
     setApiError(null)
@@ -125,6 +157,7 @@ export function BillingProfileForm({ baseUrl, mode = 'full' }: { baseUrl: string
       } catch {
         // Opslaan zelf is gelukt; alleen het verversen faalde.
       }
+      setIsEditing(false)
       setSaved(true)
       setTimeout(() => setSaved(false), 2500)
     } catch (err: unknown) {
@@ -154,6 +187,29 @@ export function BillingProfileForm({ baseUrl, mode = 'full' }: { baseUrl: string
     )
   }
 
+  const postalCity = [watchedPostalCode, watchedCity].filter(Boolean).join(' ')
+  const intervalDisplay = watchedInterval === BillingInterval.Yearly
+    ? `Jaarlijks${savedYearAnchorDate ? ` — periode vanaf ${fmtDate(savedYearAnchorDate)}` : ''}`
+    : 'Maandelijks'
+
+  const viewRows: { label: string; value: string }[] = [
+    { label: 'Bedrijfsnaam', value: watchedCompanyName },
+    { label: 'Adres', value: watchedAddressLine },
+    { label: 'Postcode en plaats', value: postalCity },
+    { label: 'Land', value: watchedCountry },
+    { label: 'KvK-nummer', value: watchedKvkNumber },
+    { label: 'BTW-nummer', value: watchedVatNumber },
+    { label: 'IBAN', value: watchedIban },
+    ...(mode === 'full' ? [
+      { label: 'Factuur-e-mailadres', value: watchedEmail },
+      { label: 'Frequentie', value: intervalDisplay },
+    ] : []),
+  ]
+
+  const allEmpty = !watchedCompanyName && !watchedAddressLine && !watchedPostalCode && !watchedCity &&
+    !watchedCountry && !watchedKvkNumber && !watchedVatNumber && !watchedIban &&
+    (mode !== 'full' || !watchedEmail)
+
   return (
     <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
       {mode === 'full' && !watchedEmail && (
@@ -165,83 +221,111 @@ export function BillingProfileForm({ baseUrl, mode = 'full' }: { baseUrl: string
         </div>
       )}
 
-      <form onSubmit={handleSubmit(onSubmit)} className="p-5 space-y-5">
-        {/* Frequentie — bij MSP-beheerde tenants forceert de backend altijd
-            Maandelijks; de selector wordt dan niet getoond, maar het
-            geladen interval blijft ongewijzigd meegestuurd via de hidden input. */}
-        {mode === 'full' ? (
-          <div>
-            <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">Frequentie</label>
-            <div className="inline-flex rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
-              {[
-                { value: BillingInterval.Monthly, label: 'Maandelijks' },
-                { value: BillingInterval.Yearly, label: 'Jaarlijks (met korting)' },
-              ].map((opt, idx) => {
-                const active = watchedInterval === opt.value
-                return (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    onClick={() => setValue('interval', String(opt.value), { shouldDirty: true })}
-                    className={`px-3.5 py-2 text-xs font-semibold transition-colors ${idx > 0 ? 'border-l border-slate-200 dark:border-slate-700' : ''} ${
-                      active
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-white dark:bg-slate-900/60 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                )
-              })}
+      {!isEditing ? (
+        <div className="p-5">
+          {(saved || !allEmpty) && (
+            <div className="flex items-center justify-between gap-3 mb-4">
+              {saved ? (
+                <span className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                  <CheckCircle2 size={13} /> Opgeslagen
+                </span>
+              ) : <span />}
+              {!allEmpty && (
+                <Button variant="secondary" size="sm" onClick={startEdit}>
+                  <Pencil size={14} /> Wijzigen
+                </Button>
+              )}
             </div>
-            <input type="hidden" {...register('interval')} />
+          )}
 
-            {watchedInterval === BillingInterval.Yearly && savedInterval !== BillingInterval.Yearly && (
-              <p className="mt-2 text-xs text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/40 rounded-lg px-3 py-2">
-                De eerste jaarfactuur wordt vooruit aangemaakt vanaf vandaag.
-              </p>
-            )}
-            {watchedInterval === BillingInterval.Yearly && savedInterval === BillingInterval.Yearly && savedYearAnchorDate && (
-              <p className="mt-2 text-xs text-slate-400 dark:text-slate-500">
-                Jaarperiode loopt vanaf {fmtDate(savedYearAnchorDate)}
-              </p>
-            )}
-          </div>
-        ) : (
-          <input type="hidden" {...register('interval')} />
-        )}
-
-        {/* Overige velden — in 'company'-modus blijft het factuur-e-mailadres
-            geregistreerd (verzonden zoals geladen) maar wordt het niet getoond,
-            omdat facturatie via de MSP verloopt. */}
-        <div className="grid grid-cols-2 gap-4">
-          {TEXT_FIELDS.filter(f => mode === 'full' || f.key !== 'invoiceEmail').map(f => (
-            <div key={f.key}>
-              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">{f.label}</label>
-              <input {...register(f.key)} type={f.type ?? 'text'} placeholder={f.placeholder} className={inputField} />
-              {errors[f.key] && <p className="mt-1 text-xs text-red-600">{errors[f.key]?.message}</p>}
+          {allEmpty ? (
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <p className="text-sm text-slate-500 dark:text-slate-400">Nog geen bedrijfsgegevens ingevuld.</p>
+              <Button size="sm" onClick={startEdit}>Gegevens invullen</Button>
             </div>
-          ))}
-          {mode === 'company' && <input type="hidden" {...register('invoiceEmail')} />}
-        </div>
-
-        {apiError && (
-          <p className="text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2 dark:bg-red-900/20 dark:text-red-300 dark:border-red-800/40">
-            {apiError}
-          </p>
-        )}
-
-        <div className="flex items-center gap-3">
-          <Button type="submit" size="sm" disabled={isSubmitting}>
-            {isSubmitting ? 'Opslaan…' : 'Opslaan'}
-          </Button>
-          {saved && (
-            <span className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-              <CheckCircle2 size={13} /> Opgeslagen
-            </span>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
+              {viewRows.map(row => <ViewRow key={row.label} label={row.label} value={row.value} />)}
+            </div>
           )}
         </div>
-      </form>
+      ) : (
+        <form onSubmit={handleSubmit(onSubmit)} className="p-5 space-y-5">
+          {/* Frequentie — bij MSP-beheerde tenants forceert de backend altijd
+              Maandelijks; de selector wordt dan niet getoond, maar het
+              geladen interval blijft ongewijzigd meegestuurd via de hidden input. */}
+          {mode === 'full' ? (
+            <div>
+              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">Frequentie</label>
+              <div className="inline-flex rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
+                {[
+                  { value: BillingInterval.Monthly, label: 'Maandelijks' },
+                  { value: BillingInterval.Yearly, label: 'Jaarlijks (met korting)' },
+                ].map((opt, idx) => {
+                  const active = watchedInterval === opt.value
+                  return (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setValue('interval', String(opt.value), { shouldDirty: true })}
+                      className={`px-3.5 py-2 text-xs font-semibold transition-colors ${idx > 0 ? 'border-l border-slate-200 dark:border-slate-700' : ''} ${
+                        active
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-white dark:bg-slate-900/60 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  )
+                })}
+              </div>
+              <input type="hidden" {...register('interval')} />
+
+              {watchedInterval === BillingInterval.Yearly && savedInterval !== BillingInterval.Yearly && (
+                <p className="mt-2 text-xs text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/40 rounded-lg px-3 py-2">
+                  De eerste jaarfactuur wordt vooruit aangemaakt vanaf vandaag.
+                </p>
+              )}
+              {watchedInterval === BillingInterval.Yearly && savedInterval === BillingInterval.Yearly && savedYearAnchorDate && (
+                <p className="mt-2 text-xs text-slate-400 dark:text-slate-500">
+                  Jaarperiode loopt vanaf {fmtDate(savedYearAnchorDate)}
+                </p>
+              )}
+            </div>
+          ) : (
+            <input type="hidden" {...register('interval')} />
+          )}
+
+          {/* Overige velden — in 'company'-modus blijft het factuur-e-mailadres
+              geregistreerd (verzonden zoals geladen) maar wordt het niet getoond,
+              omdat facturatie via de MSP verloopt. */}
+          <div className="grid grid-cols-2 gap-4">
+            {TEXT_FIELDS.filter(f => mode === 'full' || f.key !== 'invoiceEmail').map(f => (
+              <div key={f.key}>
+                <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">{f.label}</label>
+                <input {...register(f.key)} type={f.type ?? 'text'} placeholder={f.placeholder} className={inputField} />
+                {errors[f.key] && <p className="mt-1 text-xs text-red-600">{errors[f.key]?.message}</p>}
+              </div>
+            ))}
+            {mode === 'company' && <input type="hidden" {...register('invoiceEmail')} />}
+          </div>
+
+          {apiError && (
+            <p className="text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2 dark:bg-red-900/20 dark:text-red-300 dark:border-red-800/40">
+              {apiError}
+            </p>
+          )}
+
+          <div className="flex items-center gap-3">
+            <Button type="submit" size="sm" disabled={isSubmitting}>
+              {isSubmitting ? 'Opslaan…' : 'Opslaan'}
+            </Button>
+            <Button type="button" size="sm" variant="secondary" onClick={handleCancel} disabled={isSubmitting}>
+              Annuleren
+            </Button>
+          </div>
+        </form>
+      )}
     </div>
   )
 }
