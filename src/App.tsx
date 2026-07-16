@@ -13,6 +13,7 @@ import RegisterPage from '@/pages/RegisterPage'
 import ClientPortal from '@/pages/client/ClientPortal'
 import SelfServicePortal from '@/pages/client/SelfServicePortal'
 import TransferApprovePage from '@/pages/TransferApprovePage'
+import OnboardingAcceptPage from '@/pages/OnboardingAcceptPage'
 import PricingPage from '@/pages/PricingPage'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import { useAuthStore } from '@/store/authStore'
@@ -76,6 +77,7 @@ export default function App() {
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/superuser/login" element={<SuperUserLoginPage />} />
         <Route path="/transfer/approve" element={<TransferApprovePage />} />
+        <Route path="/onboarding/accept" element={<OnboardingAcceptPage />} />
 
         {/* SuperUser */}
         <Route
