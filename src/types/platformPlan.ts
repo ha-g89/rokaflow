@@ -1,6 +1,6 @@
 import type { BillingInterval } from './billing'
 
-export type TenantPlanStatus = 'Trial' | 'GracePeriod' | 'Active' | 'Blocked'
+export type TenantPlanStatus = 'Trial' | 'GracePeriod' | 'Active' | 'Blocked' | 'None'
 
 export interface PlatformPlanDto {
   id: string

@@ -1,13 +1,12 @@
 import { useState, useRef } from 'react'
 import {
   ExternalLink, Pencil, Package, Users, Shield, CreditCard,
-  CheckCircle2, AlertTriangle, Zap, Lock, Ban, ShieldCheck,
+  CheckCircle2, AlertTriangle, Zap, Lock, Ban, ShieldCheck, CircleSlash,
   Loader2, Search, UserPlus, User, Mail, Calendar, X,
   Building2,
 } from 'lucide-react'
 import api from '@/lib/axios'
 import { Card, CardContent } from '@/components/ui/Card'
-import { Button } from '@/components/ui/Button'
 import { LoadingState } from '@/components/ui/LoadingState'
 import type { ClientListItem } from '@/types/client'
 import type { ClientUserListItem, ClientUserDetailResponse } from '@/types/clientUser'
@@ -43,6 +42,7 @@ const STATUS_META: Record<TenantPlanStatus, { label: string; icon: React.ReactNo
   GracePeriod: { label: 'Grace period', icon: <AlertTriangle size={14} />, cls: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800' },
   Active:      { label: 'Actief',       icon: <CheckCircle2 size={14} />,  cls: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800' },
   Blocked:     { label: 'Geblokkeerd',  icon: <Lock size={14} />,          cls: 'text-red-600 dark:text-red-400',     bg: 'bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800' },
+  None:        { label: 'Geen abonnement', icon: <CircleSlash size={14} />, cls: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800' },
 }
 
 // ── EditUserModal ─────────────────────────────────────────────────────────────

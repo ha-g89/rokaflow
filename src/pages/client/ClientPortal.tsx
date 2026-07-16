@@ -88,6 +88,7 @@ export default function ClientPortal() {
   const [locationOptions, setLocationOptions] = useState<LocationListItem[]>([])
 
   const [plan, setPlan] = useState<MyPlanDto | null>(null)
+  const [planNotFound, setPlanNotFound] = useState(false)
 
   // ── User menu + MSP ───────────────────────────────────────────────────────
   const [showUserMenu, setShowUserMenu] = useState(false)
@@ -120,7 +121,10 @@ export default function ClientPortal() {
 
   useEffect(() => {
     if (!isMspMode) fetchMspStatus()
-    api.get<MyPlanDto>('/portal/my-plan').then(r => setPlan(r.data)).catch(() => {})
+    api.get<MyPlanDto>('/portal/my-plan').then(r => setPlan(r.data)).catch((err: unknown) => {
+      const status = (err as { response?: { status?: number } })?.response?.status
+      if (status === 404) setPlanNotFound(true)
+    })
   }, [fetchMspStatus, isMspMode])
 
   useEffect(() => {
@@ -328,7 +332,7 @@ export default function ClientPortal() {
     <div className="flex flex-col h-screen overflow-hidden bg-slate-100 dark:bg-slate-950">
 
       {/* ── Plan banner ─────────────────────────────────────────────────── */}
-      <PlanBanner plan={plan} />
+      <PlanBanner plan={plan} noPlan={planNotFound} />
 
       {/* ── Top bar ─────────────────────────────────────────────────────── */}
       <div className="flex flex-shrink-0 h-16">

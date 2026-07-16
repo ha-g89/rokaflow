@@ -6,7 +6,18 @@ function daysLeft(dateStr: string | null) {
   return Math.ceil((new Date(dateStr).getTime() - Date.now()) / 86400000)
 }
 
-export function PlanBanner({ plan }: { plan: MyPlanDto | null }) {
+export function PlanBanner({ plan, noPlan }: { plan: MyPlanDto | null; noPlan?: boolean }) {
+  if (noPlan) {
+    return (
+      <div className="flex-shrink-0 bg-red-600 text-white px-4 py-2 flex items-center gap-2 text-xs font-medium">
+        <Lock size={12} />
+        <span>
+          Er is geen abonnement gekoppeld aan deze omgeving. Alles is alleen-lezen totdat uw MSP (of beheerder) een abonnement toewijst.
+        </span>
+      </div>
+    )
+  }
+
   if (!plan) return null
 
   if (plan.status === 'Trial') {
@@ -57,6 +68,7 @@ export function PlanBadge({ plan }: { plan: MyPlanDto | null }) {
     GracePeriod: { label: 'Grace',              color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' },
     Active:      { label: plan.planName ?? 'Actief', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' },
     Blocked:     { label: 'Geblokkeerd',        color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' },
+    None:        { label: 'Geen abonnement',    color: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400' },
   }
 
   const s = statusMap[plan.status]

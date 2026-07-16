@@ -155,9 +155,13 @@ export function SettingsView({ teammates, tenantName, onAddUser, mspStatus, onMs
   const { darkMode, toggleDarkMode } = useThemeStore()
 
   const [plan, setPlan] = useState<MyPlanDto | null>(null)
+  const [planNotFound, setPlanNotFound] = useState(false)
 
   useEffect(() => {
-    api.get<MyPlanDto>('/portal/my-plan').then(r => setPlan(r.data)).catch(() => {})
+    api.get<MyPlanDto>('/portal/my-plan').then(r => setPlan(r.data)).catch((err: unknown) => {
+      const status = (err as { response?: { status?: number } })?.response?.status
+      if (status === 404) setPlanNotFound(true)
+    })
   }, [])
 
   const [upgradeLoading, setUpgradeLoading]   = useState(false)
@@ -198,6 +202,30 @@ export function SettingsView({ teammates, tenantName, onAddUser, mspStatus, onMs
       <LogoCard onLogoChanged={onLogoChanged} />
 
       {/* Abonnement */}
+      {planNotFound && (
+        <Card>
+          <CardContent className="p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <CreditCard size={15} className="text-slate-400" />
+              <h2 className="text-sm font-bold text-slate-800 dark:text-slate-100">Abonnement</h2>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 rounded-lg bg-amber-50 dark:bg-amber-900/30 flex items-center justify-center flex-shrink-0">
+                <AlertTriangle size={15} className="text-amber-500" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-slate-800 dark:text-slate-100">Geen abonnement gekoppeld</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  Alles is alleen-lezen totdat {mspStatus?.hasMspManager ? 'uw MSP' : 'een beheerder'} een abonnement toewijst.
+                  Neem contact op met{' '}
+                  <a href="mailto:support@rokaflow.nl" className="text-blue-600 hover:underline">support@rokaflow.nl</a>
+                  {' '}als u vragen heeft.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
       {plan && (
         <Card>
           <CardContent className="p-5">

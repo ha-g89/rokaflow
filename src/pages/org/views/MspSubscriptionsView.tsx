@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
-  CreditCard, CheckCircle2, AlertTriangle, Zap, Lock,
+  CreditCard, CheckCircle2, AlertTriangle, Zap, Lock, CircleSlash,
   Pencil, X, Save, Loader2, RefreshCw,
 } from 'lucide-react'
 import api from '@/lib/axios'
@@ -38,6 +38,7 @@ function StatusBadge({ status }: { status: TenantPlanStatus }) {
     GracePeriod: { cls: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300', icon: <AlertTriangle size={11} />, label: 'Grace' },
     Active:      { cls: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300', icon: <CheckCircle2 size={11} />, label: 'Actief' },
     Blocked:     { cls: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',         icon: <Lock size={11} />,          label: 'Geblokkeerd' },
+    None:        { cls: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400', icon: <CircleSlash size={11} />,   label: 'Geen abonnement' },
   }
   const { cls, icon, label } = map[status] ?? map.Blocked
   return (
@@ -70,9 +71,12 @@ interface EditRowProps {
   onCancel: () => void
 }
 
+// 'None' is niet opneembaar in het edit-formulier — die status bestaat alleen
+// zolang er geen plan gekoppeld is, en wordt door de backend niet geparsed als
+// geldige input. Zodra een plan gekoppeld wordt, moet een echte status gekozen zijn.
 const STATUSES: TenantPlanStatus[] = ['Trial', 'GracePeriod', 'Active', 'Blocked']
 const STATUS_LABELS: Record<TenantPlanStatus, string> = {
-  Trial: 'Trial', GracePeriod: 'Grace period', Active: 'Actief', Blocked: 'Geblokkeerd',
+  Trial: 'Trial', GracePeriod: 'Grace period', Active: 'Actief', Blocked: 'Geblokkeerd', None: 'Geen abonnement',
 }
 
 const INTERVAL_OPTIONS: { value: BillingInterval; label: string }[] = [
@@ -94,8 +98,12 @@ function toDateInput(iso: string | null) {
 }
 
 function EditRow({ row, plans, onSave, onCancel }: EditRowProps) {
+  const isUnassigned = row.status === 'None'
   const [planId,      setPlanId]      = useState<string>(row.planId ?? '')
-  const [status,      setStatus]      = useState<TenantPlanStatus>(row.status)
+  // 'None' is geen keuzeoptie in het formulier (de backend accepteert die status
+  // niet als input) — bij een nog-niet-gekoppelde omgeving starten we daarom op
+  // Actief, zodat "Opslaan" altijd een geldige status verstuurt.
+  const [status,      setStatus]      = useState<TenantPlanStatus>(isUnassigned ? 'Active' : row.status)
   const [interval,    setInterval_]   = useState<BillingInterval>(row.interval)
   const [trialEndsAt, setTrialEndsAt] = useState(toDateInput(row.trialEndsAt))
   const [graceEndsAt, setGraceEndsAt] = useState(toDateInput(row.graceEndsAt))
@@ -138,6 +146,11 @@ function EditRow({ row, plans, onSave, onCancel }: EditRowProps) {
             <option key={p.id} value={p.id}>{p.name}</option>
           ))}
         </select>
+        {isUnassigned && (
+          <p className="mt-1 text-[11px] text-amber-600 dark:text-amber-400 max-w-[10rem]">
+            Koppel een abonnement; de omgeving is tot die tijd alleen-lezen.
+          </p>
+        )}
       </td>
       <td className="px-4 py-2 align-top">
         <select value={status} onChange={e => setStatus(e.target.value as TenantPlanStatus)} className={sel}>
@@ -225,8 +238,8 @@ export function MspSubscriptionsView() {
     <div className="flex flex-col gap-5">
 
       {/* Header stats */}
-      <div className="grid grid-cols-4 gap-3">
-        {(['Trial', 'GracePeriod', 'Active', 'Blocked'] as TenantPlanStatus[]).map(s => (
+      <div className="grid grid-cols-5 gap-3">
+        {(['Trial', 'GracePeriod', 'Active', 'Blocked', 'None'] as TenantPlanStatus[]).map(s => (
           <button
             key={s}
             onClick={() => setStatusFilter(prev => prev === s ? 'all' : s)}
@@ -298,7 +311,7 @@ export function MspSubscriptionsView() {
                           {row.tenantName}
                         </td>
                         <td className="px-4 py-3 text-xs text-slate-600 dark:text-slate-300">
-                          {row.planName ?? <span className="text-slate-400 italic">Geen plan</span>}
+                          {row.planName ?? <span className="text-slate-400">—</span>}
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-1.5">
