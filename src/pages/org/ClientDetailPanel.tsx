@@ -301,7 +301,7 @@ function AbonnementTab({ plan, planDetail, onManageSubscription }: {
   const meta = STATUS_META[plan.status]
   const days = plan.status === 'Trial' ? trialDaysLeft(plan.trialEndsAt) : plan.status === 'GracePeriod' ? trialDaysLeft(plan.graceEndsAt) : null
   const intervalDisplay = !planDetail ? null : planDetail.interval === BillingInterval.Yearly
-    ? `Jaarlijks${planDetail.yearAnchorDate ? ` — periode vanaf ${fmtDateOnly(planDetail.yearAnchorDate)}` : ''}`
+    ? `Jaarcontract${planDetail.yearAnchorDate ? ` — loopt vanaf ${fmtDateOnly(planDetail.yearAnchorDate)}` : ''}`
     : 'Maandelijks'
 
   return (

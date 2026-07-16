@@ -196,7 +196,7 @@ export function BillingProfileForm({ baseUrl, mode = 'full' }: { baseUrl: string
   const showEmail = mode !== 'company'
   const postalCity = [watchedPostalCode, watchedCity].filter(Boolean).join(' ')
   const intervalDisplay = watchedInterval === BillingInterval.Yearly
-    ? `Jaarlijks${savedYearAnchorDate ? ` — periode vanaf ${fmtDate(savedYearAnchorDate)}` : ''}`
+    ? `Jaarcontract${savedYearAnchorDate ? ` — loopt vanaf ${fmtDate(savedYearAnchorDate)}` : ''}`
     : 'Maandelijks'
 
   const viewRows: { label: string; value: string }[] = [
@@ -272,7 +272,7 @@ export function BillingProfileForm({ baseUrl, mode = 'full' }: { baseUrl: string
               <div className="inline-flex rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
                 {[
                   { value: BillingInterval.Monthly, label: 'Maandelijks' },
-                  { value: BillingInterval.Yearly, label: 'Jaarlijks (met korting)' },
+                  { value: BillingInterval.Yearly, label: 'Jaarcontract (met korting)' },
                 ].map((opt, idx) => {
                   const active = watchedInterval === opt.value
                   return (
@@ -295,12 +295,12 @@ export function BillingProfileForm({ baseUrl, mode = 'full' }: { baseUrl: string
 
               {watchedInterval === BillingInterval.Yearly && savedInterval !== BillingInterval.Yearly && (
                 <p className="mt-2 text-xs text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/40 rounded-lg px-3 py-2">
-                  De eerste jaarfactuur wordt vooruit aangemaakt vanaf vandaag.
+                  Het jaarcontract gaat vandaag in; u betaalt maandelijks met jaarkorting. Terugschakelen kan per de contractvervaldatum.
                 </p>
               )}
               {watchedInterval === BillingInterval.Yearly && savedInterval === BillingInterval.Yearly && savedYearAnchorDate && (
                 <p className="mt-2 text-xs text-slate-400 dark:text-slate-500">
-                  Jaarperiode loopt vanaf {fmtDate(savedYearAnchorDate)}
+                  Jaarcontract loopt vanaf {fmtDate(savedYearAnchorDate)}
                 </p>
               )}
             </div>

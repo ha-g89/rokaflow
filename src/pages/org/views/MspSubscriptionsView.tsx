@@ -51,9 +51,9 @@ function IntervalDisplay({ interval, yearAnchorDate }: { interval: BillingInterv
   if (interval === BillingInterval.Yearly) {
     return (
       <div>
-        <span className="text-xs text-slate-600 dark:text-slate-300">Jaarlijks</span>
+        <span className="text-xs text-slate-600 dark:text-slate-300">Jaarcontract</span>
         {yearAnchorDate && (
-          <p className="text-[11px] text-slate-400 dark:text-slate-500">periode vanaf {fmtDateOnly(yearAnchorDate)}</p>
+          <p className="text-[11px] text-slate-400 dark:text-slate-500">contract loopt vanaf {fmtDateOnly(yearAnchorDate)}</p>
         )}
       </div>
     )
@@ -77,7 +77,7 @@ const STATUS_LABELS: Record<TenantPlanStatus, string> = {
 
 const INTERVAL_OPTIONS: { value: BillingInterval; label: string }[] = [
   { value: BillingInterval.Monthly, label: 'Maandelijks' },
-  { value: BillingInterval.Yearly, label: 'Jaarlijks (met jaarkorting)' },
+  { value: BillingInterval.Yearly, label: 'Jaarcontract — maandelijks gefactureerd (met jaarkorting)' },
 ]
 
 // Backend UpdateMspClientPlanCommand.Interval verwacht een string ("Monthly" |
@@ -149,7 +149,7 @@ function EditRow({ row, plans, onSave, onCancel }: EditRowProps) {
           {INTERVAL_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
         {interval === BillingInterval.Yearly && row.yearAnchorDate && (
-          <p className="mt-1 text-[11px] text-slate-400 dark:text-slate-500">periode vanaf {fmtDateOnly(row.yearAnchorDate)}</p>
+          <p className="mt-1 text-[11px] text-slate-400 dark:text-slate-500">contract loopt vanaf {fmtDateOnly(row.yearAnchorDate)}</p>
         )}
       </td>
       <td className="px-4 py-2 align-top">

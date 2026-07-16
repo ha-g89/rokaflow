@@ -223,7 +223,7 @@ export function AddClientModal({ open, onClose, onSuccess, endpoint, requireOwne
               <div className="inline-flex rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
                 {[
                   { value: String(BillingInterval.Monthly), label: 'Maandelijks' },
-                  { value: String(BillingInterval.Yearly), label: 'Jaarlijks (met jaarkorting)' },
+                  { value: String(BillingInterval.Yearly), label: 'Jaarcontract' },
                 ].map((opt, idx) => {
                   const active = watchedInterval === opt.value
                   return (
@@ -245,7 +245,7 @@ export function AddClientModal({ open, onClose, onSuccess, endpoint, requireOwne
               <input type="hidden" {...register('interval')} />
               {watchedInterval === String(BillingInterval.Yearly) && (
                 <p className="mt-2 text-xs text-slate-500 leading-relaxed">
-                  Jaarlijks wordt vooruit gefactureerd (met jaarkorting) vanaf het moment dat de eigenaar goedkeurt.
+                  Jaarcontract: maandelijks gefactureerd met jaarkorting. Het contract gaat in zodra de eigenaar goedkeurt.
                 </p>
               )}
             </div>
