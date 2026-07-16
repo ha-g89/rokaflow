@@ -1,11 +1,12 @@
 ﻿import { useEffect, useState, useCallback, useRef } from 'react'
 import {
   Building2, Users, Plus, LogOut, Shield,
-  Briefcase, Search, Moon, Sun, Upload, Trash2, CreditCard, Bell, Receipt,
+  Briefcase, Search, Moon, Sun, Upload, Trash2, CreditCard, Bell, Receipt, Settings2,
 } from 'lucide-react'
 import { SubscriptionsView } from './views/SubscriptionsView'
 import { NotificationsView } from './views/NotificationsView'
 import { InvoicesView } from './views/InvoicesView'
+import { SystemSettingsView } from './views/SystemSettingsView'
 import { useAuthStore } from '@/store/authStore'
 import { useThemeStore } from '@/store/themeStore'
 import { useNavigate } from 'react-router-dom'
@@ -167,7 +168,7 @@ export default function SuperUserDashboard() {
   const { darkMode, toggleDarkMode } = useThemeStore()
   const navigate = useNavigate()
 
-  const [activeSection, setActiveSection] = useState<'organisations' | 'subscriptions' | 'invoices' | 'notifications'>('organisations')
+  const [activeSection, setActiveSection] = useState<'organisations' | 'subscriptions' | 'invoices' | 'notifications' | 'system'>('organisations')
 
   const [orgs, setOrgs]                               = useState<OrganisationListItem[]>([])
   const [allClients, setAllClients]                   = useState<ClientListItem[]>([])
@@ -281,6 +282,7 @@ export default function SuperUserDashboard() {
               ['subscriptions', CreditCard, 'Abonnementen'],
               ['invoices', Receipt, 'Facturen'],
               ['notifications', Bell, 'Notificaties'],
+              ['system', Settings2, 'Systeem'],
             ] as const).map(([key, Icon, label]) => (
               <button key={key} onClick={() => setActiveSection(key)}
                 className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
@@ -326,6 +328,7 @@ export default function SuperUserDashboard() {
       {activeSection === 'subscriptions' && <SubscriptionsView />}
       {activeSection === 'invoices' && <InvoicesView />}
       {activeSection === 'notifications' && <NotificationsView />}
+      {activeSection === 'system' && <SystemSettingsView />}
 
       {/* ── Three columns (organisations) ── */}
       <div className={`flex flex-1 overflow-hidden ${activeSection !== 'organisations' ? 'hidden' : ''}`}>
