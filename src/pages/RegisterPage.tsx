@@ -18,6 +18,7 @@ const schema = z.object({
   companyName:     z.string().min(1, 'Bedrijfsnaam is verplicht').max(200),
   kvkNumber:       z.string().max(16, 'Maximaal 16 tekens').optional(),
   vatNumber:       z.string().max(32, 'Maximaal 32 tekens').optional(),
+  iban:            z.string().max(34, 'Maximaal 34 tekens').optional(),
   invoiceEmail:    z.string().max(256, 'Maximaal 256 tekens').email('Ongeldig e-mailadres').optional().or(z.literal('')),
   addressLine:     z.string().max(200, 'Maximaal 200 tekens').optional(),
   postalCode:      z.string().max(16, 'Maximaal 16 tekens').optional(),
@@ -587,6 +588,7 @@ export default function RegisterPage() {
         password:      values.password,
         kvkNumber:     values.kvkNumber || undefined,
         vatNumber:     values.vatNumber || undefined,
+        iban:          values.iban || undefined,
         invoiceEmail:  values.invoiceEmail || undefined,
         addressLine:   values.addressLine || undefined,
         postalCode:    values.postalCode || undefined,
@@ -819,6 +821,19 @@ export default function RegisterPage() {
                         />
                         {errors.vatNumber && <p className="rfr-err-msg">{errors.vatNumber.message}</p>}
                       </div>
+                    </div>
+
+                    <div className="rfr-field">
+                      <label className="rfr-label">
+                        IBAN{' '}
+                        <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0, color: 'var(--muted)', fontSize: 11 }}>(optioneel)</span>
+                      </label>
+                      <input
+                        placeholder="NL00 BANK 0123 4567 89"
+                        {...register('iban')}
+                        className={`rfr-input${errors.iban ? ' rfr-err' : ''}`}
+                      />
+                      {errors.iban && <p className="rfr-err-msg">{errors.iban.message}</p>}
                     </div>
 
                     <div className="rfr-field">

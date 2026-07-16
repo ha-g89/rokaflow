@@ -286,7 +286,7 @@ export function SettingsView({ teammates, tenantName, onAddUser, mspStatus, onMs
         </Card>
       )}
 
-      {/* Facturatie */}
+      {/* Facturatie (directe klant) */}
       {mspStatus !== null && !mspStatus.hasMspManager && (
         <Card>
           <CardContent className="p-5">
@@ -297,10 +297,26 @@ export function SettingsView({ teammates, tenantName, onAddUser, mspStatus, onMs
             <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
               Deze gegevens worden gebruikt voor de maandelijkse of jaarlijkse facturen van RokaFlow.
             </p>
-            <BillingProfileForm baseUrl="/portal/billing" />
+            <BillingProfileForm baseUrl="/portal/billing" mode="full" />
 
             <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100 mt-6 mb-3">Facturen</h3>
             <InvoiceList baseUrl="/portal/billing" />
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Bedrijfsgegevens (MSP-beheerde klant) */}
+      {mspStatus !== null && mspStatus.hasMspManager && (
+        <Card>
+          <CardContent className="p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <Building2 size={15} className="text-slate-400" />
+              <h2 className="text-sm font-bold text-slate-800 dark:text-slate-100">Bedrijfsgegevens</h2>
+            </div>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
+              Deze gegevens (KvK, BTW, IBAN, adres) horen bij uw organisatie. Facturatie verloopt via uw MSP.
+            </p>
+            <BillingProfileForm baseUrl="/portal/billing" mode="company" />
           </CardContent>
         </Card>
       )}

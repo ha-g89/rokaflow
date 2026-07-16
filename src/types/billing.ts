@@ -51,6 +51,7 @@ export interface BillingProfile {
   country: string | null
   vatNumber: string | null
   kvkNumber: string | null
+  iban: string | null
   yearAnchorDate: string | null
 }
 
