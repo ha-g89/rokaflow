@@ -108,6 +108,7 @@ export default function OrgDashboard() {
   const [resentId, setResentId]             = useState<string | null>(null)
   const [cancelPendingClient, setCancelPendingClient] = useState<ClientListItem | null>(null)
   const [cancellingPending, setCancellingPending] = useState(false)
+  const [ownPlan, setOwnPlan] = useState<MyPlanDto | null>(null)
 
   useEffect(() => {
     if (!showUserMenu) return
@@ -164,6 +165,14 @@ export default function OrgDashboard() {
   // MSP's own tenantId onto this same, still-mounted component — refetches
   // instead of leaving the client's stale list/transfers on screen.
   useEffect(() => { fetchClients(); fetchTransfers() }, [fetchClients, fetchTransfers, user?.tenantId])
+
+  // Trial-restdagen van de MSP's eigen tenant (indien aanwezig — 204 bij oudere
+  // MSP's die vóór deze functionaliteit zijn aangemaakt).
+  useEffect(() => {
+    api.get<MyPlanDto | null>('/msp/billing/own-plan')
+      .then(r => setOwnPlan(r.status === 204 ? null : r.data))
+      .catch(() => setOwnPlan(null))
+  }, [])
 
   // Bij het verlaten van de Abonnementen-sectie de abonnementen (en het plan
   // van de nog geselecteerde client) opnieuw ophalen: wijzigingen die daar
@@ -334,6 +343,15 @@ export default function OrgDashboard() {
               : activeSection === 'billing' ? 'Facturatie'
               : 'Berichtencentrum'}
           </h1>
+          <div className="flex items-center gap-3">
+          {ownPlan?.status === 'Trial' && ownPlan.trialEndsAt && (() => {
+            const days = Math.ceil((new Date(ownPlan.trialEndsAt).getTime() - Date.now()) / 86400000)
+            return (
+              <span className={`text-xs font-medium ${days <= 3 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-500 dark:text-slate-400'}`}>
+                Proefperiode — {days > 0 ? `nog ${days} dag${days !== 1 ? 'en' : ''}` : 'verlopen'}
+              </span>
+            )
+          })()}
           <div className="flex items-center gap-1">
           <NotificationBell
             countEndpoint="/msp/notifications/count"
@@ -400,6 +418,7 @@ export default function OrgDashboard() {
               </div>
             </div>
           )}
+          </div>
           </div>
           </div>
         </div>

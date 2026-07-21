@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
-  CreditCard, CheckCircle2, AlertTriangle, Zap, Lock, CircleSlash,
+  CreditCard, CheckCircle2, AlertTriangle, Zap, Lock, CircleSlash, Clock,
   Pencil, X, Save, Loader2, RefreshCw,
 } from 'lucide-react'
 import api from '@/lib/axios'
@@ -48,6 +48,7 @@ function StatusBadge({ status }: { status: TenantPlanStatus }) {
     GracePeriod: { cls: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300', icon: <AlertTriangle size={11} />, label: 'Grace' },
     Active:      { cls: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300', icon: <CheckCircle2 size={11} />, label: 'Actief' },
     Blocked:     { cls: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',         icon: <Lock size={11} />,          label: 'Geblokkeerd' },
+    PendingApproval: { cls: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300', icon: <Clock size={11} />, label: 'Wacht op goedkeuring' },
     None:        { cls: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400', icon: <CircleSlash size={11} />,   label: 'Geen abonnement' },
   }
   const { cls, icon, label } = map[status] ?? map.Blocked
@@ -87,7 +88,7 @@ interface EditRowProps {
 // geen plan gekoppeld is, en wordt door de backend niet geparsed als geldige input.
 const STATUSES: TenantPlanStatus[] = ['Active', 'Blocked']
 const STATUS_LABELS: Record<TenantPlanStatus, string> = {
-  Trial: 'Trial', GracePeriod: 'Grace period', Active: 'Actief', Blocked: 'Geblokkeerd', None: 'Geen abonnement',
+  Trial: 'Trial', GracePeriod: 'Grace period', Active: 'Actief', Blocked: 'Geblokkeerd', PendingApproval: 'Wacht op goedkeuring', None: 'Geen abonnement',
 }
 
 const INTERVAL_OPTIONS: { value: BillingInterval; label: string }[] = [
