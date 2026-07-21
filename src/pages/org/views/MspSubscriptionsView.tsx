@@ -246,8 +246,8 @@ export function MspSubscriptionsView() {
 
       {/* Header stats */}
       <div className="flex flex-col sm:flex-row gap-3">
-        <div className="grid grid-cols-5 gap-3 flex-1">
-          {(['Trial', 'GracePeriod', 'Active', 'Blocked', 'None'] as TenantPlanStatus[]).map(s => (
+        <div className="grid grid-cols-4 gap-3 flex-1">
+          {(['Trial', 'Active', 'Blocked', 'None'] as TenantPlanStatus[]).map(s => (
             <button
               key={s}
               onClick={() => setStatusFilter(prev => prev === s ? 'all' : s)}
