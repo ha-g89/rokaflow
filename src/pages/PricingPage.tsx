@@ -546,7 +546,7 @@ export default function PricingPage() {
   const [annual, setAnnual] = useState(false)
 
   const handleLogin    = () => navigate(isLoggedIn && user ? (ROLE_HOME[user.role] ?? '/login') : '/login')
-  const handleRegister = () => navigate('/register')
+  const handleRegister = (type?: 'client' | 'msp') => navigate(type ? `/register?type=${type}` : '/register')
 
   // Prices
   const p1 = annual ? 10  : 12
@@ -570,7 +570,7 @@ export default function PricingPage() {
               {isLoggedIn ? 'Naar portaal' : 'Inloggen'} <em>→</em>
             </button>
             {!isLoggedIn && (
-              <button className="pr-nav-cta" onClick={handleRegister}>
+              <button className="pr-nav-cta" onClick={() => handleRegister()}>
                 Gratis starten
               </button>
             )}
@@ -626,7 +626,7 @@ export default function PricingPage() {
                 </li>
               ))}
             </ul>
-            <button className="pr-btn pr-btn-ghost" onClick={handleRegister}>
+            <button className="pr-btn pr-btn-ghost" onClick={() => handleRegister('client')}>
               Gratis proberen <em>→</em>
             </button>
           </TiltCard>
@@ -653,7 +653,7 @@ export default function PricingPage() {
                 </li>
               ))}
             </ul>
-            <button className="pr-btn pr-btn-primary" onClick={handleRegister}>
+            <button className="pr-btn pr-btn-primary" onClick={() => handleRegister('msp')}>
               Gratis starten <em>→</em>
             </button>
             <p style={{ fontSize: '11.5px', color: 'rgba(232,241,255,0.28)', marginTop: '14px', lineHeight: '1.55', position: 'relative', zIndex: 2 }}>
@@ -683,7 +683,7 @@ export default function PricingPage() {
                 </li>
               ))}
             </ul>
-            <button className="pr-btn pr-btn-ghost" onClick={handleRegister}>
+            <button className="pr-btn pr-btn-ghost" onClick={() => handleRegister('client')}>
               Gratis proberen <em>→</em>
             </button>
           </TiltCard>
@@ -706,7 +706,7 @@ export default function PricingPage() {
           <h3>Klaar om te beginnen?</h3>
           <p>Start uw gratis proefperiode. Geen creditcard vereist, geen verplichtingen.</p>
           <div className="pr-cta-btns">
-            <button className="pr-cta-primary" onClick={handleRegister}>
+            <button className="pr-cta-primary" onClick={() => handleRegister()}>
               Gratis starten <em>→</em>
             </button>
             <button className="pr-cta-ghost" onClick={handleLogin}>

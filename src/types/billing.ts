@@ -63,7 +63,6 @@ export interface BillingConfig {
   graceToBlockedDays: number
   onboardingExpiryDays: number
   mspBaseFee: number
-  mspPerClientRate: number
 }
 
 export const INVOICE_STATUS_LABEL: Record<InvoiceStatus, string> = {

@@ -344,11 +344,10 @@ const configSchema = z.object({
   graceToBlockedDays: z.string().min(1, 'Verplicht'),
   onboardingExpiryDays: z.string().min(1, 'Verplicht'),
   mspBaseFee: z.string().min(1, 'Verplicht'),
-  mspPerClientRate: z.string().min(1, 'Verplicht'),
 })
 type ConfigFormValues = z.infer<typeof configSchema>
 
-// Alleen vatPct/mspBaseFee/mspPerClientRate zijn server-side decimalen; de overige velden zijn integers.
+// Alleen vatPct/mspBaseFee zijn server-side decimalen; de overige velden zijn integers.
 const CONFIG_FIELDS: { key: keyof ConfigFormValues; label: string; suffix: string; step: string }[] = [
   { key: 'vatPct', label: 'BTW-percentage', suffix: '%', step: '0.01' },
   { key: 'yearlyDiscountPct', label: 'Jaarkorting', suffix: '%', step: '1' },
@@ -356,8 +355,7 @@ const CONFIG_FIELDS: { key: keyof ConfigFormValues; label: string; suffix: strin
   { key: 'reminderToGraceDays', label: 'Herinnering → beperkt', suffix: 'dagen', step: '1' },
   { key: 'graceToBlockedDays', label: 'Beperkt → geblokkeerd', suffix: 'dagen', step: '1' },
   { key: 'onboardingExpiryDays', label: 'Uitnodiging verloopt na', suffix: 'dagen', step: '1' },
-  { key: 'mspBaseFee', label: 'MSP-abonnement (basis)', suffix: '€/maand', step: '0.01' },
-  { key: 'mspPerClientRate', label: 'MSP-tarief per klant', suffix: '€/klant', step: '0.01' },
+  { key: 'mspBaseFee', label: 'MSP-abonnement', suffix: '€/maand', step: '0.01' },
 ]
 
 function BillingConfigCard() {
@@ -381,7 +379,6 @@ function BillingConfigCard() {
         graceToBlockedDays: String(data.graceToBlockedDays),
         onboardingExpiryDays: String(data.onboardingExpiryDays),
         mspBaseFee: String(data.mspBaseFee),
-        mspPerClientRate: String(data.mspPerClientRate),
       })
     }).catch(() => {}).finally(() => setLoading(false))
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -399,7 +396,6 @@ function BillingConfigCard() {
         graceToBlockedDays: Math.round(Number(values.graceToBlockedDays)),
         onboardingExpiryDays: Math.round(Number(values.onboardingExpiryDays)),
         mspBaseFee: Number(values.mspBaseFee),
-        mspPerClientRate: Number(values.mspPerClientRate),
       })
       // defaultValues bijwerken naar de zojuist opgeslagen waarden, zodat een
       // latere Annuleren (reset zonder argumenten) hierop terugvalt.

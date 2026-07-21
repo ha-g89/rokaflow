@@ -1,8 +1,9 @@
 import { useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
+import { Building2, Network } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import api from '@/lib/axios'
 import type { LoginResponse } from '@/types/auth'
@@ -370,6 +371,66 @@ const CSS = `
   }
   .rfr-btn-secondary:hover { background: var(--line); }
 
+  /* ── Account type cards ── */
+  .rfr-type-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .rfr-type-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    width: 100%;
+    padding: 17px 19px;
+    border-radius: 14px;
+    border: 1.5px solid var(--field-bd);
+    background: var(--field-bg);
+    cursor: pointer;
+    text-align: left;
+    font-family: 'DM Sans', sans-serif;
+    transition: border-color 0.18s, background 0.18s, transform 0.18s, box-shadow 0.18s;
+  }
+  .rfr-type-card:hover {
+    border-color: var(--accent);
+    background: #eff6ff;
+    transform: translateY(-2px);
+    box-shadow: 0 10px 24px rgba(37,99,235,0.14);
+  }
+  .rfr-type-icon {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    border-radius: 11px;
+    background: rgba(37,99,235,0.10);
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.18s, color 0.18s;
+  }
+  .rfr-type-card:hover .rfr-type-icon { background: var(--accent); color: #fff; }
+  .rfr-type-body { flex: 1; min-width: 0; }
+  .rfr-type-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .rfr-type-title { font-size: 14.5px; font-weight: 700; color: var(--text); }
+  .rfr-type-arr {
+    font-style: normal;
+    color: var(--muted);
+    transition: transform 0.18s, color 0.18s;
+  }
+  .rfr-type-card:hover .rfr-type-arr { transform: translateX(3px); color: var(--accent); }
+  .rfr-type-desc {
+    margin-top: 3px;
+    font-size: 12.5px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
   @keyframes rfrSpin { to { transform: rotate(360deg); } }
   .rfr-spin {
     width: 14px; height: 14px;
@@ -411,6 +472,11 @@ const CSS = `
     align-items: center;
     gap: 20px;
     animation: rfrFadeIn 0.8s ease 0.2s both;
+    transition: transform 0.55s cubic-bezier(0.16,1,0.3,1), gap 0.4s ease;
+  }
+  .rfr-emblem-compact {
+    transform: translateY(-72px);
+    gap: 14px;
   }
 
   /* ── Logo mask animation ── */
@@ -419,7 +485,11 @@ const CSS = `
     height: 160px;
     position: relative;
     flex-shrink: 0;
-    animation: rfrFloat 8s ease-in-out 1s infinite;
+    transition: width 0.5s cubic-bezier(0.16,1,0.3,1), height 0.5s cubic-bezier(0.16,1,0.3,1);
+  }
+  .rfr-logo-wrap-compact {
+    width: 84px;
+    height: 84px;
   }
   .rfr-logo-base {
     position: absolute;
@@ -475,16 +545,60 @@ const CSS = `
     font-weight: 500;
   }
 
+  /* ── Benefits (right panel, per account type) ── */
+  .rfr-benefits {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    max-width: 300px;
+  }
+  .rfr-benefits-title {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    color: var(--text);
+    text-align: center;
+    animation: rfrItemIn 0.4s cubic-bezier(0.16,1,0.3,1) both;
+  }
+  .rfr-benefits-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    list-style: none;
+  }
+  .rfr-benefit-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--text-2);
+    animation: rfrItemIn 0.4s cubic-bezier(0.16,1,0.3,1) both;
+  }
+  @keyframes rfrItemIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .rfr-benefit-check {
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: rgba(37,99,235,0.12);
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 1px;
+  }
+
   /* ── Animations ── */
   @keyframes rfrSlideUp {
     from { opacity: 0; transform: translateY(14px); }
     to   { opacity: 1; transform: translateY(0); }
   }
   @keyframes rfrFadeIn { from { opacity: 0; } to { opacity: 1; } }
-  @keyframes rfrFloat {
-    0%, 100% { transform: translateY(0); }
-    50%       { transform: translateY(-12px); }
-  }
 
   /* ── Responsive ── */
   @media (max-width: 900px) {
@@ -521,9 +635,41 @@ const CSS = `
   html.dark .rfr-section-label { border-bottom-color: rgba(238,240,246,0.08); }
   html.dark .rfr-btn-secondary { background: rgba(238,240,246,0.04); border-color: rgba(238,240,246,0.12); color: var(--text-2); }
   html.dark .rfr-btn-secondary:hover { background: rgba(238,240,246,0.08); }
+  html.dark .rfr-type-card { background: rgba(238,240,246,0.03); border-color: rgba(238,240,246,0.10); }
+  html.dark .rfr-type-card:hover { background: rgba(37,99,235,0.10); border-color: rgba(37,99,235,0.45); box-shadow: 0 10px 28px rgba(37,99,235,0.22); }
+  html.dark .rfr-type-icon { background: rgba(59,130,246,0.14); color: #60a5fa; }
+  html.dark .rfr-type-card:hover .rfr-type-icon { background: #3b82f6; color: #0b1220; }
   html.dark .rfr-brand { color: rgba(238,240,246,0.28); }
   html.dark .rfr-tagline { color: rgba(238,240,246,0.45); }
+  html.dark .rfr-benefit-check { background: rgba(59,130,246,0.18); color: #60a5fa; }
 `
+
+const CheckIcon = () => (
+  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="20 6 9 17 4 12" />
+  </svg>
+)
+
+const BENEFITS: Record<AccountType, { title: string; items: string[] }> = {
+  [AccountType.Client]: {
+    title: 'Voordelen voor uw bedrijf',
+    items: [
+      'Medewerkers, hardware, licenties en telefonie op één plek',
+      'Automatische onboarding- en offboardingchecklists',
+      'Altijd inzicht in wie wat gebruikt',
+      '30 dagen gratis proberen',
+    ],
+  },
+  [AccountType.Msp]: {
+    title: 'Voordelen voor uw MSP',
+    items: [
+      'Beheer al uw klantorganisaties vanuit één dashboard',
+      'Wissel moeiteloos tussen klantomgevingen',
+      'Eén geconsolideerde factuur voor al uw klanten',
+      'Eigen branding op elk klantportaal',
+    ],
+  },
+}
 
 const EyeIcon = ({ open }: { open: boolean }) => open ? (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -544,7 +690,13 @@ export default function RegisterPage() {
   const [logoFile,    setLogoFile]    = useState<File | null>(null)
   const [logoPreview, setLogoPreview] = useState<string | null>(null)
   const [logoError,   setLogoError]   = useState<string | null>(null)
-  const [accountType, setAccountType] = useState<AccountType | null>(null)
+  const [searchParams] = useSearchParams()
+  const presetType = searchParams.get('type')
+  const [accountType, setAccountType] = useState<AccountType | null>(
+    presetType === 'msp' ? AccountType.Msp : presetType === 'client' ? AccountType.Client : null
+  )
+  const [hoveredType, setHoveredType] = useState<AccountType | null>(null)
+  const displayedType = accountType ?? hoveredType
   const [step,        setStep]        = useState<1 | 2>(1)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { login }  = useAuthStore()
@@ -635,7 +787,17 @@ export default function RegisterPage() {
         <div className="rfr-left">
           <div className="rfr-topbar">
             <img src={logo} alt="RokaFlow" className="rfr-logo-sm" />
-            <button className="rfr-back" onClick={() => navigate('/')}>
+            <button
+              className="rfr-back"
+              onClick={() => {
+                if (accountType !== null) {
+                  setAccountType(null)
+                  setStep(1)
+                } else {
+                  navigate('/')
+                }
+              }}
+            >
               <i className="rfr-arr">←</i> Terug
             </button>
           </div>
@@ -647,27 +809,41 @@ export default function RegisterPage() {
                   <h1 className="rfr-heading">Account aanmaken</h1>
                   <p className="rfr-sub">Kies hoe u RokaFlow gaat gebruiken.</p>
 
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  <div className="rfr-type-grid">
                     <button
                       type="button"
-                      className="rfr-btn-secondary"
-                      style={{ width: '100%', flexDirection: 'column', alignItems: 'flex-start', padding: '16px 18px', gap: 4 }}
+                      className="rfr-type-card"
                       onClick={() => setAccountType(AccountType.Client)}
+                      onMouseEnter={() => setHoveredType(AccountType.Client)}
+                      onMouseLeave={() => setHoveredType(null)}
                     >
-                      <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>Ik ben een bedrijf</span>
-                      <span style={{ fontSize: 12, fontWeight: 400, color: 'var(--muted)' }}>
-                        Beheer uw eigen medewerkers, hardware en licenties.
+                      <span className="rfr-type-icon"><Building2 size={19} /></span>
+                      <span className="rfr-type-body">
+                        <span className="rfr-type-title-row">
+                          <span className="rfr-type-title">Ik ben een bedrijf</span>
+                          <i className="rfr-type-arr">→</i>
+                        </span>
+                        <span className="rfr-type-desc">
+                          Beheer uw eigen medewerkers, hardware en licenties.
+                        </span>
                       </span>
                     </button>
                     <button
                       type="button"
-                      className="rfr-btn-secondary"
-                      style={{ width: '100%', flexDirection: 'column', alignItems: 'flex-start', padding: '16px 18px', gap: 4 }}
+                      className="rfr-type-card"
                       onClick={() => setAccountType(AccountType.Msp)}
+                      onMouseEnter={() => setHoveredType(AccountType.Msp)}
+                      onMouseLeave={() => setHoveredType(null)}
                     >
-                      <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>Ik ben een MSP / IT-dienstverlener</span>
-                      <span style={{ fontSize: 12, fontWeight: 400, color: 'var(--muted)' }}>
-                        Beheer meerdere klantorganisaties. €60/maand + €9 per klant die u toevoegt.
+                      <span className="rfr-type-icon"><Network size={19} /></span>
+                      <span className="rfr-type-body">
+                        <span className="rfr-type-title-row">
+                          <span className="rfr-type-title">Ik ben een MSP / IT-dienstverlener</span>
+                          <i className="rfr-type-arr">→</i>
+                        </span>
+                        <span className="rfr-type-desc">
+                          Beheer meerdere klantorganisaties. Vanaf €60/maand.
+                        </span>
                       </span>
                     </button>
                   </div>
@@ -952,9 +1128,9 @@ export default function RegisterPage() {
 
         {/* ── Right: panel ── */}
         <div className="rfr-right">
-          <div className="rfr-emblem">
+          <div className={`rfr-emblem${displayedType !== null ? ' rfr-emblem-compact' : ''}`}>
             <div
-              className="rfr-logo-wrap"
+              className={`rfr-logo-wrap${displayedType !== null ? ' rfr-logo-wrap-compact' : ''}`}
               style={{
                 WebkitMaskImage: `url(${logo})`,
                 maskImage: `url(${logo})`,
@@ -970,14 +1146,31 @@ export default function RegisterPage() {
               <div className="rfr-logo-sweep" />
             </div>
             <span className="rfr-brand">RokaFlow</span>
-            <p className="rfr-tagline">
-              Start in minuten met uw organisatie.
-            </p>
-            <div className="rfr-trust">
-              <div className="rfr-trust-item">Veilig &amp; versleuteld</div>
-              <div className="rfr-trust-item">Direct operationeel</div>
-              <div className="rfr-trust-item">30 dagen gratis</div>
-            </div>
+
+            {displayedType === null ? (
+              <>
+                <p className="rfr-tagline">
+                  Start in minuten met uw organisatie.
+                </p>
+                <div className="rfr-trust">
+                  <div className="rfr-trust-item">Veilig &amp; versleuteld</div>
+                  <div className="rfr-trust-item">Direct operationeel</div>
+                  <div className="rfr-trust-item">30 dagen gratis</div>
+                </div>
+              </>
+            ) : (
+              <div className="rfr-benefits" key={displayedType}>
+                <p className="rfr-benefits-title">{BENEFITS[displayedType].title}</p>
+                <ul className="rfr-benefits-list">
+                  {BENEFITS[displayedType].items.map((item, i) => (
+                    <li key={item} className="rfr-benefit-item" style={{ animationDelay: `${0.09 + i * 0.09}s` }}>
+                      <span className="rfr-benefit-check"><CheckIcon /></span>
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
         </div>
 

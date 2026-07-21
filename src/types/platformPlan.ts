@@ -29,6 +29,7 @@ export interface TenantPlanDto {
   createdAt: string
   monthlyAmount: number | null
   nextBillingDate: string | null
+  isOwnTenant: boolean
 }
 
 export interface MyPlanDto {

@@ -78,6 +78,7 @@ function IntervalDisplay({ interval, yearAnchorDate }: { interval: BillingInterv
 interface EditRowProps {
   row: TenantPlanDto
   plans: PlatformPlanDto[]
+  ownTenantPlans: PlatformPlanDto[]
   onSave: (updated: TenantPlanDto) => void
   onCancel: () => void
 }
@@ -104,8 +105,9 @@ const INTERVAL_WIRE: Record<BillingInterval, 'Monthly' | 'Yearly'> = {
   [BillingInterval.Yearly]: 'Yearly',
 }
 
-function EditRow({ row, plans, onSave, onCancel }: EditRowProps) {
+function EditRow({ row, plans, ownTenantPlans, onSave, onCancel }: EditRowProps) {
   const isUnassigned = row.status === 'None'
+  const availablePlans = row.isOwnTenant ? ownTenantPlans : plans
   const [planId,      setPlanId]      = useState<string>(row.planId ?? '')
   // 'Trial'/'GracePeriod'/'None' zijn geen keuzeopties in het formulier (de MSP
   // beheert die niet meer, en de backend accepteert 'None' sowieso niet als input)
@@ -145,7 +147,7 @@ function EditRow({ row, plans, onSave, onCancel }: EditRowProps) {
       <td className="px-4 py-2 align-top">
         <select value={planId} onChange={e => setPlanId(e.target.value)} className={sel}>
           <option value="">— Geen plan —</option>
-          {plans.filter(p => p.isActive).map(p => (
+          {availablePlans.filter(p => p.isActive).map(p => (
             <option key={p.id} value={p.id}>{p.name}</option>
           ))}
         </select>
@@ -202,8 +204,6 @@ function EditRow({ row, plans, onSave, onCancel }: EditRowProps) {
 
 interface OwnSubscriptionCost {
   baseFee: number
-  perClientRate: number
-  activeClientCount: number
   totalMonthly: number
 }
 
@@ -212,6 +212,7 @@ interface OwnSubscriptionCost {
 export function MspSubscriptionsView() {
   const [subscriptions, setSubscriptions] = useState<TenantPlanDto[]>([])
   const [plans,         setPlans]         = useState<PlatformPlanDto[]>([])
+  const [ownTenantPlans, setOwnTenantPlans] = useState<PlatformPlanDto[]>([])
   const [loading,       setLoading]       = useState(true)
   const [editingId,     setEditingId]     = useState<string | null>(null)
   const [statusFilter,  setStatusFilter]  = useState<TenantPlanStatus | 'all'>('all')
@@ -220,12 +221,14 @@ export function MspSubscriptionsView() {
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const [subRes, planRes] = await Promise.all([
+      const [subRes, planRes, ownPlanRes] = await Promise.all([
         api.get<TenantPlanDto[]>('/msp/subscriptions'),
         api.get<PlatformPlanDto[]>('/msp/subscriptions/plans'),
+        api.get<PlatformPlanDto[]>('/msp/subscriptions/plans', { params: { forOwnTenant: true } }),
       ])
       setSubscriptions(subRes.data)
       setPlans(planRes.data)
+      setOwnTenantPlans(ownPlanRes.data)
     } finally {
       setLoading(false)
     }
@@ -251,9 +254,13 @@ export function MspSubscriptionsView() {
     return acc
   }, {} as Record<string, number>)
 
-  const totalMonthly = subscriptions
+  const clientsMonthly = subscriptions
     .filter(s => s.status === 'Active')
     .reduce((sum, s) => sum + (s.monthlyAmount ?? 0), 0)
+
+  // Totaal = MSP's eigen vaste abonnementsfee + som van de (al gereduceerde)
+  // maandprijzen van de actieve klant-abonnementen — geen vermenigvuldiging nodig.
+  const totalMonthly = (ownCost?.totalMonthly ?? 0) + clientsMonthly
 
   return (
     <div className="flex flex-col gap-5">
@@ -281,7 +288,7 @@ export function MspSubscriptionsView() {
             Totaal per maand
           </span>
           <p className="mt-1.5 text-2xl font-bold text-slate-900 dark:text-slate-100">{fmtCurrency(totalMonthly)}</p>
-          <p className="text-[11px] text-slate-400 dark:text-slate-500">o.b.v. actieve abonnementen</p>
+          <p className="text-[11px] text-slate-400 dark:text-slate-500">incl. eigen MSP-abonnement</p>
         </div>
         {ownCost && (
           <div className="rounded-xl p-3 border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/30 sm:w-56 flex flex-col justify-center">
@@ -289,9 +296,7 @@ export function MspSubscriptionsView() {
               MSP-abonnement
             </span>
             <p className="mt-1.5 text-2xl font-bold text-indigo-700 dark:text-indigo-300">{fmtCurrency(ownCost.totalMonthly)}</p>
-            <p className="text-[11px] text-indigo-500 dark:text-indigo-400">
-              {fmtCurrency(ownCost.baseFee)} + {ownCost.activeClientCount} × {fmtCurrency(ownCost.perClientRate)}
-            </p>
+            <p className="text-[11px] text-indigo-500 dark:text-indigo-400">vast bedrag per maand</p>
           </div>
         )}
       </div>
@@ -343,6 +348,7 @@ export function MspSubscriptionsView() {
                         key={row.tenantId}
                         row={row}
                         plans={plans}
+                        ownTenantPlans={ownTenantPlans}
                         onSave={handleSave}
                         onCancel={() => setEditingId(null)}
                       />
