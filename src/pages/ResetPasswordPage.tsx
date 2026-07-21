@@ -142,24 +142,27 @@ const CSS = `
   @keyframes rprSlide { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
   @keyframes rprSpin  { to { transform: rotate(360deg); } }
 
-  /* ── Dark mode ── */
-  html.dark .rpr-wrap {
-    --rpr-bg: #030812; --rpr-text: #eef0f6; --rpr-text-2: rgba(238,240,246,0.72);
-    --rpr-muted: rgba(238,240,246,0.42); --rpr-accent-dk: #3b82f6;
-    --rpr-line: rgba(238,240,246,0.07); --rpr-field-bg: rgba(238,240,246,0.05); --rpr-field-bd: rgba(238,240,246,0.10);
-    background-color: #030812;
+  /* ── Dark mode: volgt de OS/browser-voorkeur (prefers-color-scheme), er is hier
+     geen handmatige schakelaar zoals in de ingelogde app ── */
+  @media (prefers-color-scheme: dark) {
+    .rpr-wrap {
+      --rpr-bg: #030812; --rpr-text: #eef0f6; --rpr-text-2: rgba(238,240,246,0.72);
+      --rpr-muted: rgba(238,240,246,0.42); --rpr-accent-dk: #3b82f6;
+      --rpr-line: rgba(238,240,246,0.07); --rpr-field-bg: rgba(238,240,246,0.05); --rpr-field-bd: rgba(238,240,246,0.10);
+      background-color: #030812;
+    }
+    .rpr-card { background: rgba(8,12,28,0.95); border-color: rgba(238,240,246,0.07); box-shadow: 0 24px 56px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.04); }
+    .rpr-logo-base { background: rgba(238,240,246,0.25); }
+    .rpr-badge { color: #60a5fa; background: rgba(37,99,235,0.12); border-color: rgba(37,99,235,0.25); }
+    .rpr-wrap .rpr-input { background: var(--rpr-field-bg); border-color: var(--rpr-field-bd); color: var(--rpr-text); }
+    .rpr-wrap .rpr-input::placeholder { color: rgba(238,240,246,0.22); }
+    .rpr-wrap .rpr-input:focus { border-color: rgba(37,99,235,0.7); background: rgba(37,99,235,0.08); box-shadow: 0 0 0 3px rgba(37,99,235,0.15); }
+    .rpr-wrap .rpr-input.rpr-err { border-color: rgba(239,68,68,0.45); background: rgba(239,68,68,0.05); }
+    .rpr-api-err { background: rgba(239,68,68,0.08); border-color: rgba(239,68,68,0.2); color: #fca5a5; }
+    .rpr-invalid-icon { background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.22); }
+    .rpr-success-icon { background: rgba(16,185,129,0.1); border-color: rgba(16,185,129,0.22); }
+    .rpr-footer { color: rgba(238,240,246,0.18); }
   }
-  html.dark .rpr-card { background: rgba(8,12,28,0.95); border-color: rgba(238,240,246,0.07); box-shadow: 0 24px 56px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.04); }
-  html.dark .rpr-logo-base { background: rgba(238,240,246,0.25); }
-  html.dark .rpr-badge { color: #60a5fa; background: rgba(37,99,235,0.12); border-color: rgba(37,99,235,0.25); }
-  html.dark .rpr-wrap .rpr-input { background: var(--rpr-field-bg); border-color: var(--rpr-field-bd); color: var(--rpr-text); }
-  html.dark .rpr-wrap .rpr-input::placeholder { color: rgba(238,240,246,0.22); }
-  html.dark .rpr-wrap .rpr-input:focus { border-color: rgba(37,99,235,0.7); background: rgba(37,99,235,0.08); box-shadow: 0 0 0 3px rgba(37,99,235,0.15); }
-  html.dark .rpr-wrap .rpr-input.rpr-err { border-color: rgba(239,68,68,0.45); background: rgba(239,68,68,0.05); }
-  html.dark .rpr-api-err { background: rgba(239,68,68,0.08); border-color: rgba(239,68,68,0.2); color: #fca5a5; }
-  html.dark .rpr-invalid-icon { background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.22); }
-  html.dark .rpr-success-icon { background: rgba(16,185,129,0.1); border-color: rgba(16,185,129,0.22); }
-  html.dark .rpr-footer { color: rgba(238,240,246,0.18); }
 `
 
 const schema = z.object({

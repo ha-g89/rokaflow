@@ -107,21 +107,24 @@ const CSS = `
   @keyframes rfpSlide { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
   @keyframes rfpSpin  { to { transform: rotate(360deg); } }
 
-  /* ── Dark mode ── */
-  html.dark .rfp-wrap {
-    --rfp-bg: #030812; --rfp-text: #eef0f6; --rfp-text-2: rgba(238,240,246,0.72);
-    --rfp-muted: rgba(238,240,246,0.42); --rfp-accent-dk: #3b82f6;
-    --rfp-line: rgba(238,240,246,0.07); --rfp-field-bg: rgba(238,240,246,0.05); --rfp-field-bd: rgba(238,240,246,0.10);
-    background-color: #030812;
+  /* ── Dark mode: volgt de OS/browser-voorkeur (prefers-color-scheme), er is hier
+     geen handmatige schakelaar zoals in de ingelogde app ── */
+  @media (prefers-color-scheme: dark) {
+    .rfp-wrap {
+      --rfp-bg: #030812; --rfp-text: #eef0f6; --rfp-text-2: rgba(238,240,246,0.72);
+      --rfp-muted: rgba(238,240,246,0.42); --rfp-accent-dk: #3b82f6;
+      --rfp-line: rgba(238,240,246,0.07); --rfp-field-bg: rgba(238,240,246,0.05); --rfp-field-bd: rgba(238,240,246,0.10);
+      background-color: #030812;
+    }
+    .rfp-card { background: rgba(8,12,28,0.95); border-color: rgba(238,240,246,0.07); box-shadow: 0 24px 56px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.04); }
+    .rfp-logo-base { background: rgba(238,240,246,0.25); }
+    .rfp-wrap .rfp-input { background: var(--rfp-field-bg); border-color: var(--rfp-field-bd); color: var(--rfp-text); }
+    .rfp-wrap .rfp-input::placeholder { color: rgba(238,240,246,0.22); }
+    .rfp-wrap .rfp-input:focus { border-color: rgba(37,99,235,0.7); background: rgba(37,99,235,0.08); box-shadow: 0 0 0 3px rgba(37,99,235,0.15); }
+    .rfp-wrap .rfp-input.rfp-err { border-color: rgba(239,68,68,0.45); background: rgba(239,68,68,0.05); }
+    .rfp-sent-icon { background: rgba(37,99,235,0.12); border-color: rgba(37,99,235,0.25); }
+    .rfp-footer { color: rgba(238,240,246,0.18); }
   }
-  html.dark .rfp-card { background: rgba(8,12,28,0.95); border-color: rgba(238,240,246,0.07); box-shadow: 0 24px 56px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.04); }
-  html.dark .rfp-logo-base { background: rgba(238,240,246,0.25); }
-  html.dark .rfp-wrap .rfp-input { background: var(--rfp-field-bg); border-color: var(--rfp-field-bd); color: var(--rfp-text); }
-  html.dark .rfp-wrap .rfp-input::placeholder { color: rgba(238,240,246,0.22); }
-  html.dark .rfp-wrap .rfp-input:focus { border-color: rgba(37,99,235,0.7); background: rgba(37,99,235,0.08); box-shadow: 0 0 0 3px rgba(37,99,235,0.15); }
-  html.dark .rfp-wrap .rfp-input.rfp-err { border-color: rgba(239,68,68,0.45); background: rgba(239,68,68,0.05); }
-  html.dark .rfp-sent-icon { background: rgba(37,99,235,0.12); border-color: rgba(37,99,235,0.25); }
-  html.dark .rfp-footer { color: rgba(238,240,246,0.18); }
 `
 
 const schema = z.object({

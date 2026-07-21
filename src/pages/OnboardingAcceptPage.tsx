@@ -49,12 +49,6 @@ const CSS = `
     box-shadow: 0 1px 3px rgba(15,23,42,0.05), 0 8px 24px rgba(15,23,42,0.08);
     animation: onbSlide 0.45s cubic-bezier(0.16,1,0.3,1) 0.05s both;
   }
-  .onb-badge {
-    display: inline-flex; align-items: center; gap: 6px;
-    font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
-    color: var(--onb-accent); background: #eff6ff;
-    border: 1px solid #bfdbfe; border-radius: 6px; padding: 5px 10px; margin-bottom: 18px;
-  }
   .onb-heading {
     font-family: 'Bricolage Grotesque', sans-serif;
     font-size: 26px; font-weight: 800; letter-spacing: -0.02em;
@@ -155,27 +149,29 @@ const CSS = `
   @keyframes onbSlide { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
   @keyframes onbSpin  { to { transform: rotate(360deg); } }
 
-  /* ── Dark mode ── */
-  html.dark .onb-wrap {
-    --onb-bg: #030812; --onb-text: #eef0f6; --onb-text-2: rgba(238,240,246,0.72);
-    --onb-muted: rgba(238,240,246,0.42); --onb-accent-dk: #3b82f6;
-    --onb-line: rgba(238,240,246,0.07); --onb-field-bg: rgba(238,240,246,0.05); --onb-field-bd: rgba(238,240,246,0.10);
-    background-color: #030812;
+  /* ── Dark mode: volgt de OS/browser-voorkeur (prefers-color-scheme), er is hier
+     geen handmatige schakelaar zoals in de ingelogde app ── */
+  @media (prefers-color-scheme: dark) {
+    .onb-wrap {
+      --onb-bg: #030812; --onb-text: #eef0f6; --onb-text-2: rgba(238,240,246,0.72);
+      --onb-muted: rgba(238,240,246,0.42); --onb-accent-dk: #3b82f6;
+      --onb-line: rgba(238,240,246,0.07); --onb-field-bg: rgba(238,240,246,0.05); --onb-field-bd: rgba(238,240,246,0.10);
+      background-color: #030812;
+    }
+    .onb-card { background: rgba(8,12,28,0.95); border-color: rgba(238,240,246,0.07); box-shadow: 0 24px 56px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.04); }
+    .onb-logo-base { background: rgba(238,240,246,0.25); }
+    .onb-wrap .onb-input { background: rgba(238,240,246,0.05); border-color: rgba(238,240,246,0.10); color: var(--onb-text); box-shadow: inset 0 1px 3px 0 rgba(0,0,0,0.4); }
+    .onb-wrap .onb-input::placeholder { color: rgba(238,240,246,0.22); }
+    .onb-wrap .onb-input:focus { border-color: rgba(37,99,235,0.7); background: rgba(37,99,235,0.08); box-shadow: 0 0 0 3px rgba(37,99,235,0.15); }
+    .onb-wrap .onb-input.onb-err { border-color: rgba(239,68,68,0.45); background: rgba(239,68,68,0.05); }
+    .onb-api-err { background: rgba(239,68,68,0.08); border-color: rgba(239,68,68,0.2); color: #fca5a5; }
+    .onb-status-icon.invalid { background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.22); }
+    .onb-status-icon.expired { background: rgba(249,115,22,0.1); border-color: rgba(249,115,22,0.25); }
+    .onb-status-icon.cancelled { background: rgba(238,240,246,0.05); border-color: rgba(238,240,246,0.10); }
+    .onb-status-icon.accepted { background: rgba(37,99,235,0.12); border-color: rgba(37,99,235,0.25); }
+    .onb-status-icon.success { background: rgba(16,185,129,0.1); border-color: rgba(16,185,129,0.22); }
+    .onb-footer { color: rgba(238,240,246,0.18); }
   }
-  html.dark .onb-card { background: rgba(8,12,28,0.95); border-color: rgba(238,240,246,0.07); box-shadow: 0 24px 56px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.04); }
-  html.dark .onb-logo-base { background: rgba(238,240,246,0.25); }
-  html.dark .onb-badge { color: #60a5fa; background: rgba(37,99,235,0.12); border-color: rgba(37,99,235,0.25); }
-  html.dark .onb-wrap .onb-input { background: rgba(238,240,246,0.05); border-color: rgba(238,240,246,0.10); color: var(--onb-text); box-shadow: inset 0 1px 3px 0 rgba(0,0,0,0.4); }
-  html.dark .onb-wrap .onb-input::placeholder { color: rgba(238,240,246,0.22); }
-  html.dark .onb-wrap .onb-input:focus { border-color: rgba(37,99,235,0.7); background: rgba(37,99,235,0.08); box-shadow: 0 0 0 3px rgba(37,99,235,0.15); }
-  html.dark .onb-wrap .onb-input.onb-err { border-color: rgba(239,68,68,0.45); background: rgba(239,68,68,0.05); }
-  html.dark .onb-api-err { background: rgba(239,68,68,0.08); border-color: rgba(239,68,68,0.2); color: #fca5a5; }
-  html.dark .onb-status-icon.invalid { background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.22); }
-  html.dark .onb-status-icon.expired { background: rgba(249,115,22,0.1); border-color: rgba(249,115,22,0.25); }
-  html.dark .onb-status-icon.cancelled { background: rgba(238,240,246,0.05); border-color: rgba(238,240,246,0.10); }
-  html.dark .onb-status-icon.accepted { background: rgba(37,99,235,0.12); border-color: rgba(37,99,235,0.25); }
-  html.dark .onb-status-icon.success { background: rgba(16,185,129,0.1); border-color: rgba(16,185,129,0.22); }
-  html.dark .onb-footer { color: rgba(238,240,246,0.18); }
 `
 
 const schema = z.object({
@@ -337,7 +333,6 @@ export default function OnboardingAcceptPage() {
 
           {stage === 'pending' && info && (
             <>
-              <div className="onb-badge">🤝 Goedkeuring beheer</div>
               <h1 className="onb-heading">Goedkeuring beheer</h1>
               <p className="onb-sub">
                 <span className="onb-strong">{info.mspName}</span> wil de omgeving{' '}
