@@ -200,6 +200,13 @@ function EditRow({ row, plans, onSave, onCancel }: EditRowProps) {
   )
 }
 
+interface OwnSubscriptionCost {
+  baseFee: number
+  perClientRate: number
+  activeClientCount: number
+  totalMonthly: number
+}
+
 // ── main view ─────────────────────────────────────────────────────────────────
 
 export function MspSubscriptionsView() {
@@ -208,6 +215,7 @@ export function MspSubscriptionsView() {
   const [loading,       setLoading]       = useState(true)
   const [editingId,     setEditingId]     = useState<string | null>(null)
   const [statusFilter,  setStatusFilter]  = useState<TenantPlanStatus | 'all'>('all')
+  const [ownCost,       setOwnCost]       = useState<OwnSubscriptionCost | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -224,6 +232,12 @@ export function MspSubscriptionsView() {
   }, [])
 
   useEffect(() => { load() }, [load])
+
+  useEffect(() => {
+    api.get<OwnSubscriptionCost>('/msp/billing/own-subscription-cost')
+      .then(r => setOwnCost(r.data))
+      .catch(() => setOwnCost(null))
+  }, [])
 
   const handleSave = (updated: TenantPlanDto) => {
     setSubscriptions(prev => prev.map(s => s.tenantId === updated.tenantId ? updated : s))
@@ -269,6 +283,17 @@ export function MspSubscriptionsView() {
           <p className="mt-1.5 text-2xl font-bold text-slate-900 dark:text-slate-100">{fmtCurrency(totalMonthly)}</p>
           <p className="text-[11px] text-slate-400 dark:text-slate-500">o.b.v. actieve abonnementen</p>
         </div>
+        {ownCost && (
+          <div className="rounded-xl p-3 border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/30 sm:w-56 flex flex-col justify-center">
+            <span className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider">
+              MSP-abonnement
+            </span>
+            <p className="mt-1.5 text-2xl font-bold text-indigo-700 dark:text-indigo-300">{fmtCurrency(ownCost.totalMonthly)}</p>
+            <p className="text-[11px] text-indigo-500 dark:text-indigo-400">
+              {fmtCurrency(ownCost.baseFee)} + {ownCost.activeClientCount} × {fmtCurrency(ownCost.perClientRate)}
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Table */}
