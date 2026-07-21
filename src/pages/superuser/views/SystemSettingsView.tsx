@@ -2,40 +2,47 @@ import { useEffect, useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Mail, AlertTriangle, CheckCircle2, Pencil } from 'lucide-react'
+import { Mail, AlertTriangle, CheckCircle2, Pencil, Building2 } from 'lucide-react'
 import api from '@/lib/axios'
 import { Button } from '@/components/ui/Button'
 
-interface SystemSettings {
+interface SystemSettingsDto {
   mailingEnabled: boolean
   mailRedirectAddress: string | null
+  companyName: string | null
+  addressLine: string | null
+  postalCode: string | null
+  city: string | null
+  country: string | null
+  vatNumber: string | null
+  kvkNumber: string | null
+  iban: string | null
+  email: string | null
 }
 
 const inputField =
   'w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900/60 dark:shadow-[inset_0_1px_3px_0_rgba(0,0,0,0.4)] text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-500/25 transition-colors'
 
-const settingsSchema = z.object({
+const mailSchema = z.object({
   mailingEnabled: z.boolean(),
   mailRedirectAddress: z.string().max(256).email('Ongeldig e-mailadres').optional().or(z.literal('')),
 })
-type SettingsFormValues = z.infer<typeof settingsSchema>
+type MailFormValues = z.infer<typeof mailSchema>
 
 function MailCard() {
   const [loading, setLoading] = useState(true)
   const [saved, setSaved] = useState(false)
   const [apiError, setApiError] = useState<string | null>(null)
-  // View/edit-toggle: na het laden start de kaart in view-mode (samenvatting);
-  // "Wijzigen" schakelt om naar het bewerkbare formulier.
   const [isEditing, setIsEditing] = useState(false)
   const {
     register, handleSubmit, reset, watch, control, formState: { errors, isSubmitting },
-  } = useForm<SettingsFormValues>({
-    resolver: zodResolver(settingsSchema),
+  } = useForm<MailFormValues>({
+    resolver: zodResolver(mailSchema),
     defaultValues: { mailingEnabled: true, mailRedirectAddress: '' },
   })
 
   useEffect(() => {
-    api.get<SystemSettings>('/system-settings').then(({ data }) => {
+    api.get<SystemSettingsDto>('/system-settings').then(({ data }) => {
       reset({
         mailingEnabled: data.mailingEnabled,
         mailRedirectAddress: data.mailRedirectAddress ?? '',
@@ -44,16 +51,24 @@ function MailCard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const onSubmit = async (values: SettingsFormValues) => {
+  const onSubmit = async (values: MailFormValues) => {
     setApiError(null)
     setSaved(false)
     try {
+      const { data: current } = await api.get<SystemSettingsDto>('/system-settings')
       await api.put('/system-settings', {
         mailingEnabled: values.mailingEnabled,
         mailRedirectAddress: values.mailRedirectAddress || null,
+        companyName: current.companyName,
+        addressLine: current.addressLine,
+        postalCode: current.postalCode,
+        city: current.city,
+        country: current.country,
+        vatNumber: current.vatNumber,
+        kvkNumber: current.kvkNumber,
+        iban: current.iban,
+        email: current.email,
       })
-      // defaultValues bijwerken naar de zojuist opgeslagen waarden, zodat een
-      // latere Annuleren (reset zonder argumenten) hierop terugvalt.
       reset(values)
       setIsEditing(false)
       setSaved(true)
@@ -65,7 +80,6 @@ function MailCard() {
   }
 
   const handleCancel = () => {
-    // Terug naar de laatst geladen/opgeslagen waarden zonder API-call.
     reset()
     setApiError(null)
     setIsEditing(false)
@@ -184,11 +198,205 @@ function MailCard() {
   )
 }
 
+const billingDetailsSchema = z.object({
+  companyName: z.string().max(256).optional().or(z.literal('')),
+  addressLine: z.string().max(256).optional().or(z.literal('')),
+  postalCode: z.string().max(16).optional().or(z.literal('')),
+  city: z.string().max(128).optional().or(z.literal('')),
+  country: z.string().max(128).optional().or(z.literal('')),
+  vatNumber: z.string().max(32).optional().or(z.literal('')),
+  kvkNumber: z.string().max(16).optional().or(z.literal('')),
+  iban: z.string().max(34).regex(/^[A-Za-z]{2}\d{2}[A-Za-z0-9]{1,30}$/, 'Ongeldig IBAN-formaat').optional().or(z.literal('')),
+  email: z.string().max(256).email('Ongeldig e-mailadres').optional().or(z.literal('')),
+})
+type BillingDetailsFormValues = z.infer<typeof billingDetailsSchema>
+
+const emptyBillingDetails: BillingDetailsFormValues = {
+  companyName: '', addressLine: '', postalCode: '', city: '', country: '',
+  vatNumber: '', kvkNumber: '', iban: '', email: '',
+}
+
+function BillingDetailsCard() {
+  const [loading, setLoading] = useState(true)
+  const [saved, setSaved] = useState(false)
+  const [apiError, setApiError] = useState<string | null>(null)
+  const [isEditing, setIsEditing] = useState(false)
+  const {
+    register, handleSubmit, reset, watch, formState: { errors, isSubmitting },
+  } = useForm<BillingDetailsFormValues>({
+    resolver: zodResolver(billingDetailsSchema),
+    defaultValues: emptyBillingDetails,
+  })
+
+  useEffect(() => {
+    api.get<SystemSettingsDto>('/system-settings').then(({ data }) => {
+      reset({
+        companyName: data.companyName ?? '',
+        addressLine: data.addressLine ?? '',
+        postalCode: data.postalCode ?? '',
+        city: data.city ?? '',
+        country: data.country ?? '',
+        vatNumber: data.vatNumber ?? '',
+        kvkNumber: data.kvkNumber ?? '',
+        iban: data.iban ?? '',
+        email: data.email ?? '',
+      })
+    }).catch(() => {}).finally(() => setLoading(false))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const onSubmit = async (values: BillingDetailsFormValues) => {
+    setApiError(null)
+    setSaved(false)
+    try {
+      const { data: current } = await api.get<SystemSettingsDto>('/system-settings')
+      await api.put('/system-settings', {
+        mailingEnabled: current.mailingEnabled,
+        mailRedirectAddress: current.mailRedirectAddress,
+        companyName: values.companyName || null,
+        addressLine: values.addressLine || null,
+        postalCode: values.postalCode || null,
+        city: values.city || null,
+        country: values.country || null,
+        vatNumber: values.vatNumber || null,
+        kvkNumber: values.kvkNumber || null,
+        iban: values.iban || null,
+        email: values.email || null,
+      })
+      reset(values)
+      setIsEditing(false)
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2500)
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail
+      setApiError(msg ?? 'Opslaan mislukt.')
+    }
+  }
+
+  const handleCancel = () => {
+    reset()
+    setApiError(null)
+    setIsEditing(false)
+  }
+
+  const watched = watch()
+  const summaryLines = [
+    watched.companyName,
+    watched.addressLine,
+    `${watched.postalCode ?? ''} ${watched.city ?? ''}`.trim(),
+    watched.vatNumber && `BTW: ${watched.vatNumber}`,
+    watched.kvkNumber && `KvK: ${watched.kvkNumber}`,
+    watched.iban && `IBAN: ${watched.iban}`,
+    watched.email,
+  ].filter((line): line is string => Boolean(line && line.trim()))
+
+  return (
+    <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+      <div className="px-5 py-3 border-b border-slate-100 dark:border-slate-800 flex items-center gap-2">
+        <Building2 size={14} className="text-slate-400" />
+        <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Facturatiegegevens RokaFlow</h2>
+        {!loading && !isEditing && (
+          <div className="ml-auto flex items-center gap-3">
+            {saved && (
+              <span className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                <CheckCircle2 size={13} /> Opgeslagen
+              </span>
+            )}
+            <Button variant="secondary" size="sm" onClick={() => setIsEditing(true)}>
+              <Pencil size={14} /> Wijzigen
+            </Button>
+          </div>
+        )}
+      </div>
+
+      {loading ? (
+        <div className="p-6 text-center text-xs text-slate-400">Laden…</div>
+      ) : !isEditing ? (
+        <div className="p-5">
+          {summaryLines.length === 0 ? (
+            <p className="text-sm text-slate-400 dark:text-slate-500">
+              Nog niet ingevuld — deze gegevens verschijnen op elke factuur-PDF.
+            </p>
+          ) : (
+            <div className="text-sm text-slate-800 dark:text-slate-100 space-y-0.5">
+              {summaryLines.map((line, i) => <div key={i}>{line}</div>)}
+            </div>
+          )}
+        </div>
+      ) : (
+        <form onSubmit={handleSubmit(onSubmit)} className="p-5 space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="col-span-2">
+              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Bedrijfsnaam</label>
+              <input {...register('companyName')} type="text" placeholder="RokaFlow B.V." className={inputField} />
+              {errors.companyName && <p className="mt-1 text-xs text-red-600">{errors.companyName.message}</p>}
+            </div>
+            <div className="col-span-2">
+              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Adres</label>
+              <input {...register('addressLine')} type="text" placeholder="Straatnaam 1" className={inputField} />
+              {errors.addressLine && <p className="mt-1 text-xs text-red-600">{errors.addressLine.message}</p>}
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Postcode</label>
+              <input {...register('postalCode')} type="text" placeholder="1234 AB" className={inputField} />
+              {errors.postalCode && <p className="mt-1 text-xs text-red-600">{errors.postalCode.message}</p>}
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Plaats</label>
+              <input {...register('city')} type="text" placeholder="Amsterdam" className={inputField} />
+              {errors.city && <p className="mt-1 text-xs text-red-600">{errors.city.message}</p>}
+            </div>
+            <div className="col-span-2">
+              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Land</label>
+              <input {...register('country')} type="text" placeholder="Nederland" className={inputField} />
+              {errors.country && <p className="mt-1 text-xs text-red-600">{errors.country.message}</p>}
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">BTW-nummer</label>
+              <input {...register('vatNumber')} type="text" placeholder="NL123456789B01" className={inputField} />
+              {errors.vatNumber && <p className="mt-1 text-xs text-red-600">{errors.vatNumber.message}</p>}
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">KvK-nummer</label>
+              <input {...register('kvkNumber')} type="text" placeholder="12345678" className={inputField} />
+              {errors.kvkNumber && <p className="mt-1 text-xs text-red-600">{errors.kvkNumber.message}</p>}
+            </div>
+            <div className="col-span-2">
+              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">IBAN</label>
+              <input {...register('iban')} type="text" placeholder="NL91ABNA0417164300" className={inputField} />
+              {errors.iban && <p className="mt-1 text-xs text-red-600">{errors.iban.message}</p>}
+            </div>
+            <div className="col-span-2">
+              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">E-mail</label>
+              <input {...register('email')} type="text" placeholder="facturatie@rokaflow.nl" className={inputField} />
+              {errors.email && <p className="mt-1 text-xs text-red-600">{errors.email.message}</p>}
+            </div>
+          </div>
+
+          {apiError && (
+            <p className="text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{apiError}</p>
+          )}
+
+          <div className="flex items-center gap-3 pt-1">
+            <Button type="submit" size="sm" disabled={isSubmitting}>
+              {isSubmitting ? 'Opslaan…' : 'Opslaan'}
+            </Button>
+            <Button type="button" size="sm" variant="secondary" onClick={handleCancel} disabled={isSubmitting}>
+              Annuleren
+            </Button>
+          </div>
+        </form>
+      )}
+    </div>
+  )
+}
+
 export function SystemSettingsView() {
   return (
     <div className="flex-1 overflow-y-auto p-6">
       <div className="max-w-3xl mx-auto space-y-6">
         <MailCard />
+        <BillingDetailsCard />
       </div>
     </div>
   )
