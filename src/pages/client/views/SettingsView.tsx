@@ -184,7 +184,7 @@ export function SettingsView({ teammates, tenantName, onAddUser, mspStatus, onMs
   }
 
   return (
-    <div className="max-w-2xl space-y-6">
+    <div className="max-w-2xl space-y-6 h-full overflow-y-auto pr-4 pb-2">
 
       {mspStatus?.hasPendingTransfer && (
         <div className="flex items-start gap-3 px-4 py-3.5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-xl">
