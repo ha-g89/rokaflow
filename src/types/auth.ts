@@ -1,5 +1,11 @@
 export type UserRole = 'superuser' | 'msp_admin' | 'msp_member' | 'portal_admin' | 'employee'
 
+/** Spiegelt backend RokaFlow.Domain.Enums.TenantType (Client = 0, Msp = 1). */
+export enum AccountType {
+  Client = 0,
+  Msp = 1,
+}
+
 export interface AuthUser {
   id: string
   email: string

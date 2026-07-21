@@ -6,6 +6,7 @@ import { z } from 'zod'
 import { useAuthStore } from '@/store/authStore'
 import api from '@/lib/axios'
 import type { LoginResponse } from '@/types/auth'
+import { AccountType } from '@/types/auth'
 import logo from '@/assets/RokaFlow_icon_dark_transparent.png'
 
 const schema = z.object({
@@ -543,6 +544,7 @@ export default function RegisterPage() {
   const [logoFile,    setLogoFile]    = useState<File | null>(null)
   const [logoPreview, setLogoPreview] = useState<string | null>(null)
   const [logoError,   setLogoError]   = useState<string | null>(null)
+  const [accountType, setAccountType] = useState<AccountType | null>(null)
   const [step,        setStep]        = useState<1 | 2>(1)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { login }  = useAuthStore()
@@ -580,6 +582,7 @@ export default function RegisterPage() {
     setApiError(null)
     try {
       const { data } = await api.post<LoginResponse>('/auth/register', {
+        accountType:   accountType ?? AccountType.Client,
         companyName:   values.companyName,
         firstName:     values.firstName,
         tussenvoegsel: values.tussenvoegsel ?? '',
@@ -604,7 +607,8 @@ export default function RegisterPage() {
         try {
           const form = new FormData()
           form.append('file', logoFile)
-          await api.post('/portal/logo', form, {
+          const logoEndpoint = accountType === AccountType.Msp ? '/msp/logo' : '/portal/logo'
+          await api.post(logoEndpoint, form, {
             headers: {
               Authorization: `Bearer ${data.accessToken}`,
               'Content-Type': undefined,
@@ -615,7 +619,7 @@ export default function RegisterPage() {
         }
       }
 
-      navigate('/client', { replace: true })
+      navigate(accountType === AccountType.Msp ? '/org' : '/client', { replace: true })
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail
       setApiError(msg ?? 'Registratie mislukt. Probeer het opnieuw.')
@@ -638,13 +642,42 @@ export default function RegisterPage() {
 
           <div className="rfr-form-wrap">
             <div className="rfr-card">
-              <h1 className="rfr-heading">{step === 1 ? 'Account aanmaken' : 'Bedrijfsgegevens'}</h1>
-              <p className="rfr-sub">
-                {step === 1
-                  ? 'Start gratis met RokaFlow voor uw organisatie.'
-                  : 'Vertel ons iets over uw organisatie voor facturatie en branding.'}
-              </p>
+              {accountType === null ? (
+                <>
+                  <h1 className="rfr-heading">Account aanmaken</h1>
+                  <p className="rfr-sub">Kies hoe u RokaFlow gaat gebruiken.</p>
 
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    <button
+                      type="button"
+                      className="rfr-btn-secondary"
+                      style={{ width: '100%', flexDirection: 'column', alignItems: 'flex-start', padding: '16px 18px', gap: 4 }}
+                      onClick={() => setAccountType(AccountType.Client)}
+                    >
+                      <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>Ik ben een bedrijf</span>
+                      <span style={{ fontSize: 12, fontWeight: 400, color: 'var(--muted)' }}>
+                        Beheer uw eigen medewerkers, hardware en licenties.
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      className="rfr-btn-secondary"
+                      style={{ width: '100%', flexDirection: 'column', alignItems: 'flex-start', padding: '16px 18px', gap: 4 }}
+                      onClick={() => setAccountType(AccountType.Msp)}
+                    >
+                      <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>Ik ben een MSP / IT-dienstverlener</span>
+                      <span style={{ fontSize: 12, fontWeight: 400, color: 'var(--muted)' }}>
+                        Beheer meerdere klantorganisaties. €60/maand + €9 per klant die u toevoegt.
+                      </span>
+                    </button>
+                  </div>
+
+                  <p className="rfr-footer">
+                    Al een account?{' '}
+                    <a href="/login">Inloggen →</a>
+                  </p>
+                </>
+              ) : (
               <form onSubmit={handleSubmit(onSubmit)} noValidate>
                 {apiError && <div className="rfr-api-err">{apiError}</div>}
 
@@ -912,6 +945,7 @@ export default function RegisterPage() {
                   <a href="/login">Inloggen →</a>
                 </p>
               </form>
+              )}
             </div>
           </div>
         </div>
