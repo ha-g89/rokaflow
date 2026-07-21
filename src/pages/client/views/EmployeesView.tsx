@@ -3,7 +3,7 @@ import { useSort, SortHeader } from '@/components/ui/SortHeader'
 import { useState, useEffect } from 'react'
 import {
   Users, ArrowLeft, Laptop, CreditCard, Smartphone,
-  CheckCircle2, AlertTriangle, Trash2, UserPlus,
+  CheckCircle2, AlertTriangle, Trash2, UserPlus, Upload,
   Search, MoreVertical, ChevronRight,
 } from 'lucide-react'
 import api from '@/lib/axios'
@@ -12,6 +12,8 @@ import { Button } from '@/components/ui/Button'
 import { LoadingState, SkeletonRow } from '@/components/ui/LoadingState'
 import { Avatar, StatCard } from '@/components/portal/PortalUI'
 import { UserDetailPanel } from '@/components/UserDetailPanel'
+import { ImportWizardModal } from '@/components/import/ImportWizardModal'
+import type { ImportEmployeeRow, EmployeeImportPreview } from '@/types/import'
 import type { ClientUserListItem, ClientUserDetailResponse } from '@/types/clientUser'
 import { STATUS_LABEL, STATUS_TONE } from '@/types/clientUser'
 import type { LocationListItem } from '@/types/location'
@@ -193,7 +195,7 @@ export function DeleteEmployeeModal({ userId, userName, onClose, onDeleted }: {
 
 // ── Employee list view ────────────────────────────────────────────────────────
 
-export function EmployeeListView({ teammates, loading, search, currentUserId, onSearch, onSelect, onAddEmployee, onDelete }: {
+export function EmployeeListView({ teammates, loading, search, currentUserId, onSearch, onSelect, onAddEmployee, onDelete, onImported }: {
   teammates: ClientUserListItem[]
   loading: boolean
   search: string
@@ -202,8 +204,10 @@ export function EmployeeListView({ teammates, loading, search, currentUserId, on
   onSelect: (id: string) => void
   onAddEmployee: () => void
   onDelete: (id: string, name: string) => void
+  onImported: () => void
 }) {
   const [openMenu, setOpenMenu] = useState<string | null>(null)
+  const [showImport, setShowImport] = useState(false)
   const [statusFilter, setStatusFilter]     = useState('')
   const [afdelingFilter, setAfdelingFilter] = useState('')
 
@@ -257,10 +261,31 @@ export function EmployeeListView({ teammates, loading, search, currentUserId, on
         <FilterSelect label="Afdeling" value={afdelingFilter} onChange={setAfdelingFilter}
           options={afdelingen.map(a => ({ value: a, label: a }))} />
         <span className="text-xs text-slate-400 flex-1">{filtered.length} medewerker{filtered.length !== 1 ? 's' : ''}</span>
+        <Button size="sm" variant="secondary" className="py-2" onClick={() => setShowImport(true)}>
+          <Upload size={13} /> Importeren
+        </Button>
         <Button size="sm" className="py-2" onClick={onAddEmployee}>
           <UserPlus size={13} /> Medewerker toevoegen
         </Button>
       </div>
+
+      <ImportWizardModal<ImportEmployeeRow, EmployeeImportPreview>
+        open={showImport}
+        title="Medewerkers importeren"
+        templateUrl="/portal/employees/import-template"
+        templateFileName="medewerkers-import-template.xlsx"
+        validateUrl="/portal/employees/import/validate"
+        confirmUrl="/portal/employees/import/confirm"
+        columns={[
+          { key: 'firstName', label: 'Voornaam' },
+          { key: 'lastName', label: 'Achternaam' },
+          { key: 'email', label: 'E-mailadres' },
+          { key: 'department', label: 'Afdeling' },
+          { key: 'managerEmail', label: 'Manager' },
+        ]}
+        onClose={() => setShowImport(false)}
+        onDone={() => { setShowImport(false); onImported() }}
+      />
 
       <Card className="flex-1 overflow-hidden flex flex-col">
         <div className={`grid ${cols} gap-3 px-5 py-3 bg-slate-50 border-b border-slate-100`}>

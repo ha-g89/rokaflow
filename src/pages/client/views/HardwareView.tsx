@@ -3,8 +3,10 @@ import { useSort, SortHeader } from '@/components/ui/SortHeader'
 import { useState, useEffect, useCallback } from 'react'
 import {
   Laptop, Search, Plus, Package, Activity, Archive, XCircle,
-  Pencil, Trash2, StickyNote, History, Link2Off, User, Maximize2, ArrowLeft, PackageCheck,
+  Pencil, Trash2, StickyNote, History, Link2Off, User, Maximize2, ArrowLeft, PackageCheck, Upload,
 } from 'lucide-react'
+import { ImportWizardModal } from '@/components/import/ImportWizardModal'
+import type { ImportHardwareRow, HardwareImportPreview } from '@/types/import'
 import api from '@/lib/axios'
 import { Card, CardContent } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -307,6 +309,7 @@ export function HardwareView({ teammates, onExpand }: { teammates: ClientUserLis
   const [showModal, setShowModal]   = useState(false)
   const [editTarget, setEditTarget] = useState<HardwareAssetListItem | null>(null)
   const [historyKey, setHistoryKey] = useState(0)
+  const [showImport, setShowImport] = useState(false)
 
   const fetchAssets = useCallback(async () => {
     try {
@@ -432,6 +435,9 @@ export function HardwareView({ teammates, onExpand }: { teammates: ClientUserLis
             options={Object.entries(HARDWARE_TYPE_LABEL).map(([value, label]) => ({ value, label }))} />
           <FilterSelect label="Status" value={statusFilter} onChange={setStatusFilter}
             options={Object.entries(HARDWARE_STATUS_LABEL).map(([value, label]) => ({ value, label }))} />
+          <Button size="sm" variant="secondary" className="py-2" onClick={() => setShowImport(true)}>
+            <Upload size={13} /> Importeren
+          </Button>
           <Button size="sm" className="py-2" onClick={handleOpenAdd}>
             <Plus size={13} /> Toevoegen
           </Button>
@@ -521,6 +527,25 @@ export function HardwareView({ teammates, onExpand }: { teammates: ClientUserLis
         teammates={teammates}
         locations={locations}
         asset={editTarget}
+      />
+
+      <ImportWizardModal<ImportHardwareRow, HardwareImportPreview>
+        open={showImport}
+        title="Hardware importeren"
+        templateUrl="/portal/hardware/import-template"
+        templateFileName="hardware-import-template.xlsx"
+        validateUrl="/portal/hardware/import/validate"
+        confirmUrl="/portal/hardware/import/confirm"
+        columns={[
+          { key: 'name', label: 'Naam' },
+          { key: 'brand', label: 'Merk' },
+          { key: 'type', label: 'Type' },
+          { key: 'serialNumber', label: 'Serienummer' },
+          { key: 'locationName', label: 'Locatie' },
+          { key: 'assignedToEmail', label: 'Toegewezen aan' },
+        ]}
+        onClose={() => setShowImport(false)}
+        onDone={() => { setShowImport(false); fetchAssets() }}
       />
     </div>
   )

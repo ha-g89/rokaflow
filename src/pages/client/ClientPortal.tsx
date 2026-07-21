@@ -508,6 +508,7 @@ export default function ClientPortal() {
                 onSelect={handleSelectEmployee}
                 onAddEmployee={() => { fetchDepartmentOptions(); setShowAddEmployee(true) }}
                 onDelete={handleOpenDelete}
+                onImported={fetchUsers}
               />
             )}
 
