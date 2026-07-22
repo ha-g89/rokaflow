@@ -3,6 +3,19 @@ export interface ImportRowError {
   message: string
 }
 
+export interface ImportFieldDefinition {
+  key: string
+  label: string
+  required: boolean
+}
+
+export interface ImportColumnsResult {
+  fileErrors: string[]
+  fileColumns: string[]
+  fields: ImportFieldDefinition[]
+  suggestedMapping: Record<string, string | null>
+}
+
 export interface ImportResult {
   createdCount: number
   skippedCount: number

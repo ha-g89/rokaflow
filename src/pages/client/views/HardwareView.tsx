@@ -534,6 +534,7 @@ export function HardwareView({ teammates, onExpand }: { teammates: ClientUserLis
         title="Hardware importeren"
         templateUrl="/portal/hardware/import-template"
         templateFileName="hardware-import-template.xlsx"
+        columnsUrl="/portal/hardware/import/columns"
         validateUrl="/portal/hardware/import/validate"
         confirmUrl="/portal/hardware/import/confirm"
         columns={[

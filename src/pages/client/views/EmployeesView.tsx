@@ -274,6 +274,7 @@ export function EmployeeListView({ teammates, loading, search, currentUserId, on
         title="Medewerkers importeren"
         templateUrl="/portal/employees/import-template"
         templateFileName="medewerkers-import-template.xlsx"
+        columnsUrl="/portal/employees/import/columns"
         validateUrl="/portal/employees/import/validate"
         confirmUrl="/portal/employees/import/confirm"
         columns={[
