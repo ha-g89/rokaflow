@@ -103,15 +103,15 @@ export function LocationModal({ open, onClose, onSuccess, location }: Props) {
           <input {...register('address')} className={field} placeholder="Keizersgracht 123" />
         </div>
 
-        {/* City + PostalCode */}
+        {/* PostalCode + City */}
         <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Stad</label>
-            <input {...register('city')} className={field} placeholder="Amsterdam" />
-          </div>
           <div>
             <label className="block text-xs font-medium text-slate-600 mb-1">Postcode</label>
             <input {...register('postalCode')} className={field} placeholder="1234 AB" />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-slate-600 mb-1">Stad</label>
+            <input {...register('city')} className={field} placeholder="Amsterdam" />
           </div>
         </div>
 

@@ -291,7 +291,7 @@ export function LocationsView() {
               </div>
               <div className="flex flex-col gap-0.5">
                 <p className="text-xs text-slate-600 dark:text-slate-300">
-                  {[loc.postalCode, loc.city].filter(Boolean).join('  ')}
+                  {[loc.postalCode, loc.city].filter(Boolean).join(' ')}
                   {loc.province ? <span className="text-slate-400 font-normal"> · {loc.province}</span> : null}
                 </p>
                 {loc.country && loc.country !== 'Nederland' && <p className="text-xs text-slate-400">{loc.country}</p>}
