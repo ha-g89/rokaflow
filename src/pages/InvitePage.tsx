@@ -7,6 +7,7 @@ import { Eye, EyeOff } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import api from '@/lib/axios'
 import type { LoginResponse } from '@/types/auth'
+import { MfaChallenge } from '@/components/auth/MfaChallenge'
 import logo from '@/assets/RokaFlow_icon_dark_transparent.png'
 
 const CSS = `
@@ -335,6 +336,7 @@ export default function InvitePage() {
   const [showCpw, setShowCpw]   = useState(false)
   const [apiError, setApiError] = useState<string | null>(null)
   const [done, setDone]         = useState(false)
+  const [mfaChallenge, setMfaChallenge] = useState<{ token: string; setupRequired: boolean } | null>(null)
 
   const { register, handleSubmit, formState: { errors, isSubmitting } } =
     useForm<FormValues>({ resolver: zodResolver(schema) })
@@ -354,6 +356,12 @@ export default function InvitePage() {
       .finally(() => setChecking(false))
   }, [token])
 
+  const finishInvite = (session: LoginResponse) => {
+    login(session.accessToken!, session.refreshToken ?? '', session.user!, true)
+    setDone(true)
+    setTimeout(() => navigate('/client', { replace: true }), 1800)
+  }
+
   const onSubmit = async (values: FormValues) => {
     setApiError(null)
     try {
@@ -362,9 +370,13 @@ export default function InvitePage() {
         password: values.password,
         confirmPassword: values.confirmPassword,
       })
-      login(data.accessToken, data.refreshToken ?? '', data.user)
-      setDone(true)
-      setTimeout(() => navigate('/client', { replace: true }), 1800)
+
+      if (data.mfaRequired && data.mfaChallengeToken) {
+        setMfaChallenge({ token: data.mfaChallengeToken, setupRequired: !!data.mfaSetupRequired })
+        return
+      }
+
+      finishInvite(data)
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail
       setApiError(msg ?? 'Er is iets misgegaan. Probeer het opnieuw.')
@@ -394,6 +406,17 @@ export default function InvitePage() {
             <h3>Wachtwoord ingesteld!</h3>
             <p>Je wordt doorgestuurd naar je portaal…</p>
           </div>
+        ) : mfaChallenge ? (
+          <>
+            <div className="rfi-badge">✉ Uitnodiging</div>
+            <h1 className="rfi-heading">Beveilig je account</h1>
+            <p className="rfi-sub">Stel tweestapsverificatie in om verder te gaan.</p>
+            <MfaChallenge
+              challengeToken={mfaChallenge.token}
+              setupRequired={mfaChallenge.setupRequired}
+              onDone={finishInvite}
+            />
+          </>
         ) : (
           <>
             <div className="rfi-badge">✉ Uitnodiging</div>

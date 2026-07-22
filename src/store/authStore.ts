@@ -31,7 +31,7 @@ interface AuthState {
   orgToken: string | null
   orgUser:  AuthUser | null
 
-  login: (accessToken: string, refreshToken: string, user: AuthUser) => void
+  login: (accessToken: string, refreshToken: string, user: AuthUser, keepSignedIn?: boolean) => void
   logout: () => void
   isAuthenticated: () => boolean
 
@@ -59,13 +59,20 @@ export const useAuthStore = create<AuthState>()(
       orgToken:     null,
       orgUser:      null,
 
-      login: (accessToken, refreshToken, user) => {
-        localStorage.setItem('refreshToken', refreshToken)
+      login: (accessToken, refreshToken, user, keepSignedIn = true) => {
+        if (keepSignedIn) {
+          localStorage.setItem('refreshToken', refreshToken)
+          sessionStorage.removeItem('refreshToken')
+        } else {
+          sessionStorage.setItem('refreshToken', refreshToken)
+          localStorage.removeItem('refreshToken')
+        }
         set({ accessToken, refreshToken, user, orgToken: null, orgUser: null })
       },
 
       logout: () => {
         localStorage.removeItem('refreshToken')
+        sessionStorage.removeItem('refreshToken')
         set({ accessToken: null, refreshToken: null, user: null, orgToken: null, orgUser: null })
       },
 

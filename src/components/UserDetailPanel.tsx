@@ -603,6 +603,26 @@ export function UserDetailPanel({ user, canEdit, departments = [], managers = []
   const [confirmGrant, setConfirmGrant] = useState(false)
   const [confirmRevoke, setConfirmRevoke] = useState(false)
   const [revokingAccess, setRevokingAccess] = useState(false)
+  const [confirmMfaReset, setConfirmMfaReset] = useState(false)
+  const [resettingMfa, setResettingMfa] = useState(false)
+  const [mfaResetError, setMfaResetError] = useState<string | null>(null)
+  const [mfaResetDone, setMfaResetDone] = useState(false)
+
+  const handleResetMfa = async () => {
+    setResettingMfa(true)
+    setMfaResetError(null)
+    try {
+      await api.post('/auth/mfa/reset', { ownerType: 1, ownerId: user.id })
+      setConfirmMfaReset(false)
+      setMfaResetDone(true)
+      setTimeout(() => setMfaResetDone(false), 3000)
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail
+      setMfaResetError(msg ?? 'MFA resetten is mislukt.')
+    } finally {
+      setResettingMfa(false)
+    }
+  }
 
   const handleGrantPortalAccess = async () => {
     setGrantingAccess(true)
@@ -913,6 +933,41 @@ export function UserDetailPanel({ user, canEdit, departments = [], managers = []
         </div>
       </Modal>
 
+      <Modal
+        open={confirmMfaReset}
+        onClose={() => !resettingMfa && setConfirmMfaReset(false)}
+        title="MFA resetten"
+        className="max-w-sm"
+      >
+        <div className="flex flex-col items-center text-center gap-4 py-2">
+          <div className="w-12 h-12 rounded-full bg-orange-50 flex items-center justify-center">
+            <ShieldCheck size={22} className="text-orange-500" />
+          </div>
+          <div>
+            <p className="text-sm text-slate-700 leading-relaxed">
+              Weet je zeker dat je de tweestapsverificatie van{' '}
+              <span className="font-semibold">"{user.firstName} {user.lastName}"</span>{' '}
+              wilt resetten?
+            </p>
+            <p className="text-xs text-slate-400 mt-1">
+              De medewerker moet bij de eerstvolgende login opnieuw een authenticator-app koppelen.
+              Gebruik dit alleen na identiteitscontrole (bijv. telefoon kwijt en geen backup-codes meer over).
+            </p>
+          </div>
+        </div>
+        {mfaResetError && (
+          <p className="mt-3 text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{mfaResetError}</p>
+        )}
+        <div className="flex gap-2 mt-6">
+          <Button variant="secondary" className="flex-1" onClick={() => setConfirmMfaReset(false)} disabled={resettingMfa}>
+            Annuleren
+          </Button>
+          <Button className="flex-1 bg-orange-500 hover:bg-orange-600 text-white" onClick={handleResetMfa} disabled={resettingMfa}>
+            {resettingMfa ? 'Bezig…' : 'Resetten'}
+          </Button>
+        </div>
+      </Modal>
+
       <div className="space-y-4">
       {/* ── Profile header ── */}
       <Card className="rounded-2xl shadow-sm">
@@ -952,6 +1007,16 @@ export function UserDetailPanel({ user, canEdit, departments = [], managers = []
                         Geef portaaltoegang
                       </button>
                     )
+                  )}
+                  {user.isPortalUser && (
+                    <button
+                      onClick={() => { setMfaResetError(null); setConfirmMfaReset(true) }}
+                      className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 hover:border-slate-300 transition-colors"
+                      title="Verwijdert de gekoppelde authenticator-app; gebruiker moet opnieuw instellen bij volgende login"
+                    >
+                      <ShieldCheck size={12} />
+                      {mfaResetDone ? 'MFA gereset ✓' : 'MFA resetten'}
+                    </button>
                   )}
                   <button
                     onClick={() => setEditOpen(true)}
