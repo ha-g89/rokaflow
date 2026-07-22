@@ -6,6 +6,7 @@ import { z } from 'zod'
 import { useAuthStore } from '@/store/authStore'
 import api from '@/lib/axios'
 import type { LoginResponse } from '@/types/auth'
+import { MfaChallenge } from '@/components/auth/MfaChallenge'
 import logo from '@/assets/RokaFlow_icon_dark_transparent.png'
 
 const schema = z.object({
@@ -400,18 +401,29 @@ const CSS = `
 export default function SuperUserLoginPage() {
   const [apiError, setApiError] = useState<string | null>(null)
   const [showPass, setShowPass]  = useState(false)
+  const [mfaChallenge, setMfaChallenge] = useState<{ token: string; setupRequired: boolean } | null>(null)
   const { login }  = useAuthStore()
   const navigate   = useNavigate()
 
   const { register, handleSubmit, formState: { errors, isSubmitting } } =
     useForm<FormValues>({ resolver: zodResolver(schema) })
 
+  const proceedWithSession = (data: LoginResponse) => {
+    login(data.accessToken!, data.refreshToken!, data.user!)
+    navigate('/superuser', { replace: true })
+  }
+
   const onSubmit = async (values: FormValues) => {
     setApiError(null)
     try {
       const { data } = await api.post<LoginResponse>('/auth/superuser/login', values)
-      login(data.accessToken, data.refreshToken, data.user)
-      navigate('/superuser', { replace: true })
+
+      if (data.mfaRequired && data.mfaChallengeToken) {
+        setMfaChallenge({ token: data.mfaChallengeToken, setupRequired: !!data.mfaSetupRequired })
+        return
+      }
+
+      proceedWithSession(data)
     } catch (err: unknown) {
       const detail = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail
       setApiError(detail ?? 'Inloggen mislukt.')
@@ -440,6 +452,13 @@ export default function SuperUserLoginPage() {
               <h1 className="rfa-heading">Admin login</h1>
               <p className="rfa-sub">Toegang tot het platformbeheer.</p>
 
+              {mfaChallenge ? (
+                <MfaChallenge
+                  challengeToken={mfaChallenge.token}
+                  setupRequired={mfaChallenge.setupRequired}
+                  onDone={proceedWithSession}
+                />
+              ) : (
               <form onSubmit={handleSubmit(onSubmit)} noValidate>
                 {apiError && <div className="rfa-api-err">{apiError}</div>}
 
@@ -504,6 +523,7 @@ export default function SuperUserLoginPage() {
                   <a href="/login">Portaal login →</a>
                 </p>
               </form>
+              )}
             </div>
           </div>
         </div>
