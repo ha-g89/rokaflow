@@ -359,7 +359,7 @@ function ResetMfaCard() {
 
       <div className="p-5 space-y-3">
         <p className="text-xs text-slate-500 dark:text-slate-400">
-          Verwijdert het TOTP-geheim en alle backup-codes van de opgegeven gebruiker (bijv. als iemand
+          Verwijdert het TOTP-geheim van de opgegeven gebruiker (bijv. als iemand
           zijn authenticator kwijt is). Gebruik dit alleen na identiteitscontrole.
         </p>
         <div className="grid grid-cols-3 gap-3">

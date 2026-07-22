@@ -31,11 +31,6 @@ export interface MfaSetupResponse {
   otpAuthUri: string
 }
 
-export interface MfaConfirmResponse {
-  session: LoginResponse
-  backupCodes: string[]
-}
-
 export interface LoginRequest {
   email: string
   password: string

@@ -951,7 +951,7 @@ export function UserDetailPanel({ user, canEdit, departments = [], managers = []
             </p>
             <p className="text-xs text-slate-400 mt-1">
               De medewerker moet bij de eerstvolgende login opnieuw een authenticator-app koppelen.
-              Gebruik dit alleen na identiteitscontrole (bijv. telefoon kwijt en geen backup-codes meer over).
+              Gebruik dit alleen na identiteitscontrole (bijv. telefoon met de authenticator-app kwijt).
             </p>
           </div>
         </div>
