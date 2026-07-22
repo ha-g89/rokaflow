@@ -18,10 +18,22 @@ export interface AuthUser {
 }
 
 export interface LoginResponse {
-  accessToken: string
-  refreshToken: string
-  expiresIn: number
-  user: AuthUser
+  accessToken?: string
+  refreshToken?: string
+  expiresIn?: number
+  user?: AuthUser
+  mfaRequired?: boolean
+  mfaSetupRequired?: boolean
+  mfaChallengeToken?: string
+}
+
+export interface MfaSetupResponse {
+  otpAuthUri: string
+}
+
+export interface MfaConfirmResponse {
+  session: LoginResponse
+  backupCodes: string[]
 }
 
 export interface LoginRequest {

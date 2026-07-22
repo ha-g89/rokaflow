@@ -8,6 +8,7 @@ import { useAuthStore } from '@/store/authStore'
 import api from '@/lib/axios'
 import type { LoginResponse } from '@/types/auth'
 import { AccountType } from '@/types/auth'
+import { MfaChallenge } from '@/components/auth/MfaChallenge'
 import logo from '@/assets/RokaFlow_icon_dark_transparent.png'
 
 const schema = z.object({
@@ -698,6 +699,7 @@ export default function RegisterPage() {
   const [hoveredType, setHoveredType] = useState<AccountType | null>(null)
   const displayedType = accountType ?? hoveredType
   const [step,        setStep]        = useState<1 | 2>(1)
+  const [mfaChallenge, setMfaChallenge] = useState<{ token: string; setupRequired: boolean } | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { login }  = useAuthStore()
   const navigate   = useNavigate()
@@ -730,6 +732,30 @@ export default function RegisterPage() {
     }
   }
 
+  const finishRegistration = async (session: LoginResponse) => {
+    login(session.accessToken!, session.refreshToken!, session.user!, true)
+
+    if (logoFile) {
+      // Niet-fataal: registratie is al gelukt. Als de logo-upload mislukt,
+      // kan het logo later alsnog via Instellingen worden ingesteld.
+      try {
+        const form = new FormData()
+        form.append('file', logoFile)
+        const logoEndpoint = accountType === AccountType.Msp ? '/msp/logo' : '/portal/logo'
+        await api.post(logoEndpoint, form, {
+          headers: {
+            Authorization: `Bearer ${session.accessToken}`,
+            'Content-Type': undefined,
+          },
+        })
+      } catch {
+        // bewust genegeerd
+      }
+    }
+
+    navigate(accountType === AccountType.Msp ? '/org' : '/client', { replace: true })
+  }
+
   const onSubmit = async (values: FormValues) => {
     setApiError(null)
     try {
@@ -751,27 +777,13 @@ export default function RegisterPage() {
       }, {
         headers: { Authorization: undefined },
       })
-      login(data.accessToken, data.refreshToken, data.user)
 
-      if (logoFile) {
-        // Niet-fataal: registratie is al gelukt. Als de logo-upload mislukt,
-        // kan het logo later alsnog via Instellingen worden ingesteld.
-        try {
-          const form = new FormData()
-          form.append('file', logoFile)
-          const logoEndpoint = accountType === AccountType.Msp ? '/msp/logo' : '/portal/logo'
-          await api.post(logoEndpoint, form, {
-            headers: {
-              Authorization: `Bearer ${data.accessToken}`,
-              'Content-Type': undefined,
-            },
-          })
-        } catch {
-          // bewust genegeerd
-        }
+      if (data.mfaRequired && data.mfaChallengeToken) {
+        setMfaChallenge({ token: data.mfaChallengeToken, setupRequired: !!data.mfaSetupRequired })
+        return
       }
 
-      navigate(accountType === AccountType.Msp ? '/org' : '/client', { replace: true })
+      await finishRegistration(data)
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail
       setApiError(msg ?? 'Registratie mislukt. Probeer het opnieuw.')
@@ -853,6 +865,12 @@ export default function RegisterPage() {
                     <a href="/login">Inloggen →</a>
                   </p>
                 </>
+              ) : mfaChallenge ? (
+                <MfaChallenge
+                  challengeToken={mfaChallenge.token}
+                  setupRequired={mfaChallenge.setupRequired}
+                  onDone={finishRegistration}
+                />
               ) : (
               <form onSubmit={handleSubmit(onSubmit)} noValidate>
                 {apiError && <div className="rfr-api-err">{apiError}</div>}

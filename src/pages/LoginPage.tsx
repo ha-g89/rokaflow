@@ -6,6 +6,7 @@ import { z } from 'zod'
 import { useAuthStore } from '@/store/authStore'
 import api from '@/lib/axios'
 import type { LoginResponse, UserRole } from '@/types/auth'
+import { MfaChallenge } from '@/components/auth/MfaChallenge'
 import logo from '@/assets/RokaFlow_icon_dark_transparent.png'
 
 const schema = z.object({
@@ -252,6 +253,16 @@ const CSS = `
     flex-shrink: 0;
   }
 
+  .rfl-remember {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 18px;
+    cursor: pointer;
+  }
+
   .rfl-footer {
     margin-top: 20px;
     text-align: center;
@@ -446,6 +457,8 @@ export default function LoginPage() {
   const [apiError,     setApiError]     = useState<string | null>(null)
   const [showPass,     setShowPass]     = useState(false)
   const [loadingRole,  setLoadingRole]  = useState<UserRole | null>(null)
+  const [keepSignedIn, setKeepSignedIn] = useState(true)
+  const [mfaChallenge, setMfaChallenge] = useState<{ token: string; setupRequired: boolean } | null>(null)
   const { login }  = useAuthStore()
   const navigate   = useNavigate()
   const location   = useLocation()
@@ -453,16 +466,24 @@ export default function LoginPage() {
   const { register, handleSubmit, formState: { errors, isSubmitting } } =
     useForm<FormValues>({ resolver: zodResolver(schema) })
 
+  const proceedWithSession = (data: LoginResponse) => {
+    login(data.accessToken!, data.refreshToken!, data.user!, keepSignedIn)
+    const home = ROLE_HOME[data.user!.role]
+    const from = (location.state as { from?: { pathname: string } })?.from?.pathname
+    const dest = from?.startsWith(home) ? from : home
+    setLoadingRole(data.user!.role)
+    setTimeout(() => navigate(dest, { replace: true }), 1400)
+  }
+
   const onSubmit = async (values: FormValues) => {
     setApiError(null)
     try {
       const { data } = await api.post<LoginResponse>('/auth/login', values)
-      login(data.accessToken, data.refreshToken, data.user)
-      const home = ROLE_HOME[data.user.role]
-      const from = (location.state as { from?: { pathname: string } })?.from?.pathname
-      const dest = from?.startsWith(home) ? from : home
-      setLoadingRole(data.user.role)
-      setTimeout(() => navigate(dest, { replace: true }), 1400)
+      if (data.mfaRequired && data.mfaChallengeToken) {
+        setMfaChallenge({ token: data.mfaChallengeToken, setupRequired: !!data.mfaSetupRequired })
+        return
+      }
+      proceedWithSession(data)
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail
       setApiError(msg ?? 'Ongeldig e-mailadres of wachtwoord.')
@@ -497,6 +518,13 @@ export default function LoginPage() {
               <h1 className="rfl-heading">Inloggen</h1>
               <p className="rfl-sub">Log in op uw RokaFlow-account.</p>
 
+              {mfaChallenge ? (
+                <MfaChallenge
+                  challengeToken={mfaChallenge.token}
+                  setupRequired={mfaChallenge.setupRequired}
+                  onDone={proceedWithSession}
+                />
+              ) : (
               <form onSubmit={handleSubmit(onSubmit)} noValidate>
                 {apiError && <div className="rfl-api-err">{apiError}</div>}
 
@@ -546,6 +574,15 @@ export default function LoginPage() {
                   {errors.password && <p className="rfl-err-msg">{errors.password.message}</p>}
                 </div>
 
+                <label className="rfl-remember">
+                  <input
+                    type="checkbox"
+                    checked={keepSignedIn}
+                    onChange={e => setKeepSignedIn(e.target.checked)}
+                  />
+                  Blijf ingelogd op dit apparaat
+                </label>
+
                 <button type="submit" disabled={isSubmitting} className="rfl-submit">
                   <span className="rfl-submit-inner">
                     {isSubmitting
@@ -559,6 +596,7 @@ export default function LoginPage() {
                   <a href="/forgot-password">Wachtwoord vergeten?</a>
                 </p>
               </form>
+              )}
             </div>
           </div>
         </div>

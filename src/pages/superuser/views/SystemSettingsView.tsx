@@ -2,9 +2,10 @@ import { useEffect, useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Mail, AlertTriangle, CheckCircle2, Pencil, Building2 } from 'lucide-react'
+import { Mail, AlertTriangle, CheckCircle2, Pencil, Building2, ShieldCheck, KeyRound } from 'lucide-react'
 import api from '@/lib/axios'
 import { Button } from '@/components/ui/Button'
+import { Modal } from '@/components/ui/Modal'
 
 interface SystemSettingsDto {
   mailingEnabled: boolean
@@ -18,6 +19,7 @@ interface SystemSettingsDto {
   kvkNumber: string | null
   iban: string | null
   email: string | null
+  mfaEnabled: boolean
 }
 
 const inputField =
@@ -68,6 +70,7 @@ function MailCard() {
         kvkNumber: current.kvkNumber,
         iban: current.iban,
         email: current.email,
+        mfaEnabled: current.mfaEnabled,
       })
       reset(values)
       setIsEditing(false)
@@ -198,6 +201,209 @@ function MailCard() {
   )
 }
 
+function MfaCard() {
+  const [loading, setLoading] = useState(true)
+  const [enabled, setEnabled] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+  const [apiError, setApiError] = useState<string | null>(null)
+
+  useEffect(() => {
+    api.get<SystemSettingsDto>('/system-settings').then(({ data }) => {
+      setEnabled(data.mfaEnabled)
+    }).catch(() => {}).finally(() => setLoading(false))
+  }, [])
+
+  const toggle = async () => {
+    const next = !enabled
+    setSaving(true)
+    setApiError(null)
+    setSaved(false)
+    try {
+      const { data: current } = await api.get<SystemSettingsDto>('/system-settings')
+      await api.put('/system-settings', {
+        mailingEnabled: current.mailingEnabled,
+        mailRedirectAddress: current.mailRedirectAddress,
+        companyName: current.companyName,
+        addressLine: current.addressLine,
+        postalCode: current.postalCode,
+        city: current.city,
+        country: current.country,
+        vatNumber: current.vatNumber,
+        kvkNumber: current.kvkNumber,
+        iban: current.iban,
+        email: current.email,
+        mfaEnabled: next,
+      })
+      setEnabled(next)
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2500)
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail
+      setApiError(msg ?? 'Opslaan mislukt.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+      <div className="px-5 py-3 border-b border-slate-100 dark:border-slate-800 flex items-center gap-2">
+        <ShieldCheck size={14} className="text-slate-400" />
+        <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Tweestapsverificatie (MFA)</h2>
+        {!loading && saved && (
+          <span className="ml-auto text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+            <CheckCircle2 size={13} /> Opgeslagen
+          </span>
+        )}
+      </div>
+
+      {loading ? (
+        <div className="p-6 text-center text-xs text-slate-400">Laden…</div>
+      ) : (
+        <div className="p-5 space-y-3">
+          <button
+            type="button"
+            role="switch"
+            aria-checked={enabled}
+            disabled={saving}
+            onClick={toggle}
+            className="flex items-center gap-2 disabled:opacity-50"
+          >
+            <span className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 ${
+              enabled ? 'bg-blue-600' : 'bg-slate-300 dark:bg-slate-600'
+            }`}>
+              <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-200 ${
+                enabled ? 'translate-x-4' : 'translate-x-0.5'
+              }`} />
+            </span>
+            <span className="text-sm font-medium text-slate-700 dark:text-slate-200">
+              MFA verplichten voor alle gebruikers
+            </span>
+          </button>
+          {!enabled && (
+            <p className="text-xs text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/40 rounded-lg px-3 py-2 flex items-start gap-1.5">
+              <AlertTriangle size={13} className="flex-shrink-0 mt-0.5" />
+              Uit — gebruikers loggen in zonder tweede factor. Zet dit in productie altijd aan.
+            </p>
+          )}
+          {apiError && (
+            <p className="text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{apiError}</p>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+const GUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+function ResetMfaCard() {
+  const [ownerType, setOwnerType] = useState<'1' | '2'>('1')
+  const [ownerId, setOwnerId] = useState('')
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [resetting, setResetting] = useState(false)
+  const [result, setResult] = useState<'ok' | 'error' | null>(null)
+
+  const handleReset = async () => {
+    setResetting(true)
+    setResult(null)
+    try {
+      await api.post('/auth/mfa/reset', { ownerType: Number(ownerType), ownerId })
+      setResult('ok')
+      setConfirmOpen(false)
+      setOwnerId('')
+    } catch {
+      setResult('error')
+    } finally {
+      setResetting(false)
+    }
+  }
+
+  return (
+    <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+      <Modal
+        open={confirmOpen}
+        onClose={() => !resetting && setConfirmOpen(false)}
+        title="MFA resetten"
+        className="max-w-sm"
+      >
+        <div className="flex flex-col items-center text-center gap-4 py-2">
+          <div className="w-12 h-12 rounded-full bg-orange-50 flex items-center justify-center">
+            <KeyRound size={22} className="text-orange-500" />
+          </div>
+          <p className="text-sm text-slate-700 leading-relaxed">
+            Weet je zeker dat je de MFA-instelling voor deze gebruiker wilt resetten?
+            De gebruiker moet bij de eerstvolgende login opnieuw een authenticator koppelen.
+          </p>
+        </div>
+        <div className="flex gap-2 mt-6">
+          <Button variant="secondary" className="flex-1" onClick={() => setConfirmOpen(false)} disabled={resetting}>
+            Annuleren
+          </Button>
+          <Button className="flex-1 bg-orange-500 hover:bg-orange-600 text-white" onClick={handleReset} disabled={resetting}>
+            {resetting ? 'Bezig…' : 'Resetten'}
+          </Button>
+        </div>
+      </Modal>
+
+      <div className="px-5 py-3 border-b border-slate-100 dark:border-slate-800 flex items-center gap-2">
+        <KeyRound size={14} className="text-slate-400" />
+        <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">MFA resetten</h2>
+        {result === 'ok' && (
+          <span className="ml-auto text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+            <CheckCircle2 size={13} /> Gereset
+          </span>
+        )}
+      </div>
+
+      <div className="p-5 space-y-3">
+        <p className="text-xs text-slate-500 dark:text-slate-400">
+          Verwijdert het TOTP-geheim en alle backup-codes van de opgegeven gebruiker (bijv. als iemand
+          zijn authenticator kwijt is). Gebruik dit alleen na identiteitscontrole.
+        </p>
+        <div className="grid grid-cols-3 gap-3">
+          <div>
+            <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Type</label>
+            <select
+              value={ownerType}
+              onChange={e => setOwnerType(e.target.value as '1' | '2')}
+              className={inputField}
+            >
+              <option value="1">Gebruiker</option>
+              <option value="2">Superuser</option>
+            </select>
+          </div>
+          <div className="col-span-2">
+            <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Gebruikers-ID (GUID)</label>
+            <input
+              value={ownerId}
+              onChange={e => { setOwnerId(e.target.value); setResult(null) }}
+              placeholder="00000000-0000-0000-0000-000000000000"
+              className={inputField}
+            />
+          </div>
+        </div>
+        {result === 'error' && (
+          <p className="text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+            Resetten mislukt. Controleer het ID en probeer het opnieuw.
+          </p>
+        )}
+        <div>
+          <Button
+            size="sm"
+            className="bg-orange-500 hover:bg-orange-600 text-white"
+            disabled={!GUID_RE.test(ownerId)}
+            onClick={() => { setResult(null); setConfirmOpen(true) }}
+          >
+            MFA resetten
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 const billingDetailsSchema = z.object({
   companyName: z.string().max(256).optional().or(z.literal('')),
   addressLine: z.string().max(256).optional().or(z.literal('')),
@@ -253,6 +459,7 @@ function BillingDetailsCard() {
       await api.put('/system-settings', {
         mailingEnabled: current.mailingEnabled,
         mailRedirectAddress: current.mailRedirectAddress,
+        mfaEnabled: current.mfaEnabled,
         companyName: values.companyName || null,
         addressLine: values.addressLine || null,
         postalCode: values.postalCode || null,
@@ -396,6 +603,8 @@ export function SystemSettingsView() {
     <div className="flex-1 overflow-y-auto p-6">
       <div className="max-w-3xl mx-auto space-y-6">
         <MailCard />
+        <MfaCard />
+        <ResetMfaCard />
         <BillingDetailsCard />
       </div>
     </div>

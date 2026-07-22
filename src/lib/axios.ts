@@ -55,7 +55,7 @@ api.interceptors.response.use(
       return Promise.reject(error)
     }
 
-    const refreshToken = localStorage.getItem('refreshToken')
+    const refreshToken = localStorage.getItem('refreshToken') ?? sessionStorage.getItem('refreshToken')
     if (!refreshToken) {
       useAuthStore.getState().logout()
       isRefreshing = false
