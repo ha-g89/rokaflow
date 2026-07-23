@@ -76,6 +76,7 @@ export function ImportWizardModal<TRow extends ImportRowBase, TPreview extends I
   const [result, setResult] = useState<ImportResult | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [isDragging, setIsDragging] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const reset = () => {
@@ -158,6 +159,25 @@ export function ImportWizardModal<TRow extends ImportRowBase, TPreview extends I
     }
   }
 
+  const isAcceptedFile = (f: File) => /\.(csv|xlsx)$/i.test(f.name)
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    setIsDragging(true)
+  }
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    setIsDragging(false)
+  }
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    setIsDragging(false)
+    const dropped = e.dataTransfer.files?.[0]
+    if (dropped && isAcceptedFile(dropped)) setFile(dropped)
+  }
+
   const validCount = preview?.rows.filter(r => r.isValid).length ?? 0
   const invalidCount = (preview?.rows.length ?? 0) - validCount
 
@@ -186,11 +206,18 @@ export function ImportWizardModal<TRow extends ImportRowBase, TPreview extends I
 
           <div
             onClick={() => fileInputRef.current?.click()}
-            className="rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-600 p-8 flex flex-col items-center gap-2 cursor-pointer hover:border-blue-400 transition-colors"
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            className={`rounded-xl border-2 border-dashed p-8 flex flex-col items-center gap-2 cursor-pointer transition-colors ${
+              isDragging
+                ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/20'
+                : 'border-slate-300 dark:border-slate-600 hover:border-blue-400'
+            }`}
           >
             <Upload size={22} className="text-slate-400" />
             <p className="text-sm text-slate-600 dark:text-slate-300">
-              {file ? file.name : 'Klik om een CSV- of Excel-bestand te uploaden'}
+              {file ? file.name : 'Klik of sleep een CSV- of Excel-bestand hierheen'}
             </p>
             <input
               ref={fileInputRef}

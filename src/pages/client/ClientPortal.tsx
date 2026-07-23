@@ -350,12 +350,12 @@ export default function ClientPortal() {
             <button
               onClick={handleSwitchBack}
               title={`Terug naar ${user?.switchedFromOrgName}`}
-              className="flex items-center gap-1.5 pl-2.5 pr-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors flex-shrink-0"
+              className="flex items-center gap-1.5 pl-2.5 pr-3 py-1 rounded-full bg-[#f1f5f9] dark:bg-slate-800 hover:bg-blue-100 dark:hover:bg-blue-700 transition-colors flex-shrink-0"
             >
               <ArrowLeftCircle size={12} className="text-slate-400 dark:text-slate-500 flex-shrink-0" />
               <span className="text-xs font-medium text-slate-600 dark:text-slate-300">{user?.tenantName}</span>
               <ChevronRight size={12} className="text-slate-400 dark:text-slate-600 flex-shrink-0" />
-              <span className="text-xs font-semibold text-indigo-600 dark:text-indigo-400">{user?.switchedFromOrgName}</span>
+              <span className="text-xs font-semibold text-blue-600 dark:text-blue-400">{user?.switchedFromOrgName}</span>
             </button>
           )}
           <div className="relative" ref={notificationMenuRef}>
