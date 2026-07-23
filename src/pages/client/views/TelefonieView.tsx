@@ -1,7 +1,7 @@
 import { FilterSelect } from '@/components/ui/FilterSelect'
 import { useSort, SortHeader } from '@/components/ui/SortHeader'
 import { useState, useEffect, useCallback } from 'react'
-import { Phone as PhoneIcon, Layers, CreditCard, Wifi, Search, Plus, Pencil, Trash2, StickyNote, History, Maximize2, ArrowLeft, User, Link2Off, Unlink, PackageCheck } from 'lucide-react'
+import { Phone as PhoneIcon, Layers, CreditCard, Wifi, Search, Plus, Pencil, Trash2, StickyNote, History, Maximize2, ArrowLeft, User, Link2Off, Unlink, PackageCheck, Upload } from 'lucide-react'
 import api from '@/lib/axios'
 import { Card, CardContent } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -17,6 +17,8 @@ import { SubscriptionModal } from '@/components/SubscriptionModal'
 import { NotesPanel } from '@/components/NotesPanel'
 import { EntityChecklistCard } from '@/components/EntityChecklistCard'
 import { LoadingState } from '@/components/ui/LoadingState'
+import { ImportWizardModal } from '@/components/import/ImportWizardModal'
+import type { ImportPhoneRow, PhoneImportPreview } from '@/types/import'
 import type { PhoneListItem } from '@/types/phone'
 import { PHONE_STATUS_LABEL, PHONE_STATUS_TONE } from '@/types/phone'
 import type { SimCardListItem } from '@/types/simcard'
@@ -44,6 +46,7 @@ function PhonesTab({ teammates, onExpand }: { teammates: ClientUserListItem[]; o
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [historyKey, setHistoryKey] = useState(0)
   const [showWizard, setShowWizard]         = useState(false)
+  const [showImport, setShowImport]         = useState(false)
   const [confirmUnlink, setConfirmUnlink]       = useState(false)
   const [unlinking, setUnlinking]               = useState(false)
   const [confirmUnlinkSim, setConfirmUnlinkSim] = useState(false)
@@ -142,11 +145,14 @@ function PhonesTab({ teammates, onExpand }: { teammates: ClientUserListItem[]; o
           </div>
           <FilterSelect label="Status" value={statusFilter} onChange={setStatusFilter}
             options={Object.entries(PHONE_STATUS_LABEL).map(([value, label]) => ({ value, label }))} />
-          <Button size="sm" className="py-2" onClick={() => { setEditTarget(null); setShowModal(true) }}>
-            <Plus size={13} /> Toevoegen
-          </Button>
           <Button size="sm" variant="secondary" className="py-2" onClick={() => setShowWizard(true)}>
             <Layers size={13} /> Setup
+          </Button>
+          <Button size="sm" variant="secondary" className="py-2" onClick={() => setShowImport(true)}>
+            <Upload size={13} /> Importeren
+          </Button>
+          <Button size="sm" className="py-2 ml-auto" onClick={() => { setEditTarget(null); setShowModal(true) }}>
+            <Plus size={13} /> Toevoegen
           </Button>
         </div>
         <div />
@@ -352,6 +358,26 @@ function PhonesTab({ teammates, onExpand }: { teammates: ClientUserListItem[]; o
         onClose={() => setShowWizard(false)}
         onSuccess={handleSaved}
         teammates={teammates}
+      />
+
+      <ImportWizardModal<ImportPhoneRow, PhoneImportPreview>
+        open={showImport}
+        title="Telefonie importeren"
+        templateUrl="/portal/phones/import-template"
+        templateFileName="telefonie-import-template.xlsx"
+        columnsUrl="/portal/phones/import/columns"
+        validateUrl="/portal/phones/import/validate"
+        confirmUrl="/portal/phones/import/confirm"
+        columns={[
+          { key: 'brand', label: 'Merk' },
+          { key: 'model', label: 'Model' },
+          { key: 'serialNumber', label: 'Serienummer' },
+          { key: 'imeiNumber', label: 'IMEI' },
+          { key: 'assignedToEmail', label: 'Toegewezen aan' },
+          { key: 'simKaartNummer', label: 'Simkaart' },
+        ]}
+        onClose={() => setShowImport(false)}
+        onDone={() => { setShowImport(false); fetchPhones() }}
       />
     </div>
   )

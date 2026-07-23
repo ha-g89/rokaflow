@@ -72,3 +72,47 @@ export interface EmployeeImportPreview {
   planLimitMessage: string | null
   rows: ImportEmployeeRow[]
 }
+
+export interface ImportSoftwareRow {
+  rowNumber: number
+  isValid: boolean
+  errors: string[]
+  name: string
+  publisher: string
+  vendor: string | null
+  isPaid: boolean
+  assignedToEmail: string | null
+}
+
+export interface SoftwareImportPreview {
+  fileErrors: string[]
+  totalRows: number
+  validRowCount: number
+  planLimitExceeded: boolean
+  planLimitMessage: string | null
+  rows: ImportSoftwareRow[]
+}
+
+export interface ImportPhoneRow {
+  rowNumber: number
+  isValid: boolean
+  errors: string[]
+  brand: string
+  model: string
+  serialNumber: string
+  imeiNumber: string
+  supplier: string | null
+  assignedToEmail: string | null
+  simKaartNummer: string | null
+  simPhoneNumber: string | null
+  simProvider: string | null
+}
+
+export interface PhoneImportPreview {
+  fileErrors: string[]
+  totalRows: number
+  validRowCount: number
+  planLimitExceeded: boolean
+  planLimitMessage: string | null
+  rows: ImportPhoneRow[]
+}

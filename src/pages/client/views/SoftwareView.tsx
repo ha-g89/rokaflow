@@ -7,7 +7,7 @@ import { z } from 'zod'
 import {
   Shield, CreditCard, CheckCircle2, ChevronRight, Archive,
   Plus, Search, Users, Pencil, Trash2, X, StickyNote, History,
-  Maximize2, ArrowLeft, Building2, Package, Calendar,
+  Maximize2, ArrowLeft, Building2, Package, Calendar, Upload,
 } from 'lucide-react'
 import api from '@/lib/axios'
 import { Card, CardContent } from '@/components/ui/Card'
@@ -18,6 +18,8 @@ import { HistoryBlock, softwareAuditLabel, softwareDescriptionFn } from '@/compo
 import { ConfirmDeleteModal } from '@/components/ui/ConfirmDeleteModal'
 import { NotesPanel } from '@/components/NotesPanel'
 import { LicenseView } from './LicenseView'
+import { ImportWizardModal } from '@/components/import/ImportWizardModal'
+import type { ImportSoftwareRow, SoftwareImportPreview } from '@/types/import'
 import type { SoftwareListItem } from '@/types/software'
 import type { LicenseListItem, LicenseUserDto } from '@/types/license'
 import type { ClientUserListItem } from '@/types/clientUser'
@@ -955,6 +957,7 @@ function SoftwareCatalogTab({ teammates, tabBar, onExpand }: { teammates: Client
   const [loading, setLoading]       = useState(true)
   const [search, setSearch]         = useState('')
   const [showModal, setShowModal]   = useState(false)
+  const [showImport, setShowImport] = useState(false)
   const [editTarget, setEditTarget] = useState<SoftwareListItem | null>(null)
   const [selected, setSelected]     = useState<SoftwareListItem | null>(null)
 
@@ -1023,6 +1026,9 @@ function SoftwareCatalogTab({ teammates, tabBar, onExpand }: { teammates: Client
               { value: 'paid', label: 'Betaald' },
               { value: 'free', label: 'Gratis' },
             ]} />
+          <Button size="sm" variant="secondary" className="py-2" onClick={() => setShowImport(true)}>
+            <Upload size={13} /> Importeren
+          </Button>
           <Button size="sm" className="py-2" onClick={() => { setEditTarget(null); setShowModal(true) }}>
             <Plus size={13} /> Software toevoegen
           </Button>
@@ -1113,34 +1119,32 @@ function SoftwareCatalogTab({ teammates, tabBar, onExpand }: { teammates: Client
           onSaved={() => { setShowModal(false); fetchSoftware() }}
         />
       )}
-    </div>
-  )
-}
 
-// ── SoftwareToewijzingTab ─────────────────────────────────────────────────────
-
-function SoftwareToewijzingTab({ tabBar }: { tabBar: React.ReactNode }) {
-  return (
-    <div className="flex flex-col h-full gap-3">
-      {tabBar}
-      <div className="flex-1 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto mb-4">
-            <Users size={28} className="text-slate-300" />
-          </div>
-          <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Toewijzingen</p>
-          <p className="text-xs text-slate-400 mt-1 max-w-xs">
-            Hier ziet u alle softwaretoewijzingen per medewerker, inclusief compliance-status.
-          </p>
-        </div>
-      </div>
+      <ImportWizardModal<ImportSoftwareRow, SoftwareImportPreview>
+        open={showImport}
+        title="Software importeren"
+        templateUrl="/portal/software/import-template"
+        templateFileName="software-import-template.xlsx"
+        columnsUrl="/portal/software/import/columns"
+        validateUrl="/portal/software/import/validate"
+        confirmUrl="/portal/software/import/confirm"
+        columns={[
+          { key: 'name', label: 'Naam' },
+          { key: 'publisher', label: 'Uitgever' },
+          { key: 'vendor', label: 'Leverancier' },
+          { key: 'isPaid', label: 'Betaald' },
+          { key: 'assignedToEmail', label: 'Toegewezen aan' },
+        ]}
+        onClose={() => setShowImport(false)}
+        onDone={() => { setShowImport(false); fetchSoftware() }}
+      />
     </div>
   )
 }
 
 // ── SoftwareView ──────────────────────────────────────────────────────────────
 
-type SoftwareTab = 'catalog' | 'licenties' | 'toewijzing'
+type SoftwareTab = 'catalog' | 'licenties'
 
 export function SoftwareView({ teammates, onExpandSoftware, onExpandLicense }: {
   teammates: ClientUserListItem[]
@@ -1154,7 +1158,6 @@ export function SoftwareView({ teammates, onExpandSoftware, onExpandLicense }: {
       {([
         { key: 'catalog',    label: 'Software' },
         { key: 'licenties',  label: 'Licenties' },
-        { key: 'toewijzing', label: 'Toewijzing' },
       ] as { key: SoftwareTab; label: string }[]).map(t => (
         <button
           key={t.key}
@@ -1175,7 +1178,6 @@ export function SoftwareView({ teammates, onExpandSoftware, onExpandLicense }: {
     <div className="h-full">
       {tab === 'catalog'    && <SoftwareCatalogTab teammates={teammates} tabBar={tabBar} onExpand={onExpandSoftware} />}
       {tab === 'licenties'  && <LicenseView teammates={teammates} tabBar={tabBar} onExpand={onExpandLicense} />}
-      {tab === 'toewijzing' && <SoftwareToewijzingTab tabBar={tabBar} />}
     </div>
   )
 }
