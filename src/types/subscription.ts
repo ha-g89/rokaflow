@@ -3,7 +3,7 @@ export interface SubscriptionListItem {
   name: string
   provider: string
   supplier: string | null
-  type: 'Mobile' | 'Internet'
+  type: 'Mobile' | 'Data'
   bundle: string
   monthlyCost: number | null
   startsAt: string | null
@@ -19,7 +19,7 @@ export interface SubscriptionListItem {
 
 export const SUB_TYPE_LABEL: Record<string, string> = {
   Mobile: 'Mobiel',
-  Internet: 'Internet',
+  Data: 'Data',
 }
 
 export const SUB_STATUS_LABEL: Record<string, string> = {
@@ -36,7 +36,7 @@ export const SUB_STATUS_TONE: Record<string, string> = {
 
 export const SUB_TYPE_OPTIONS = [
   { value: '0', label: 'Mobiel' },
-  { value: '1', label: 'Internet' },
+  { value: '1', label: 'Data' },
 ]
 
 export const SUB_STATUS_OPTIONS = [

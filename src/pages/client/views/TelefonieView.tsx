@@ -23,7 +23,7 @@ import { PHONE_STATUS_LABEL, PHONE_STATUS_TONE } from '@/types/phone'
 import type { SimCardListItem } from '@/types/simcard'
 import { SIM_STATUS_LABEL, SIM_STATUS_TONE, SIM_TYPE_LABEL } from '@/types/simcard'
 import type { SubscriptionListItem } from '@/types/subscription'
-import { SUB_STATUS_LABEL } from '@/types/subscription'
+import { SUB_STATUS_LABEL, SUB_TYPE_LABEL } from '@/types/subscription'
 import type { ClientUserListItem } from '@/types/clientUser'
 
 type TelefonieTab = 'phones' | 'simcards'
@@ -427,16 +427,21 @@ function SimCardsTab({ teammates }: { teammates: ClientUserListItem[] }) {
     const sub = subscriptionFor(s.id)
     return (!typeFilter || s.type === typeFilter) &&
       (!statusFilter || s.status === statusFilter) &&
-      `${s.kaartNummer} ${s.phoneNumber} ${s.assignedToName ?? ''} ${s.phoneName ?? ''} ${sub?.provider ?? ''} ${sub?.bundle ?? ''}`
+      `${s.kaartNummer} ${s.phoneNumber} ${s.assignedToName ?? ''} ${s.phoneName ?? ''} ${sub?.provider ?? ''} ${sub?.name ?? ''} ${sub?.supplier ?? ''}`
         .toLowerCase().includes(search.toLowerCase())
   })
 
   const { sorted, sortKey, sortDir, toggleSort } = useSort(filtered, {
-    provider:    s => subscriptionFor(s.id)?.provider || null,
-    toegewezen:  s => s.assignedToName || null,
-    telefoon:    s => s.phoneName || null,
-    kaartnummer: s => s.kaartNummer,
-    status:      s => SIM_STATUS_LABEL[s.status] ?? s.status,
+    provider:      s => subscriptionFor(s.id)?.provider || null,
+    naam:          s => subscriptionFor(s.id)?.name || null,
+    dienst:        s => subscriptionFor(s.id) ? (SUB_TYPE_LABEL[subscriptionFor(s.id)!.type] ?? subscriptionFor(s.id)!.type) : null,
+    telefoonnummer: s => s.phoneNumber || null,
+    persoon:       s => s.assignedToName || null,
+    leverancier:   s => subscriptionFor(s.id)?.supplier || null,
+    tarief:        s => subscriptionFor(s.id)?.monthlyCost ?? null,
+    simkaart:      s => SIM_TYPE_LABEL[s.type] ?? s.type,
+    kaartnummer:   s => s.kaartNummer,
+    status:        s => SIM_STATUS_LABEL[s.status] ?? s.status,
   })
 
   const handleDelete = async (id: string) => {
@@ -452,6 +457,8 @@ function SimCardsTab({ teammates }: { teammates: ClientUserListItem[] }) {
     if (cost == null) return '—'
     return `€ ${cost.toFixed(2)}`
   }
+
+  const SIM_COLS = 'grid-cols-[1fr_1.2fr_0.8fr_1fr_1.1fr_1fr_0.8fr_0.8fr_1.2fr_0.8fr]'
 
   const selectedSubscription = selected ? subscriptionFor(selected.id) : null
 
@@ -478,11 +485,16 @@ function SimCardsTab({ teammates }: { teammates: ClientUserListItem[] }) {
       <div />
 
       <Card className="overflow-hidden flex flex-col min-h-0">
-        <div className="grid grid-cols-[1.6fr_1.2fr_1.1fr_1.3fr_0.9fr] gap-3 px-4 py-2.5 bg-slate-50 border-b border-slate-100 flex-shrink-0">
+        <div className={`grid ${SIM_COLS} gap-3 px-4 py-2.5 bg-slate-50 border-b border-slate-100 flex-shrink-0`}>
           {([
-            { label: 'Provider / bundel', key: 'provider' },
-            { label: 'Toegewezen aan', key: 'toegewezen' },
-            { label: 'Telefoon', key: 'telefoon' },
+            { label: 'Provider', key: 'provider' },
+            { label: 'Abonnement', key: 'naam' },
+            { label: 'Dienst', key: 'dienst' },
+            { label: 'Telefoonnummer', key: 'telefoonnummer' },
+            { label: 'Persoon', key: 'persoon' },
+            { label: 'Leverancier', key: 'leverancier' },
+            { label: 'Tarief', key: 'tarief' },
+            { label: 'Simkaart', key: 'simkaart' },
             { label: 'Kaartnummer', key: 'kaartnummer', right: true },
             { label: 'Status', key: 'status' },
           ] as { label: string; key?: string; right?: boolean }[]).map((h, i) => (
@@ -505,13 +517,16 @@ function SimCardsTab({ teammates }: { teammates: ClientUserListItem[] }) {
                   <li
                     key={s.id}
                     onClick={() => { setSelected(s); setConfirmDelete(false) }}
-                    className={`grid grid-cols-[1.6fr_1.2fr_1.1fr_1.3fr_0.9fr] gap-3 px-4 py-3 items-center cursor-pointer transition-colors hover:bg-slate-100 ${selected?.id === s.id ? 'bg-blue-50 border-l-2 border-blue-500' : ''}`}
+                    className={`grid ${SIM_COLS} gap-3 px-4 py-3 items-center cursor-pointer transition-colors hover:bg-slate-100 ${selected?.id === s.id ? 'bg-blue-50 border-l-2 border-blue-500' : ''}`}
                   >
-                    <p className="text-xs text-slate-600 truncate">
-                      {sub ? `${sub.provider || '—'}${sub.bundle ? ` · ${sub.bundle}` : ''}` : '—'}
-                    </p>
-                    <p className="text-xs text-slate-600 truncate">{s.assignedToName || '—'}</p>
-                    <p className="text-xs text-slate-600 truncate">{s.phoneName || '—'}</p>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 truncate">{sub?.provider || '—'}</p>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 truncate">{sub?.name || '—'}</p>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 truncate">{sub ? (SUB_TYPE_LABEL[sub.type] ?? sub.type) : '—'}</p>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 truncate tabular-nums">{s.phoneNumber || '—'}</p>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 truncate">{s.assignedToName || '—'}</p>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 truncate">{sub?.supplier || '—'}</p>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 truncate tabular-nums">{fmtCost(sub?.monthlyCost ?? null)}</p>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 truncate">{SIM_TYPE_LABEL[s.type] ?? s.type}</p>
                     <p className="text-sm font-semibold text-slate-800 truncate tabular-nums text-right">{s.kaartNummer}</p>
                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium truncate ${SIM_STATUS_TONE[s.status] ?? 'bg-slate-100 text-slate-500'}`}>
                       {SIM_STATUS_LABEL[s.status] ?? s.status}
@@ -575,10 +590,10 @@ function SimCardsTab({ teammates }: { teammates: ClientUserListItem[] }) {
               ) : (
                 <button
                   onClick={() => { setEditTarget(selected); setShowModal(true) }}
-                  className="w-full flex items-center justify-between gap-2 rounded-xl border border-dashed border-slate-300 px-3 py-2.5 text-left hover:border-blue-400 hover:bg-blue-50/40 transition-colors"
+                  className="w-full flex items-center justify-between gap-2 rounded-xl border border-dashed border-slate-300 dark:border-slate-600 bg-transparent px-3 py-2.5 text-left hover:border-blue-400 hover:bg-blue-50/40 dark:hover:bg-blue-900/20 transition-colors"
                 >
-                  <span className="text-xs text-slate-500">Nog geen abonnement — simkaart in voorraad</span>
-                  <span className="flex items-center gap-1 text-xs font-semibold text-blue-600">
+                  <span className="text-xs text-slate-500 dark:text-slate-400">Nog geen abonnement — simkaart in voorraad</span>
+                  <span className="flex items-center gap-1 text-xs font-semibold text-blue-600 dark:text-blue-400">
                     <Plus size={13} /> Toevoegen
                   </span>
                 </button>
