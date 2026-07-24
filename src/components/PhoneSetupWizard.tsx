@@ -26,23 +26,23 @@ const phoneSchema = z.object({
 })
 
 const subSchema = z.object({
-  name:        z.string().min(1, 'Naam is verplicht').max(256),
-  provider:    z.string().max(200),
-  supplier:    z.string().max(200),
-  bundle:      z.string().max(200),
-  monthlyCost: z.string(),
-  startsAt:    z.string(),
-  expiresAt:   z.string(),
-  status:      z.string(),
+  name:             z.string().min(1, 'Naam is verplicht').max(256),
+  provider:         z.string().max(200),
+  supplier:         z.string().max(200),
+  bundle:           z.string().max(200),
+  phoneNumber:      z.string().max(50),
+  assignedToUserId: z.string(),
+  monthlyCost:      z.string(),
+  startsAt:         z.string(),
+  expiresAt:        z.string(),
+  status:           z.string(),
 })
 
 const simSchema = z.object({
-  kaartNummer:      z.string().min(1, 'Kaartnummer is verplicht').max(100),
-  type:             z.string(),
-  phoneNumber:      z.string().max(50),
-  provider:         z.string().max(200),
-  status:           z.string(),
-  assignedToUserId: z.string(),
+  kaartNummer: z.string().min(1, 'Kaartnummer is verplicht').max(100),
+  type:        z.string(),
+  provider:    z.string().max(200),
+  status:      z.string(),
 })
 
 type PhoneValues = z.infer<typeof phoneSchema>
@@ -269,7 +269,13 @@ function PhoneStep({
 
 // ── Step 2: Abonnement ────────────────────────────────────────────────────────
 
-function SubStep({ form }: { form: ReturnType<typeof useForm<SubValues>> }) {
+function SubStep({
+  form, teammates, lockedUser,
+}: {
+  form: ReturnType<typeof useForm<SubValues>>
+  teammates: ClientUserListItem[]
+  lockedUser?: { id: string; name: string }
+}) {
   const { register, formState: { errors } } = form
   return (
     <div className="space-y-4">
@@ -287,9 +293,15 @@ function SubStep({ form }: { form: ReturnType<typeof useForm<SubValues>> }) {
           <input {...register('provider')} className={f} placeholder="KPN, Vodafone…" />
         </div>
       </div>
-      <div>
-        <label className="block text-xs font-medium text-slate-600 mb-1">Leverancier</label>
-        <input {...register('supplier')} className={f} placeholder="Belsimpel, Tele2…" />
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="block text-xs font-medium text-slate-600 mb-1">Telefoonnummer</label>
+          <input {...register('phoneNumber')} className={f} placeholder="+31 6 12345678" />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-slate-600 mb-1">Leverancier</label>
+          <input {...register('supplier')} className={f} placeholder="Belsimpel, Tele2…" />
+        </div>
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
@@ -300,6 +312,19 @@ function SubStep({ form }: { form: ReturnType<typeof useForm<SubValues>> }) {
           <label className="block text-xs font-medium text-slate-600 mb-1">Maandelijkse kosten (€)</label>
           <input {...register('monthlyCost')} type="number" step="0.01" className={f} placeholder="25.00" />
         </div>
+      </div>
+      <div>
+        <label className="block text-xs font-medium text-slate-600 mb-1">Toegewezen aan</label>
+        {lockedUser ? (
+          <LockedField name={lockedUser.name} />
+        ) : (
+          <select {...register('assignedToUserId')} className={f}>
+            <option value="">— Niemand —</option>
+            {teammates.map(u => (
+              <option key={u.id} value={u.id}>{u.firstName} {u.lastName}</option>
+            ))}
+          </select>
+        )}
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
@@ -326,15 +351,13 @@ function SubStep({ form }: { form: ReturnType<typeof useForm<SubValues>> }) {
 // ── Step 3: Simkaart ──────────────────────────────────────────────────────────
 
 function SimStep({
-  form, phoneBrand, phoneModel, teammates, lockedUser,
+  form, phoneBrand, phoneModel,
 }: {
   form: ReturnType<typeof useForm<SimValues>>
   phoneBrand: string
   phoneModel: string
-  teammates: ClientUserListItem[]
-  lockedUser?: { id: string; name: string }
 }) {
-  const { register, setValue, formState: { errors } } = form
+  const { register, formState: { errors } } = form
   const phoneLabel = [phoneBrand, phoneModel].filter(Boolean).join(' ') || 'de telefoon uit stap 1'
   return (
     <div className="space-y-4">
@@ -358,34 +381,8 @@ function SimStep({
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Telefoonnummer</label>
-          <input {...register('phoneNumber')} className={f} placeholder="+31 6 12345678" />
-        </div>
-        <div>
           <label className="block text-xs font-medium text-slate-600 mb-1">Provider</label>
           <input {...register('provider')} className={f} placeholder="KPN, Vodafone…" />
-        </div>
-      </div>
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Toegewezen aan</label>
-          {lockedUser ? (
-            <LockedField name={lockedUser.name} />
-          ) : (
-            <select
-              {...register('assignedToUserId')}
-              className={f}
-              onChange={e => {
-                setValue('assignedToUserId', e.target.value)
-                setValue('status', e.target.value ? '0' : '1')
-              }}
-            >
-              <option value="">— Niemand —</option>
-              {teammates.map(u => (
-                <option key={u.id} value={u.id}>{u.firstName} {u.lastName}</option>
-              ))}
-            </select>
-          )}
         </div>
         <div>
           <label className="block text-xs font-medium text-slate-600 mb-1">Status</label>
@@ -432,8 +429,8 @@ export function PhoneSetupWizard({ open, onClose, onSuccess, teammates, lockedUs
   useEffect(() => {
     if (open) {
       phoneForm.reset({ brand: '', model: '', serialNumber: '', imeiNumber: '', supplier: '', status: lockedUser ? '1' : '0', assignedToUserId: lockedUser?.id ?? '', issuedAt: '', returnedAt: '' })
-      subForm.reset({ name: '', provider: '', supplier: '', bundle: '', monthlyCost: '', startsAt: '', expiresAt: '', status: '0' })
-      simForm.reset({ kaartNummer: '', type: '0', phoneNumber: '', provider: '', status: '0', assignedToUserId: lockedUser?.id ?? '' })
+      subForm.reset({ name: '', provider: '', supplier: '', bundle: '', phoneNumber: '', assignedToUserId: lockedUser?.id ?? '', monthlyCost: '', startsAt: '', expiresAt: '', status: '0' })
+      simForm.reset({ kaartNummer: '', type: '0', provider: '', status: '0' })
       pendingSub.current = null
       setStep(1)
       setApiError(null)
@@ -503,13 +500,11 @@ export function PhoneSetupWizard({ open, onClose, onSuccess, teammates, lockedUs
       let simcardId: string | null = null
       if (simValues) {
         const simRes = await api.post('/portal/simcards', {
-          kaartNummer:      simValues.kaartNummer,
-          type:             parseInt(simValues.type, 10),
-          phoneNumber:      simValues.phoneNumber || '',
-          provider:         simValues.provider || '',
-          status:           parseInt(simValues.status, 10),
-          phoneId:          phoneId,
-          assignedToUserId: simValues.assignedToUserId || null,
+          kaartNummer: simValues.kaartNummer,
+          type:        parseInt(simValues.type, 10),
+          provider:    simValues.provider || '',
+          status:      parseInt(simValues.status, 10),
+          phoneId:     phoneId,
         })
         simcardId = simRes.data.id as string
       }
@@ -517,17 +512,19 @@ export function PhoneSetupWizard({ open, onClose, onSuccess, teammates, lockedUs
       const sv = pendingSub.current
       if (sv) {
         await api.post('/portal/subscriptions', {
-          name:        sv.name,
-          provider:    sv.provider || '',
-          supplier:    sv.supplier || null,
-          type:        0,
-          bundle:      sv.bundle || '',
-          monthlyCost: sv.monthlyCost ? parseFloat(sv.monthlyCost) : null,
-          startsAt:    sv.startsAt ? new Date(sv.startsAt).toISOString() : null,
-          expiresAt:   sv.expiresAt ? new Date(sv.expiresAt).toISOString() : null,
-          status:      parseInt(sv.status, 10),
-          location:    '',
-          simCardId:   simcardId,
+          name:             sv.name,
+          provider:         sv.provider || '',
+          supplier:         sv.supplier || null,
+          type:             0,
+          bundle:           sv.bundle || '',
+          phoneNumber:      sv.phoneNumber || '',
+          assignedToUserId: sv.assignedToUserId || null,
+          monthlyCost:      sv.monthlyCost ? parseFloat(sv.monthlyCost) : null,
+          startsAt:         sv.startsAt ? new Date(sv.startsAt).toISOString() : null,
+          expiresAt:        sv.expiresAt ? new Date(sv.expiresAt).toISOString() : null,
+          status:           parseInt(sv.status, 10),
+          location:         '',
+          simCardId:        simcardId,
         })
       }
 
@@ -541,24 +538,23 @@ export function PhoneSetupWizard({ open, onClose, onSuccess, teammates, lockedUs
     }
   }
 
-  const prefillSimAssignee = () => {
+  // Wie de telefoon krijgt, krijgt vermoedelijk ook het abonnement — handig default,
+  // niet bindend (blijft gewoon aanpasbaar in stap 2).
+  const prefillSubAssignee = () => {
     const assigned = lockedUser?.id ?? phoneForm.getValues('assignedToUserId')
-    if (assigned) {
-      simForm.setValue('assignedToUserId', assigned)
-      simForm.setValue('status', '0')
-    }
+    if (assigned) subForm.setValue('assignedToUserId', assigned)
   }
 
   const handleNext = async () => {
     if (step === 1) {
       const ok = await phoneForm.trigger()
       if (!ok) return
+      prefillSubAssignee()
       setStep(2)
     } else if (step === 2) {
       const ok = await subForm.trigger()
       if (!ok) return
       pendingSub.current = subForm.getValues()
-      prefillSimAssignee()
       setStep(3)
     } else {
       const ok = await simForm.trigger()
@@ -570,7 +566,6 @@ export function PhoneSetupWizard({ open, onClose, onSuccess, teammates, lockedUs
   const handleSkip = async () => {
     if (step === 2) {
       pendingSub.current = null
-      prefillSimAssignee()
       setStep(3)
     } else {
       await submit(null)
@@ -733,10 +728,10 @@ export function PhoneSetupWizard({ open, onClose, onSuccess, teammates, lockedUs
                   <PhoneStep form={phoneForm} teammates={teammates} lockedUser={lockedUser} />
                 </div>
                 <div style={{ display: step === 2 ? 'block' : 'none' }}>
-                  <SubStep form={subForm} />
+                  <SubStep form={subForm} teammates={teammates} lockedUser={lockedUser} />
                 </div>
                 <div style={{ display: step === 3 ? 'block' : 'none' }}>
-                  <SimStep form={simForm} phoneBrand={phoneBrand} phoneModel={phoneModel} teammates={teammates} lockedUser={lockedUser} />
+                  <SimStep form={simForm} phoneBrand={phoneBrand} phoneModel={phoneModel} />
                 </div>
 
                 {apiError && (
