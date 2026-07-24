@@ -19,7 +19,7 @@ import { SettingsView } from './views/SettingsView'
 import { HardwareView, HardwareDetailFullView } from './views/HardwareView'
 import { SoftwareView, SoftwareDetailFullView } from './views/SoftwareView'
 import { LicenseDetailFullView } from './views/LicenseView'
-import { TelefonieView, PhoneDetailFullView } from './views/TelefonieView'
+import { TelefonieView, PhoneDetailFullView, SimCardDetailFullView } from './views/TelefonieView'
 import { DepartmentsView } from './views/DepartmentsView'
 import { LocationsView } from './views/LocationsView'
 import { EmployeeListView, EmployeeDetailView, DeleteEmployeeModal } from './views/EmployeesView'
@@ -37,7 +37,7 @@ import type { MyPlanDto } from '@/types/platformPlan'
 type View =
   | 'employees' | 'employee-detail'
   | 'departments' | 'locations'
-  | 'hardware' | 'hardware-detail' | 'software' | 'software-detail' | 'license-detail' | 'phones' | 'phone-detail'
+  | 'hardware' | 'hardware-detail' | 'software' | 'software-detail' | 'license-detail' | 'phones' | 'phone-detail' | 'simcard-detail'
   | 'processes'
   | 'overviews' | 'history' | 'contracts'
   | 'settings' | 'help'
@@ -54,6 +54,7 @@ const VIEW_TITLES: Record<View, string> = {
   'license-detail':  'Licentie details',
   phones:            'Telefonie',
   'phone-detail':    'Telefoon details',
+  'simcard-detail':  'Abonnement details',
   processes:         'Processen',
   overviews:         'Overzichten',
   history:           'Historie',
@@ -221,10 +222,16 @@ export default function ClientPortal() {
   const handleHardwareFromEmployee = (asset: import('@/types/hardware').HardwareAssetListItem) => { setSelectedHardwareAsset(asset); pushAndNavigate('hardware-detail', 'Terug naar medewerker') }
 
   const [selectedPhone, setSelectedPhone] = useState<import('@/types/phone').PhoneListItem | null>(null)
+  const [telefonieTab, setTelefonieTab]   = useState<'phones' | 'simcards'>('phones')
   const handleExpandPhone      = (phone: import('@/types/phone').PhoneListItem) => { setSelectedPhone(phone); pushAndNavigate('phone-detail', 'Terug naar telefonie') }
   const handleBackToPhones     = () => { setView('phones'); setSelectedPhone(null); setNavHistory([]) }
   const handlePhoneDeleted     = () => { setView('phones'); setSelectedPhone(null); setNavHistory([]) }
   const handlePhoneFromEmployee = (phone: import('@/types/phone').PhoneListItem) => { setSelectedPhone(phone); pushAndNavigate('phone-detail', 'Terug naar medewerker') }
+
+  const [selectedSimCard, setSelectedSimCard] = useState<import('@/types/simcard').SimCardListItem | null>(null)
+  const handleExpandSimCard    = (simCard: import('@/types/simcard').SimCardListItem) => { setTelefonieTab('simcards'); setSelectedSimCard(simCard); pushAndNavigate('simcard-detail', 'Terug naar telefonie') }
+  const handleBackToSimCards   = () => { setView('phones'); setSelectedSimCard(null); setNavHistory([]) }
+  const handleSimCardDeleted   = () => { setView('phones'); setSelectedSimCard(null); setNavHistory([]) }
 
   const [selectedSoftware, setSelectedSoftware] = useState<import('@/types/software').SoftwareListItem | null>(null)
   const handleExpandSoftware   = (item: import('@/types/software').SoftwareListItem) => { setSelectedSoftware(item); pushAndNavigate('software-detail', 'Terug naar software') }
@@ -318,6 +325,8 @@ export default function ClientPortal() {
     if (v !== 'employee-detail') setSelectedUser(null)
     if (v !== 'hardware-detail') setSelectedHardwareAsset(null)
     if (v !== 'phone-detail') setSelectedPhone(null)
+    if (v !== 'simcard-detail') setSelectedSimCard(null)
+    if (v === 'phones') setTelefonieTab('phones')
     fetchUsers()
     fetchDepartmentOptions()
     fetchManagers()
@@ -572,13 +581,22 @@ export default function ClientPortal() {
                 backLabel={navHistory[navHistory.length - 1]?.backLabel ?? 'Terug naar licenties'}
               />
             )}
-            {view === 'phones'       && <TelefonieView teammates={teammates} onExpand={handleExpandPhone} />}
+            {view === 'phones'       && <TelefonieView teammates={teammates} onExpand={handleExpandPhone} onExpandSimCard={handleExpandSimCard} initialTab={telefonieTab} />}
             {view === 'phone-detail' && selectedPhone && (
               <PhoneDetailFullView
                 initialPhone={selectedPhone}
                 teammates={teammates}
                 onBack={navHistory.length > 0 ? goBack : handleBackToPhones}
                 onDeleted={handlePhoneDeleted}
+                backLabel={navHistory[navHistory.length - 1]?.backLabel ?? 'Terug naar telefonie'}
+              />
+            )}
+            {view === 'simcard-detail' && selectedSimCard && (
+              <SimCardDetailFullView
+                initialSimCard={selectedSimCard}
+                teammates={teammates}
+                onBack={navHistory.length > 0 ? goBack : handleBackToSimCards}
+                onDeleted={handleSimCardDeleted}
                 backLabel={navHistory[navHistory.length - 1]?.backLabel ?? 'Terug naar telefonie'}
               />
             )}

@@ -23,7 +23,7 @@ import { PHONE_STATUS_LABEL, PHONE_STATUS_TONE } from '@/types/phone'
 import type { SimCardListItem } from '@/types/simcard'
 import { SIM_STATUS_LABEL, SIM_STATUS_TONE, SIM_TYPE_LABEL } from '@/types/simcard'
 import type { SubscriptionListItem } from '@/types/subscription'
-import { SUB_STATUS_LABEL, SUB_STATUS_TONE, SUB_TYPE_LABEL } from '@/types/subscription'
+import { SUB_STATUS_LABEL, SUB_STATUS_TONE } from '@/types/subscription'
 import type { ClientUserListItem } from '@/types/clientUser'
 
 type TelefonieTab = 'phones' | 'simcards'
@@ -79,9 +79,9 @@ function PhonesTab({ teammates, onExpand }: { teammates: ClientUserListItem[]; o
   const { sorted, sortKey, sortDir, toggleSort } = useSort(filtered, {
     merk:       p => p.brand || null,
     model:      p => p.model || null,
+    serienummer: p => p.serialNumber || null,
     imei:       p => p.imeiNumber || null,
     leverancier: p => p.supplier || null,
-    telnr:      p => p.simPhoneNumber || null,
     toegewezen: p => p.assignedToName || null,
     uitgifte:   p => p.issuedAt || null,
     status:     p => PHONE_STATUS_LABEL[p.status] ?? p.status,
@@ -161,9 +161,9 @@ function PhonesTab({ teammates, onExpand }: { teammates: ClientUserListItem[]; o
             {([
               { label: 'Merk', key: 'merk' },
               { label: 'Model', key: 'model' },
+              { label: 'Serienummer', key: 'serienummer' },
               { label: 'IMEI-nummer', key: 'imei' },
               { label: 'Leverancier', key: 'leverancier' },
-              { label: 'Telefoonnummer', key: 'telnr' },
               { label: 'Toegewezen aan', key: 'toegewezen' },
               { label: 'Uitgiftedatum', key: 'uitgifte' },
               { label: 'Status', key: 'status' },
@@ -189,9 +189,9 @@ function PhonesTab({ teammates, onExpand }: { teammates: ClientUserListItem[]; o
                   >
                     <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 truncate">{p.brand}</p>
                     <p className="text-xs text-slate-600 dark:text-slate-400 truncate">{p.model || '—'}</p>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 truncate tabular-nums">{p.serialNumber || '—'}</p>
                     <p className="text-xs text-slate-600 dark:text-slate-400 truncate tabular-nums">{p.imeiNumber || '—'}</p>
                     <p className="text-xs text-slate-600 dark:text-slate-400 truncate">{p.supplier || '—'}</p>
-                    <p className="text-xs text-slate-600 dark:text-slate-400 truncate tabular-nums">{p.simPhoneNumber || '—'}</p>
                     <p className="text-xs text-slate-600 dark:text-slate-400 truncate">{p.assignedToName || '—'}</p>
                     <p className="text-xs text-slate-600 dark:text-slate-400 truncate tabular-nums">{fmt(p.issuedAt)}</p>
                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium truncate ${PHONE_STATUS_TONE[p.status] ?? 'bg-slate-100 text-slate-500'}`}>
@@ -384,7 +384,7 @@ function PhonesTab({ teammates, onExpand }: { teammates: ClientUserListItem[]; o
 
 // ── SimCards tab ──────────────────────────────────────────────────────────────
 
-function SimCardsTab({ teammates }: { teammates: ClientUserListItem[] }) {
+function SimCardsTab({ teammates, onExpand }: { teammates: ClientUserListItem[]; onExpand?: (simCard: SimCardListItem) => void }) {
   const [simCards, setSimCards]         = useState<SimCardListItem[]>([])
   const [phones, setPhones]             = useState<PhoneListItem[]>([])
   const [subscriptions, setSubscriptions] = useState<SubscriptionListItem[]>([])
@@ -395,6 +395,7 @@ function SimCardsTab({ teammates }: { teammates: ClientUserListItem[] }) {
   const [editTarget, setEditTarget]     = useState<SimCardListItem | null>(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [historyKey, setHistoryKey]     = useState(0)
+  const [activeTab, setActiveTab]       = useState<'notes' | 'history'>('notes')
 
   const fetchData = useCallback(async () => {
     try {
@@ -418,6 +419,11 @@ function SimCardsTab({ teammates }: { teammates: ClientUserListItem[] }) {
     }
   }, [simCards])
 
+  useEffect(() => {
+    setConfirmDelete(false)
+    setActiveTab('notes')
+  }, [selected?.id])
+
   const subscriptionFor = (simId: string) => subscriptions.find(sub => sub.simCardId === simId) ?? null
 
   const [typeFilter, setTypeFilter]         = useState('')
@@ -436,12 +442,9 @@ function SimCardsTab({ teammates }: { teammates: ClientUserListItem[] }) {
   const { sorted, sortKey, sortDir, toggleSort } = useSort(filtered, {
     provider:      s => subscriptionFor(s.id)?.provider || null,
     naam:          s => subscriptionFor(s.id)?.name || null,
-    dienst:        s => subscriptionFor(s.id) ? (SUB_TYPE_LABEL[subscriptionFor(s.id)!.type] ?? subscriptionFor(s.id)!.type) : null,
     telefoonnummer: s => s.phoneNumber || null,
     persoon:       s => s.assignedToName || null,
     leverancier:   s => subscriptionFor(s.id)?.supplier || null,
-    tarief:        s => subscriptionFor(s.id)?.monthlyCost ?? null,
-    simkaart:      s => SIM_TYPE_LABEL[s.type] ?? s.type,
     kaartnummer:   s => s.kaartNummer,
     status:        s => SIM_STATUS_LABEL[s.status] ?? s.status,
   })
@@ -460,7 +463,7 @@ function SimCardsTab({ teammates }: { teammates: ClientUserListItem[] }) {
     return `€ ${cost.toFixed(2)}`
   }
 
-  const SIM_COLS = 'grid-cols-[1fr_1.2fr_0.8fr_1fr_1.1fr_1fr_0.8fr_0.8fr_1.2fr_0.8fr]'
+  const SIM_COLS = 'grid-cols-[1fr_1.2fr_1fr_1.1fr_1fr_1.2fr_0.8fr]'
 
   const selectedSubscription = selected ? subscriptionFor(selected.id) : null
 
@@ -493,12 +496,9 @@ function SimCardsTab({ teammates }: { teammates: ClientUserListItem[] }) {
           {([
             { label: 'Provider', key: 'provider' },
             { label: 'Abonnement', key: 'naam' },
-            { label: 'Dienst', key: 'dienst' },
             { label: 'Telefoonnummer', key: 'telefoonnummer' },
             { label: 'Persoon', key: 'persoon' },
             { label: 'Leverancier', key: 'leverancier' },
-            { label: 'Tarief', key: 'tarief' },
-            { label: 'SIM type', key: 'simkaart' },
             { label: 'SIM nummer', key: 'kaartnummer' },
             { label: 'Status', key: 'status' },
           ] as { label: string; key?: string; right?: boolean }[]).map((h, i) => (
@@ -532,12 +532,9 @@ function SimCardsTab({ teammates }: { teammates: ClientUserListItem[] }) {
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-slate-600 dark:text-slate-400 truncate">{sub ? (SUB_TYPE_LABEL[sub.type] ?? sub.type) : '—'}</p>
                     <p className="text-xs text-slate-600 dark:text-slate-400 truncate tabular-nums">{s.phoneNumber || '—'}</p>
                     <p className="text-xs text-slate-600 dark:text-slate-400 truncate">{s.assignedToName || '—'}</p>
                     <p className="text-xs text-slate-600 dark:text-slate-400 truncate">{sub?.supplier || '—'}</p>
-                    <p className="text-xs text-slate-600 dark:text-slate-400 truncate tabular-nums">{fmtCost(sub?.monthlyCost ?? null)}</p>
-                    <p className="text-xs text-slate-600 dark:text-slate-400 truncate">{SIM_TYPE_LABEL[s.type] ?? s.type}</p>
                     <p className="text-sm font-semibold text-slate-800 truncate tabular-nums">{s.kaartNummer}</p>
                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium truncate ${SIM_STATUS_TONE[s.status] ?? 'bg-slate-100 text-slate-500'}`}>
                       {SIM_STATUS_LABEL[s.status] ?? s.status}
@@ -554,20 +551,31 @@ function SimCardsTab({ teammates }: { teammates: ClientUserListItem[] }) {
         {selected ? (
           <Card className="h-full overflow-y-auto">
             <CardContent className="p-5">
-              <div className="flex items-start justify-between mb-4 gap-3">
-                <div>
-                  <h2 className="text-base font-bold text-slate-900 tabular-nums">{selected.kaartNummer}</h2>
-                  <p className="text-xs text-slate-400 mt-0.5">{selected.assignedToName || 'Niet toegewezen'}</p>
+              <div className="flex items-start justify-between mb-4 gap-2">
+                <div className="min-w-0">
+                  <h2 className="text-base font-bold text-slate-900 truncate tabular-nums">{selected.kaartNummer}</h2>
+                  <p className="text-xs text-slate-400 mt-0.5 truncate">{selected.assignedToName || 'Niet toegewezen'}</p>
                 </div>
-                <span className={`text-xs px-2.5 py-1 rounded-full font-medium flex-shrink-0 ${SIM_STATUS_TONE[selected.status] ?? ''}`}>
-                  {SIM_STATUS_LABEL[selected.status] ?? selected.status}
-                </span>
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  <button onClick={() => { setEditTarget(selected); setShowModal(true) }} title="Wijzigen" className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors">
+                    <Pencil size={13} />
+                  </button>
+                  <button onClick={() => setConfirmDelete(true)} title="Verwijderen" className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors">
+                    <Trash2 size={13} />
+                  </button>
+                  {onExpand && (
+                    <button onClick={() => onExpand(selected)} title="Volledig openen" className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors">
+                      <Maximize2 size={13} />
+                    </button>
+                  )}
+                </div>
               </div>
 
               <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 mb-2">Simkaart</p>
               <div className="grid grid-cols-2 gap-2">
                 {[
                   { label: 'Type',           value: SIM_TYPE_LABEL[selected.type] ?? selected.type },
+                  { label: 'Status',         value: SIM_STATUS_LABEL[selected.status] ?? selected.status },
                   { label: 'Telefoonnummer', value: selected.phoneNumber || '—' },
                 ].map(row => (
                   <div key={row.label} className="rounded-xl bg-slate-50 p-3">
@@ -610,25 +618,30 @@ function SimCardsTab({ teammates }: { teammates: ClientUserListItem[] }) {
                 </button>
               )}
 
-              <div className="mt-4 flex flex-wrap gap-2">
-                <Button size="sm" variant="secondary" onClick={() => { setEditTarget(selected); setShowModal(true) }}>
-                  <Pencil size={13} /> Wijzigen
-                </Button>
-                <Button size="sm" variant="danger" onClick={() => setConfirmDelete(true)}>
-                  <Trash2 size={13} /> Verwijderen
-                </Button>
-              </div>
               <ConfirmDeleteModal
                 open={confirmDelete}
                 onClose={() => setConfirmDelete(false)}
                 onConfirm={() => { setConfirmDelete(false); handleDelete(selected.id) }}
                 itemName={selected.kaartNummer}
               />
-              <ItemHistoryBlock
-                key={`${selected.id}-${historyKey}`}
-                url={`/portal/simcards/${selected.id}/history`}
-                subtitle={selected.kaartNummer}
-              />
+              <div className="border-t border-slate-100 mt-4 pt-4">
+                <div className="flex items-center gap-1 mb-4">
+                  <button onClick={() => setActiveTab('notes')} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'notes' ? 'bg-blue-600 text-white' : 'text-slate-500 hover:bg-slate-100'}`}>
+                    <StickyNote size={13} /> Notities
+                  </button>
+                  <button onClick={() => setActiveTab('history')} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'history' ? 'bg-blue-600 text-white' : 'text-slate-500 hover:bg-slate-100'}`}>
+                    <History size={13} /> Historie
+                  </button>
+                </div>
+                {activeTab === 'notes' && <NotesPanel entityType="SimCard" entityId={selected.id} />}
+                {activeTab === 'history' && (
+                  <ItemHistoryBlock
+                    key={`${selected.id}-${historyKey}`}
+                    url={`/portal/simcards/${selected.id}/history`}
+                    subtitle={selected.kaartNummer}
+                  />
+                )}
+              </div>
               <p className="text-[11px] text-slate-400 mt-3">Aangemaakt op {fmt(selected.createdAt)}</p>
             </CardContent>
           </Card>
@@ -940,8 +953,13 @@ export function PhoneDetailFullView({ initialPhone, teammates, onBack, onDeleted
 
 // ── TelefonieView ─────────────────────────────────────────────────────────────
 
-export function TelefonieView({ teammates, onExpand }: { teammates: ClientUserListItem[]; onExpand?: (phone: PhoneListItem) => void }) {
-  const [tab, setTab] = useState<TelefonieTab>('phones')
+export function TelefonieView({ teammates, onExpand, onExpandSimCard, initialTab }: {
+  teammates: ClientUserListItem[]
+  onExpand?: (phone: PhoneListItem) => void
+  onExpandSimCard?: (simCard: SimCardListItem) => void
+  initialTab?: TelefonieTab
+}) {
+  const [tab, setTab] = useState<TelefonieTab>(initialTab ?? 'phones')
   const [totals, setTotals] = useState({ subscriptions: 0, phonesInUse: 0, simCardsInUse: 0 })
 
   const fetchTotals = useCallback(async () => {
@@ -972,7 +990,7 @@ export function TelefonieView({ teammates, onExpand }: { teammates: ClientUserLi
       <div className="flex gap-1 flex-shrink-0 bg-slate-100 p-1 rounded-xl w-fit">
         {([
           { key: 'phones',        label: 'Mobiele Telefoons' },
-          { key: 'simcards',      label: 'Simkaarten' },
+          { key: 'simcards',      label: 'Abonnementen' },
         ] as { key: TelefonieTab; label: string }[]).map(t => (
           <button
             key={t.key}
@@ -987,7 +1005,192 @@ export function TelefonieView({ teammates, onExpand }: { teammates: ClientUserLi
       </div>
 
       {tab === 'phones'        && <PhonesTab teammates={teammates} onExpand={onExpand} />}
-      {tab === 'simcards'      && <SimCardsTab teammates={teammates} />}
+      {tab === 'simcards'      && <SimCardsTab teammates={teammates} onExpand={onExpandSimCard} />}
+    </div>
+  )
+}
+
+// ── SimCardDetailFullView ─────────────────────────────────────────────────────
+
+export function SimCardDetailFullView({ initialSimCard, teammates, onBack, onDeleted, backLabel = 'Terug naar telefonie' }: {
+  initialSimCard: SimCardListItem
+  teammates: ClientUserListItem[]
+  onBack: () => void
+  onDeleted: () => void
+  backLabel?: string
+}) {
+  const [simCard, setSimCard]           = useState<SimCardListItem>(initialSimCard)
+  const [subscription, setSubscription] = useState<SubscriptionListItem | null>(null)
+  const [phones, setPhones]             = useState<PhoneListItem[]>([])
+  const [showModal, setShowModal]       = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [historyKey, setHistoryKey]     = useState(0)
+  const [activeTab, setActiveTab]       = useState<'notes' | 'history'>('notes')
+
+  const refresh = async () => {
+    const [simRes, phoneRes, subRes] = await Promise.all([
+      api.get<SimCardListItem[]>('/portal/simcards'),
+      api.get<PhoneListItem[]>('/portal/phones'),
+      api.get<SubscriptionListItem[]>('/portal/subscriptions'),
+    ])
+    const updated = simRes.data.find(s => s.id === simCard.id)
+    if (updated) setSimCard(updated)
+    setPhones(phoneRes.data)
+    setSubscription(subRes.data.find(s => s.simCardId === simCard.id) ?? null)
+    setHistoryKey(k => k + 1)
+  }
+
+  useEffect(() => { refresh() }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleDelete = async () => {
+    await api.delete(`/portal/simcards/${simCard.id}`)
+    onDeleted()
+  }
+
+  const handleSaved = async () => { setShowModal(false); await refresh() }
+
+  function fmtCost(cost: number | null) {
+    if (cost == null) return '—'
+    return `€ ${cost.toFixed(2)}`
+  }
+
+  return (
+    <div className="flex flex-col gap-4 h-full">
+      {/* Back */}
+      <div>
+        <button onClick={onBack} className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-800 transition-colors">
+          <ArrowLeft size={15} /> {backLabel}
+        </button>
+      </div>
+
+      {/* Header card */}
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 px-6 py-4">
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <h1 className="text-xl font-bold text-slate-900 truncate tabular-nums">{simCard.kaartNummer}</h1>
+            <p className="text-sm text-slate-400 mt-0.5 truncate">{subscription?.name || simCard.phoneNumber || 'Op voorraad'}</p>
+          </div>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <button onClick={() => setShowModal(true)} className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors">
+              <Pencil size={12} /> Wijzigen
+            </button>
+            <button onClick={() => setConfirmDelete(true)} className="inline-flex items-center gap-1.5 rounded-xl border border-red-200 bg-white px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 transition-colors">
+              <Trash2 size={12} /> Verwijderen
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Details + Abonnement */}
+      <div className="grid grid-cols-[1fr_360px] gap-4 items-stretch">
+        {/* Simkaart */}
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+          <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4">Simkaart</h3>
+          <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+            <div>
+              <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">Type</p>
+              <p className="text-sm font-medium text-slate-800">{SIM_TYPE_LABEL[simCard.type] ?? simCard.type}</p>
+            </div>
+            <div>
+              <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">Status</p>
+              <span className={`text-xs px-2.5 py-0.5 rounded-full font-semibold ${SIM_STATUS_TONE[simCard.status] ?? 'bg-slate-100 text-slate-600'}`}>
+                {SIM_STATUS_LABEL[simCard.status] ?? simCard.status}
+              </span>
+            </div>
+            <div>
+              <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">Telefoonnummer</p>
+              <p className="text-sm font-medium text-slate-800 tabular-nums">{simCard.phoneNumber || '—'}</p>
+            </div>
+            {simCard.phoneName && (
+              <div>
+                <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">Gekoppelde telefoon</p>
+                <p className="text-sm font-medium text-slate-800 truncate">{simCard.phoneName}</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Abonnement */}
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 h-full flex flex-col">
+          <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4">Abonnement</h3>
+          {subscription ? (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-semibold text-slate-800 truncate">{subscription.name}</p>
+                {subscription.status === 'Incomplete' && (
+                  <span title="Prijs/bundel nog niet ingevuld" className={`shrink-0 text-[10px] px-1.5 py-0.5 rounded-full font-medium ${SUB_STATUS_TONE.Incomplete}`}>
+                    Nog af te maken
+                  </span>
+                )}
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <p className="text-xs text-slate-400 mb-0.5">Provider</p>
+                  <p className="text-sm font-medium text-slate-800">{subscription.provider || '—'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-slate-400 mb-0.5">Kosten / mnd</p>
+                  <p className="text-sm font-medium text-slate-800">{fmtCost(subscription.monthlyCost)}</p>
+                </div>
+              </div>
+              <div>
+                <p className="text-xs text-slate-400 mb-0.5">Bundel</p>
+                <p className="text-sm font-medium text-slate-800">{subscription.bundle || '—'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-400 mb-0.5">Status</p>
+                <span className={`text-xs px-2.5 py-0.5 rounded-full font-medium ${SUB_STATUS_TONE[subscription.status] ?? 'bg-slate-100 text-slate-500'}`}>
+                  {SUB_STATUS_LABEL[subscription.status] ?? subscription.status}
+                </span>
+              </div>
+              {subscription.assignedToName && (
+                <div>
+                  <p className="text-xs text-slate-400 mb-0.5">Toegewezen aan</p>
+                  <p className="text-sm font-medium text-slate-800">{subscription.assignedToName}</p>
+                </div>
+              )}
+            </div>
+          ) : (
+            <button
+              onClick={() => setShowModal(true)}
+              className="flex-1 flex flex-col items-center justify-center gap-3 text-center rounded-xl border border-dashed border-slate-300 hover:border-blue-400 hover:bg-blue-50/40 transition-colors"
+            >
+              <p className="text-sm text-slate-400">Nog geen abonnement — simkaart in voorraad</p>
+              <span className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-1.5 text-xs font-semibold text-white">
+                <Plus size={11} /> Toevoegen
+              </span>
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Notes / History */}
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+        <div className="flex items-center gap-1 mb-4 border-b border-slate-100 -mx-5 px-5 pb-3">
+          <button onClick={() => setActiveTab('notes')} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'notes' ? 'bg-blue-600 text-white' : 'text-slate-500 hover:bg-slate-100'}`}>
+            <StickyNote size={13} /> Notities
+          </button>
+          <button onClick={() => setActiveTab('history')} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'history' ? 'bg-blue-600 text-white' : 'text-slate-500 hover:bg-slate-100'}`}>
+            <History size={13} /> Historie
+          </button>
+        </div>
+        {activeTab === 'notes' && <NotesPanel entityType="SimCard" entityId={simCard.id} canEdit />}
+        {activeTab === 'history' && (
+          <ItemHistoryBlock key={`${simCard.id}-${historyKey}`} url={`/portal/simcards/${simCard.id}/history`} subtitle={simCard.kaartNummer} />
+        )}
+        <p className="text-[11px] text-slate-400 mt-3">Aangemaakt op {fmt(simCard.createdAt)}</p>
+      </div>
+
+      <SimCardModal
+        open={showModal}
+        onClose={() => setShowModal(false)}
+        onSuccess={handleSaved}
+        teammates={teammates}
+        phones={phones}
+        simCard={simCard}
+        subscription={subscription}
+      />
+      <ConfirmDeleteModal open={confirmDelete} onClose={() => setConfirmDelete(false)} onConfirm={handleDelete} itemName={simCard.kaartNummer} />
     </div>
   )
 }
