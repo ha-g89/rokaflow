@@ -187,13 +187,13 @@ function PhonesTab({ teammates, onExpand }: { teammates: ClientUserListItem[]; o
                     onClick={() => { setSelected(p); setConfirmDelete(false); setConfirmUnlink(false) }}
                     className={`grid grid-cols-[1fr_1.2fr_1.3fr_1fr_1.2fr_1.5fr_1fr_0.9fr] gap-3 px-4 py-3 items-center cursor-pointer transition-colors hover:bg-slate-100 ${selected?.id === p.id ? 'bg-blue-50 border-l-2 border-blue-500' : ''}`}
                   >
-                    <p className="text-sm font-semibold text-slate-800 truncate">{p.brand}</p>
-                    <p className="text-xs text-slate-600 truncate">{p.model || '—'}</p>
-                    <p className="text-xs text-slate-600 truncate tabular-nums">{p.imeiNumber || '—'}</p>
-                    <p className="text-xs text-slate-600 truncate">{p.supplier || '—'}</p>
-                    <p className="text-xs text-slate-600 truncate tabular-nums">{p.simPhoneNumber || '—'}</p>
-                    <p className="text-xs text-slate-600 truncate">{p.assignedToName || '—'}</p>
-                    <p className="text-xs text-slate-600 truncate tabular-nums">{fmt(p.issuedAt)}</p>
+                    <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 truncate">{p.brand}</p>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 truncate">{p.model || '—'}</p>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 truncate tabular-nums">{p.imeiNumber || '—'}</p>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 truncate">{p.supplier || '—'}</p>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 truncate tabular-nums">{p.simPhoneNumber || '—'}</p>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 truncate">{p.assignedToName || '—'}</p>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 truncate tabular-nums">{fmt(p.issuedAt)}</p>
                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium truncate ${PHONE_STATUS_TONE[p.status] ?? 'bg-slate-100 text-slate-500'}`}>
                       {PHONE_STATUS_LABEL[p.status] ?? p.status}
                     </span>
