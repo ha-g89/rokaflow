@@ -23,7 +23,7 @@ import { PHONE_STATUS_LABEL, PHONE_STATUS_TONE } from '@/types/phone'
 import type { SimCardListItem } from '@/types/simcard'
 import { SIM_STATUS_LABEL, SIM_STATUS_TONE, SIM_TYPE_LABEL } from '@/types/simcard'
 import type { SubscriptionListItem } from '@/types/subscription'
-import { SUB_STATUS_LABEL, SUB_TYPE_LABEL } from '@/types/subscription'
+import { SUB_STATUS_LABEL, SUB_STATUS_TONE, SUB_TYPE_LABEL } from '@/types/subscription'
 import type { ClientUserListItem } from '@/types/clientUser'
 
 type TelefonieTab = 'phones' | 'simcards'
@@ -420,13 +420,15 @@ function SimCardsTab({ teammates }: { teammates: ClientUserListItem[] }) {
 
   const subscriptionFor = (simId: string) => subscriptions.find(sub => sub.simCardId === simId) ?? null
 
-  const [typeFilter, setTypeFilter]     = useState('')
-  const [statusFilter, setStatusFilter] = useState('')
+  const [typeFilter, setTypeFilter]         = useState('')
+  const [statusFilter, setStatusFilter]     = useState('')
+  const [subStatusFilter, setSubStatusFilter] = useState('')
 
   const filtered = simCards.filter(s => {
     const sub = subscriptionFor(s.id)
     return (!typeFilter || s.type === typeFilter) &&
       (!statusFilter || s.status === statusFilter) &&
+      (!subStatusFilter || sub?.status === subStatusFilter) &&
       `${s.kaartNummer} ${s.phoneNumber} ${s.assignedToName ?? ''} ${s.phoneName ?? ''} ${sub?.provider ?? ''} ${sub?.name ?? ''} ${sub?.supplier ?? ''}`
         .toLowerCase().includes(search.toLowerCase())
   })
@@ -478,6 +480,8 @@ function SimCardsTab({ teammates }: { teammates: ClientUserListItem[] }) {
           options={Object.entries(SIM_TYPE_LABEL).map(([value, label]) => ({ value, label }))} />
         <FilterSelect label="Status" value={statusFilter} onChange={setStatusFilter}
           options={Object.entries(SIM_STATUS_LABEL).map(([value, label]) => ({ value, label }))} />
+        <FilterSelect label="Abonnement" value={subStatusFilter} onChange={setSubStatusFilter}
+          options={Object.entries(SUB_STATUS_LABEL).map(([value, label]) => ({ value, label }))} />
         <Button size="sm" className="py-2" onClick={() => { setEditTarget(null); setShowModal(true) }}>
           <Plus size={13} /> Toevoegen
         </Button>
@@ -494,8 +498,8 @@ function SimCardsTab({ teammates }: { teammates: ClientUserListItem[] }) {
             { label: 'Persoon', key: 'persoon' },
             { label: 'Leverancier', key: 'leverancier' },
             { label: 'Tarief', key: 'tarief' },
-            { label: 'Simkaart', key: 'simkaart' },
-            { label: 'Kaartnummer', key: 'kaartnummer', right: true },
+            { label: 'SIM type', key: 'simkaart' },
+            { label: 'SIM nummer', key: 'kaartnummer' },
             { label: 'Status', key: 'status' },
           ] as { label: string; key?: string; right?: boolean }[]).map((h, i) => (
             <SortHeader key={i} label={h.label} sortKey={h.key} activeKey={sortKey} dir={sortDir} onToggle={toggleSort} className={h.right ? 'justify-end' : ''} />
@@ -520,14 +524,21 @@ function SimCardsTab({ teammates }: { teammates: ClientUserListItem[] }) {
                     className={`grid ${SIM_COLS} gap-3 px-4 py-3 items-center cursor-pointer transition-colors hover:bg-slate-100 ${selected?.id === s.id ? 'bg-blue-50 border-l-2 border-blue-500' : ''}`}
                   >
                     <p className="text-xs text-slate-600 dark:text-slate-400 truncate">{sub?.provider || '—'}</p>
-                    <p className="text-xs text-slate-600 dark:text-slate-400 truncate">{sub?.name || '—'}</p>
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <p className="text-xs text-slate-600 dark:text-slate-400 truncate">{sub?.name || '—'}</p>
+                      {sub?.status === 'Incomplete' && (
+                        <span title="Prijs/bundel nog niet ingevuld" className={`shrink-0 text-[10px] px-1.5 py-0.5 rounded-full font-medium ${SUB_STATUS_TONE.Incomplete}`}>
+                          Nog af te maken
+                        </span>
+                      )}
+                    </div>
                     <p className="text-xs text-slate-600 dark:text-slate-400 truncate">{sub ? (SUB_TYPE_LABEL[sub.type] ?? sub.type) : '—'}</p>
                     <p className="text-xs text-slate-600 dark:text-slate-400 truncate tabular-nums">{s.phoneNumber || '—'}</p>
                     <p className="text-xs text-slate-600 dark:text-slate-400 truncate">{s.assignedToName || '—'}</p>
                     <p className="text-xs text-slate-600 dark:text-slate-400 truncate">{sub?.supplier || '—'}</p>
                     <p className="text-xs text-slate-600 dark:text-slate-400 truncate tabular-nums">{fmtCost(sub?.monthlyCost ?? null)}</p>
                     <p className="text-xs text-slate-600 dark:text-slate-400 truncate">{SIM_TYPE_LABEL[s.type] ?? s.type}</p>
-                    <p className="text-sm font-semibold text-slate-800 truncate tabular-nums text-right">{s.kaartNummer}</p>
+                    <p className="text-sm font-semibold text-slate-800 truncate tabular-nums">{s.kaartNummer}</p>
                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium truncate ${SIM_STATUS_TONE[s.status] ?? 'bg-slate-100 text-slate-500'}`}>
                       {SIM_STATUS_LABEL[s.status] ?? s.status}
                     </span>

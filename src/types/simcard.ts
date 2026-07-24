@@ -15,7 +15,7 @@ export interface SimCardListItem {
 }
 
 export const SIM_TYPE_LABEL: Record<string, string> = {
-  Physical: 'Fysiek',
+  Physical: 'SIM-kaart',
   ESim: 'eSIM',
 }
 
@@ -32,7 +32,7 @@ export const SIM_STATUS_TONE: Record<string, string> = {
 }
 
 export const SIM_TYPE_OPTIONS = [
-  { value: '0', label: 'Fysiek' },
+  { value: '0', label: 'SIM-kaart' },
   { value: '1', label: 'eSIM' },
 ]
 

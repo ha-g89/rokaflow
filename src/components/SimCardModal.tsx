@@ -14,7 +14,7 @@ import type { SubscriptionListItem } from '@/types/subscription'
 import { SUB_TYPE_OPTIONS, SUB_STATUS_OPTIONS } from '@/types/subscription'
 
 const schema = z.object({
-  kaartNummer: z.string().min(1, 'Kaartnummer is verplicht').max(100),
+  kaartNummer: z.string().min(1, 'SIM nummer is verplicht').max(100),
   type: z.string(),
   phoneNumber: z.string().max(50),
   status: z.string(),
@@ -175,7 +175,11 @@ export function SimCardModal({ open, onClose, onSuccess, teammates, phones, simC
         subMonthlyCost: subscription?.monthlyCost != null ? String(subscription.monthlyCost) : '',
         subStartsAt: subscription?.startsAt ? subscription.startsAt.substring(0, 10) : '',
         subExpiresAt: subscription?.expiresAt ? subscription.expiresAt.substring(0, 10) : '',
-        subStatus: subscription ? (subscription.status === 'Active' ? '0' : subscription.status === 'Cancelled' ? '1' : '2') : '0',
+        // 'Incomplete' (bulk-import) is niet los kiesbaar — bij het aanvullen van zo'n
+        // abonnement is Actief de zinvolle default, niet de Inactief-fallback.
+        subStatus: subscription
+          ? (subscription.status === 'Cancelled' ? '1' : subscription.status === 'Inactive' ? '2' : '0')
+          : '0',
       } : {
         kaartNummer: '', type: '0', phoneNumber: '', status: '1', phoneId: '', assignedToUserId: '',
         subName: '', subProvider: '', subSupplier: '', subType: '0', subBundle: '',
@@ -223,6 +227,8 @@ export function SimCardModal({ open, onClose, onSuccess, teammates, phones, simC
           supplier: values.subSupplier || null,
           type: parseInt(values.subType, 10),
           bundle: values.subBundle || '',
+          phoneNumber: values.phoneNumber || '',
+          assignedToUserId: values.assignedToUserId || null,
           monthlyCost: values.subMonthlyCost ? parseFloat(values.subMonthlyCost) : null,
           startsAt: values.subStartsAt ? new Date(values.subStartsAt).toISOString() : null,
           expiresAt: values.subExpiresAt ? new Date(values.subExpiresAt).toISOString() : null,
@@ -259,7 +265,7 @@ export function SimCardModal({ open, onClose, onSuccess, teammates, phones, simC
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Kaartnummer *</label>
+            <label className="block text-xs font-medium text-slate-600 mb-1">SIM nummer *</label>
             <input {...register('kaartNummer')} className={field} placeholder="89NL…" autoFocus />
             {errors.kaartNummer && <p className="mt-1 text-xs text-red-600">{errors.kaartNummer.message}</p>}
           </div>
@@ -273,19 +279,13 @@ export function SimCardModal({ open, onClose, onSuccess, teammates, phones, simC
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Telefoonnummer</label>
-            <input {...register('phoneNumber')} className={field} placeholder="+31 6 12345678" />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Status</label>
-            <select {...register('status')} className={field}>
-              {SIM_STATUS_OPTIONS.map(o => (
-                <option key={o.value} value={o.value}>{o.label}</option>
-              ))}
-            </select>
-          </div>
+        <div>
+          <label className="block text-xs font-medium text-slate-600 mb-1">Status</label>
+          <select {...register('status')} className={field}>
+            {SIM_STATUS_OPTIONS.map(o => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
+          </select>
         </div>
 
         {/* Phone picker */}
@@ -309,16 +309,6 @@ export function SimCardModal({ open, onClose, onSuccess, teammates, phones, simC
               </p>
             </div>
           )}
-        </div>
-
-        <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Toegewezen aan</label>
-          <select {...register('assignedToUserId')} className={field}>
-            <option value="">— Niemand —</option>
-            {teammates.map(u => (
-              <option key={u.id} value={u.id}>{u.firstName} {u.lastName}</option>
-            ))}
-          </select>
         </div>
 
         <div className="pt-1 border-t border-slate-100">
@@ -348,6 +338,14 @@ export function SimCardModal({ open, onClose, onSuccess, teammates, phones, simC
             </button>
           ) : (
             <div className="space-y-3">
+              {subscription?.status === 'Incomplete' && (
+                <div className="flex gap-2 rounded-lg bg-violet-50 border border-violet-200 px-3 py-2.5">
+                  <AlertTriangle size={15} className="text-violet-500 flex-shrink-0 mt-0.5" />
+                  <p className="text-xs text-violet-800">
+                    Aangemaakt via import — prijs en bundel zijn nog niet bekend. Vul aan en kies de juiste status.
+                  </p>
+                </div>
+              )}
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-slate-600 mb-1">Naam *</label>
@@ -362,9 +360,26 @@ export function SimCardModal({ open, onClose, onSuccess, teammates, phones, simC
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">Telefoonnummer</label>
+                  <input {...register('phoneNumber')} className={field} placeholder="+31 6 12345678" />
+                </div>
+                <div>
                   <label className="block text-xs font-medium text-slate-600 mb-1">Leverancier</label>
                   <input {...register('subSupplier')} className={field} placeholder="Belsimpel, Tele2…" />
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">Toegewezen aan</label>
+                <select {...register('assignedToUserId')} className={field}>
+                  <option value="">— Niemand —</option>
+                  {teammates.map(u => (
+                    <option key={u.id} value={u.id}>{u.firstName} {u.lastName}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-slate-600 mb-1">Type</label>
                   <select {...register('subType')} className={field}>
@@ -373,11 +388,10 @@ export function SimCardModal({ open, onClose, onSuccess, teammates, phones, simC
                     ))}
                   </select>
                 </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">Bundel</label>
-                <input {...register('subBundle')} className={field} placeholder="Onbeperkt bellen + 20GB" />
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">Bundel</label>
+                  <input {...register('subBundle')} className={field} placeholder="Onbeperkt bellen + 20GB" />
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
