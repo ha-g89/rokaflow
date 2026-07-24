@@ -204,11 +204,9 @@ export function SimCardModal({ open, onClose, onSuccess, teammates, phones, simC
       const simPayload = {
         kaartNummer: values.kaartNummer,
         type: parseInt(values.type, 10),
-        phoneNumber: values.phoneNumber || '',
         provider: '',
         status: parseInt(values.status, 10),
         phoneId: values.phoneId || null,
-        assignedToUserId: values.assignedToUserId || null,
       }
 
       let simCardId: string
