@@ -17,7 +17,7 @@ import { NotesPanel } from '@/components/NotesPanel'
 import { EntityChecklistCard } from '@/components/EntityChecklistCard'
 import { LoadingState } from '@/components/ui/LoadingState'
 import { ImportWizardModal } from '@/components/import/ImportWizardModal'
-import type { ImportPhoneRow, PhoneImportPreview } from '@/types/import'
+import type { ImportPhoneRow, PhoneImportPreview, ImportSubscriptionRow, SubscriptionImportPreview } from '@/types/import'
 import type { PhoneListItem } from '@/types/phone'
 import { PHONE_STATUS_LABEL, PHONE_STATUS_TONE } from '@/types/phone'
 import type { SimCardListItem } from '@/types/simcard'
@@ -83,7 +83,7 @@ function PhonesTab({ teammates, onExpand }: { teammates: ClientUserListItem[]; o
     imei:       p => p.imeiNumber || null,
     leverancier: p => p.supplier || null,
     toegewezen: p => p.assignedToName || null,
-    uitgifte:   p => p.issuedAt || null,
+    aanschaf:   p => p.purchasedAt || null,
     status:     p => PHONE_STATUS_LABEL[p.status] ?? p.status,
   })
 
@@ -107,7 +107,8 @@ function PhonesTab({ teammates, onExpand }: { teammates: ClientUserListItem[]; o
         brand: p.brand, model: p.model || '',
         serialNumber: p.serialNumber || '', imeiNumber: p.imeiNumber || '',
         status: p.status === 'OnOrder' ? 4 : 0, assignedToUserId: null,
-        issuedAt: p.issuedAt ?? null, returnedAt: new Date().toISOString(),
+        purchaseValue: p.purchaseValue ?? null,
+        purchasedAt: p.purchasedAt ?? null, returnedAt: new Date().toISOString(),
         orderedAt: p.orderedAt ?? null,
       })
       await fetchPhones()
@@ -165,7 +166,7 @@ function PhonesTab({ teammates, onExpand }: { teammates: ClientUserListItem[]; o
               { label: 'IMEI-nummer', key: 'imei' },
               { label: 'Leverancier', key: 'leverancier' },
               { label: 'Toegewezen aan', key: 'toegewezen' },
-              { label: 'Uitgiftedatum', key: 'uitgifte' },
+              { label: 'Aanschafdatum', key: 'aanschaf' },
               { label: 'Status', key: 'status' },
             ] as { label: string; key?: string }[]).map((h, i) => (
               <SortHeader key={i} label={h.label} sortKey={h.key} activeKey={sortKey} dir={sortDir} onToggle={toggleSort} />
@@ -185,6 +186,7 @@ function PhonesTab({ teammates, onExpand }: { teammates: ClientUserListItem[]; o
                   <li
                     key={p.id}
                     onClick={() => { setSelected(p); setConfirmDelete(false); setConfirmUnlink(false) }}
+                    onDoubleClick={() => onExpand?.(p)}
                     className={`grid grid-cols-[1fr_1.2fr_1.3fr_1fr_1.2fr_1.5fr_1fr_0.9fr] gap-3 px-4 py-3 items-center cursor-pointer transition-colors hover:bg-slate-100 ${selected?.id === p.id ? 'bg-blue-50 border-l-2 border-blue-500' : ''}`}
                   >
                     <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 truncate">{p.brand}</p>
@@ -193,7 +195,7 @@ function PhonesTab({ teammates, onExpand }: { teammates: ClientUserListItem[]; o
                     <p className="text-xs text-slate-600 dark:text-slate-400 truncate tabular-nums">{p.imeiNumber || '—'}</p>
                     <p className="text-xs text-slate-600 dark:text-slate-400 truncate">{p.supplier || '—'}</p>
                     <p className="text-xs text-slate-600 dark:text-slate-400 truncate">{p.assignedToName || '—'}</p>
-                    <p className="text-xs text-slate-600 dark:text-slate-400 truncate tabular-nums">{fmt(p.issuedAt)}</p>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 truncate tabular-nums">{fmt(p.purchasedAt)}</p>
                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium truncate ${PHONE_STATUS_TONE[p.status] ?? 'bg-slate-100 text-slate-500'}`}>
                       {PHONE_STATUS_LABEL[p.status] ?? p.status}
                     </span>
@@ -245,7 +247,8 @@ function PhonesTab({ teammates, onExpand }: { teammates: ClientUserListItem[]; o
                       selected.status === 'Decommissioned' ? 'text-red-500' : 'text-slate-500'
                     }`}>{PHONE_STATUS_LABEL[selected.status] ?? selected.status}</span>
                   </p>
-                  {selected.issuedAt && <p><span className="text-slate-400">Uitgiftedatum</span><br /><span className="font-medium text-slate-800">{fmt(selected.issuedAt)}</span></p>}
+                  {selected.purchasedAt && <p><span className="text-slate-400">Aanschafdatum</span><br /><span className="font-medium text-slate-800">{fmt(selected.purchasedAt)}</span></p>}
+                  {selected.purchaseValue != null && <p><span className="text-slate-400">Aanschafwaarde</span><br /><span className="font-medium text-slate-800">€ {selected.purchaseValue.toFixed(2)}</span></p>}
                   {selected.orderedAt && <p><span className="text-slate-400">Besteldatum</span><br /><span className="font-medium text-slate-800">{fmt(selected.orderedAt)}</span></p>}
                   {selected.supplier     && <p className="col-span-2"><span className="text-slate-400">Leverancier</span><br /><span className="font-medium text-slate-800">{selected.supplier}</span></p>}
                   {selected.returnedAt && <p><span className="text-slate-400">Inleverdatum</span><br /><span className="font-medium text-slate-800">{fmt(selected.returnedAt)}</span></p>}
@@ -372,8 +375,8 @@ function PhonesTab({ teammates, onExpand }: { teammates: ClientUserListItem[]; o
           { key: 'model', label: 'Model' },
           { key: 'serialNumber', label: 'Serienummer' },
           { key: 'imeiNumber', label: 'IMEI' },
+          { key: 'purchaseValue', label: 'Aanschafwaarde' },
           { key: 'assignedToEmail', label: 'Toegewezen aan' },
-          { key: 'simKaartNummer', label: 'Simkaart' },
         ]}
         onClose={() => setShowImport(false)}
         onDone={() => { setShowImport(false); fetchPhones() }}
@@ -396,6 +399,7 @@ function SimCardsTab({ teammates, onExpand }: { teammates: ClientUserListItem[];
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [historyKey, setHistoryKey]     = useState(0)
   const [activeTab, setActiveTab]       = useState<'notes' | 'history'>('notes')
+  const [showImport, setShowImport]     = useState(false)
 
   const fetchData = useCallback(async () => {
     try {
@@ -485,6 +489,9 @@ function SimCardsTab({ teammates, onExpand }: { teammates: ClientUserListItem[];
           options={Object.entries(SIM_STATUS_LABEL).map(([value, label]) => ({ value, label }))} />
         <FilterSelect label="Abonnement" value={subStatusFilter} onChange={setSubStatusFilter}
           options={Object.entries(SUB_STATUS_LABEL).map(([value, label]) => ({ value, label }))} />
+        <Button size="sm" variant="secondary" className="py-2" onClick={() => setShowImport(true)}>
+          <Upload size={13} /> Importeren
+        </Button>
         <Button size="sm" className="py-2" onClick={() => { setEditTarget(null); setShowModal(true) }}>
           <Plus size={13} /> Toevoegen
         </Button>
@@ -521,6 +528,7 @@ function SimCardsTab({ teammates, onExpand }: { teammates: ClientUserListItem[];
                   <li
                     key={s.id}
                     onClick={() => { setSelected(s); setConfirmDelete(false) }}
+                    onDoubleClick={() => onExpand?.(s)}
                     className={`grid ${SIM_COLS} gap-3 px-4 py-3 items-center cursor-pointer transition-colors hover:bg-slate-100 ${selected?.id === s.id ? 'bg-blue-50 border-l-2 border-blue-500' : ''}`}
                   >
                     <p className="text-xs text-slate-600 dark:text-slate-400 truncate">{sub?.provider || '—'}</p>
@@ -666,6 +674,29 @@ function SimCardsTab({ teammates, onExpand }: { teammates: ClientUserListItem[];
         simCard={editTarget}
         subscription={editTarget ? subscriptionFor(editTarget.id) : null}
       />
+
+      <ImportWizardModal<ImportSubscriptionRow, SubscriptionImportPreview>
+        open={showImport}
+        title="Abonnementen importeren"
+        templateUrl="/portal/subscriptions/import-template"
+        templateFileName="abonnementen-import-template.xlsx"
+        columnsUrl="/portal/subscriptions/import/columns"
+        validateUrl="/portal/subscriptions/import/validate"
+        confirmUrl="/portal/subscriptions/import/confirm"
+        columns={[
+          { key: 'name', label: 'Naam' },
+          { key: 'provider', label: 'Provider' },
+          { key: 'supplier', label: 'Leverancier' },
+          { key: 'type', label: 'Type' },
+          { key: 'bundle', label: 'Bundel' },
+          { key: 'phoneNumber', label: 'Telefoonnummer' },
+          { key: 'monthlyCost', label: 'Kosten' },
+          { key: 'status', label: 'Status' },
+          { key: 'assignedToEmail', label: 'Toegewezen aan' },
+        ]}
+        onClose={() => setShowImport(false)}
+        onDone={() => { setShowImport(false); fetchData() }}
+      />
     </div>
   )
 }
@@ -707,7 +738,8 @@ export function PhoneDetailFullView({ initialPhone, teammates, onBack, onDeleted
         brand: phone.brand, model: phone.model || '',
         serialNumber: phone.serialNumber || '', imeiNumber: phone.imeiNumber || '',
         status: phone.status === 'OnOrder' ? 4 : 0, assignedToUserId: null,
-        issuedAt: phone.issuedAt ?? null, returnedAt: new Date().toISOString(),
+        purchaseValue: phone.purchaseValue ?? null,
+        purchasedAt: phone.purchasedAt ?? null, returnedAt: new Date().toISOString(),
         orderedAt: phone.orderedAt ?? null,
       })
       await refresh()
@@ -722,7 +754,8 @@ export function PhoneDetailFullView({ initialPhone, teammates, onBack, onDeleted
         brand: phone.brand, model: phone.model || '',
         serialNumber: phone.serialNumber || '', imeiNumber: phone.imeiNumber || '',
         status: phone.status === 'OnOrder' ? 4 : 1, assignedToUserId: linkUserId,
-        issuedAt: phone.status === 'OnOrder' ? (phone.issuedAt ?? null) : new Date().toISOString(), returnedAt: null,
+        purchaseValue: phone.purchaseValue ?? null,
+        purchasedAt: phone.purchasedAt ?? null, returnedAt: null,
         orderedAt: phone.orderedAt ?? null,
       })
       await refresh()
@@ -789,10 +822,16 @@ export function PhoneDetailFullView({ initialPhone, teammates, onBack, onDeleted
                 {PHONE_STATUS_LABEL[phone.status] ?? phone.status}
               </span>
             </div>
-            {phone.issuedAt && (
+            {phone.purchasedAt && (
               <div>
-                <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">Uitgiftedatum</p>
-                <p className="text-sm font-medium text-slate-800">{fmt(phone.issuedAt)}</p>
+                <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">Aanschafdatum</p>
+                <p className="text-sm font-medium text-slate-800">{fmt(phone.purchasedAt)}</p>
+              </div>
+            )}
+            {phone.purchaseValue != null && (
+              <div>
+                <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">Aanschafwaarde</p>
+                <p className="text-sm font-medium text-slate-800">€ {phone.purchaseValue.toFixed(2)}</p>
               </div>
             )}
             {phone.orderedAt && (
@@ -866,7 +905,6 @@ export function PhoneDetailFullView({ initialPhone, teammates, onBack, onDeleted
                     <div className="min-w-0">
                       <p className="text-xs text-blue-500 font-medium">Toegewezen aan</p>
                       <p className="text-sm font-semibold text-slate-800 truncate">{phone.assignedToName}</p>
-                      {phone.issuedAt && <p className="text-xs text-slate-400 mt-0.5">Uitgegeven {fmt(phone.issuedAt)}</p>}
                     </div>
                   </div>
                   {confirmUnlink ? (

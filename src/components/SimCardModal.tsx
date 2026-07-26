@@ -430,7 +430,7 @@ export function SimCardModal({ open, onClose, onSuccess, teammates, phones, simC
             Annuleren
           </Button>
           <Button type="submit" className="flex-1" disabled={isSubmitting}>
-            {isSubmitting ? 'Opslaan…' : isEdit ? 'Wijzigingen opslaan' : 'Simkaart toevoegen'}
+            {isSubmitting ? 'Opslaan…' : isEdit ? 'Wijzigingen opslaan' : 'Toevoegen'}
           </Button>
         </div>
       </form>

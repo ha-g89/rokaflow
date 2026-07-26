@@ -102,10 +102,8 @@ export interface ImportPhoneRow {
   serialNumber: string
   imeiNumber: string
   supplier: string | null
+  purchaseValue: number | null
   assignedToEmail: string | null
-  simKaartNummer: string | null
-  simPhoneNumber: string | null
-  simProvider: string | null
 }
 
 export interface PhoneImportPreview {
@@ -115,4 +113,30 @@ export interface PhoneImportPreview {
   planLimitExceeded: boolean
   planLimitMessage: string | null
   rows: ImportPhoneRow[]
+}
+
+export interface ImportSubscriptionRow {
+  rowNumber: number
+  isValid: boolean
+  errors: string[]
+  name: string
+  provider: string | null
+  supplier: string | null
+  type: string | null
+  bundle: string | null
+  phoneNumber: string | null
+  monthlyCost: number | null
+  startsAt: string | null
+  expiresAt: string | null
+  status: string | null
+  assignedToEmail: string | null
+}
+
+export interface SubscriptionImportPreview {
+  fileErrors: string[]
+  totalRows: number
+  validRowCount: number
+  planLimitExceeded: boolean
+  planLimitMessage: string | null
+  rows: ImportSubscriptionRow[]
 }
