@@ -232,6 +232,15 @@ export default function ClientPortal() {
   const handleExpandSimCard    = (simCard: import('@/types/simcard').SimCardListItem) => { setTelefonieTab('simcards'); setSelectedSimCard(simCard); pushAndNavigate('simcard-detail', 'Terug naar telefonie') }
   const handleBackToSimCards   = () => { setView('phones'); setSelectedSimCard(null); setNavHistory([]) }
   const handleSimCardDeleted   = () => { setView('phones'); setSelectedSimCard(null); setNavHistory([]) }
+  const handleSubscriptionFromEmployee = async (subscriptionId: string) => {
+    try {
+      const { data } = await api.get<import('@/types/simcard').SimCardListItem[]>('/portal/simcards')
+      const item = data.find(sc => sc.subscriptionId === subscriptionId)
+      if (item) { setTelefonieTab('simcards'); setSelectedSimCard(item); pushAndNavigate('simcard-detail', 'Terug naar medewerker') }
+    } catch {
+      // niet-kritiek — gebruiker blijft op de huidige view staan
+    }
+  }
 
   const [selectedSoftware, setSelectedSoftware] = useState<import('@/types/software').SoftwareListItem | null>(null)
   const handleExpandSoftware   = (item: import('@/types/software').SoftwareListItem) => { setSelectedSoftware(item); pushAndNavigate('software-detail', 'Terug naar software') }
@@ -536,6 +545,7 @@ export default function ClientPortal() {
                 onPhoneClick={handlePhoneFromEmployee}
                 onSoftwareClick={handleSoftwareFromEmployee}
                 onLicenseClick={handleLicenseFromEmployee}
+                onSubscriptionClick={handleSubscriptionFromEmployee}
               />
             )}
 

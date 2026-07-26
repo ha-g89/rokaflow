@@ -385,7 +385,7 @@ export function EmployeeListView({ teammates, loading, search, currentUserId, on
 
 // ── Employee detail view ──────────────────────────────────────────────────────
 
-export function EmployeeDetailView({ user, loading, onBack, onUserUpdated, onDelete, departments, managers, locations, teammates, onHardwareClick, onPhoneClick, onSoftwareClick, onLicenseClick }: {
+export function EmployeeDetailView({ user, loading, onBack, onUserUpdated, onDelete, departments, managers, locations, teammates, onHardwareClick, onPhoneClick, onSoftwareClick, onLicenseClick, onSubscriptionClick }: {
   user: ClientUserDetailResponse | null
   loading: boolean
   onBack: () => void
@@ -399,6 +399,7 @@ export function EmployeeDetailView({ user, loading, onBack, onUserUpdated, onDel
   onPhoneClick?: (phone: import('@/types/phone').PhoneListItem) => void
   onSoftwareClick?: (licenseId: string) => void | Promise<void>
   onLicenseClick?: (licenseId: string) => void | Promise<void>
+  onSubscriptionClick?: (subscriptionId: string) => void | Promise<void>
 }) {
   return (
     <div className="flex flex-col gap-4 h-full">
@@ -431,6 +432,7 @@ export function EmployeeDetailView({ user, loading, onBack, onUserUpdated, onDel
             onPhoneClick={onPhoneClick}
             onSoftwareClick={onSoftwareClick}
             onLicenseClick={onLicenseClick}
+            onSubscriptionClick={onSubscriptionClick}
           />
         )}
       </div>

@@ -137,11 +137,15 @@ function PhoneDetailCard({ phone }: { phone: PhoneListItem }) {
           <p><span className="text-slate-400">Aangeschaft:</span> {phone.purchasedAt.substring(0, 10)}</p>
         )}
       </div>
-      {phone.simCardId && (
+      {phone.subscriptionName ? (
+        <p className="mt-2.5 text-xs text-blue-600 font-medium">
+          ✓ Abonnement: {phone.subscriptionName}{phone.subscriptionProvider ? ` (${phone.subscriptionProvider})` : ''}
+        </p>
+      ) : phone.simCardId ? (
         <p className="mt-2.5 text-xs text-blue-600 font-medium">
           ✓ Al voorzien van een simkaart
         </p>
-      )}
+      ) : null}
     </div>
   )
 }

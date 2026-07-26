@@ -56,6 +56,7 @@ export interface ClientUserDetailResponse {
   createdAt: string
   hardware: HardwareAssetDto[]
   phones: PhoneDto[]
+  subscriptions: ClientUserSubscriptionDto[]
   software: SoftwareAssignmentDto[]
   licenses: UserLicenseDto[]
   starterChecklist: ChecklistEntryDto[]
@@ -109,6 +110,23 @@ export interface PhoneDto {
   purchasedAt: string | null
   simCardNumber: string | null
   simPhoneNumber: string | null
+  subscriptionName: string | null
+  subscriptionProvider: string | null
+  subscriptionStatus: string | null
+}
+
+/** Abonnement rechtstreeks aan deze medewerker gekoppeld (los van telefoon/simkaart). */
+export interface ClientUserSubscriptionDto {
+  id: string
+  name: string
+  provider: string
+  supplier: string | null
+  type: string
+  bundle: string
+  phoneNumber: string
+  monthlyCost: number | null
+  status: string
+  simCardId: string | null
 }
 
 export interface ChecklistEntryDto {

@@ -9,13 +9,16 @@ import {
 import { Card, CardContent } from '@/components/ui/Card'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
-import type { ClientUserDetailResponse, ClientUserListItem, UserStatus, SoftwareAssignmentDto, UserLicenseDto } from '@/types/clientUser'
+import type { ClientUserDetailResponse, ClientUserListItem, UserStatus, SoftwareAssignmentDto, UserLicenseDto, ClientUserSubscriptionDto } from '@/types/clientUser'
 import { STATUS_LABEL } from '@/types/clientUser'
 import { HARDWARE_STATUS_LABEL, HARDWARE_STATUS_TONE, HARDWARE_TYPE_LABEL } from '@/types/hardware'
 import type { HardwareAssetListItem } from '@/types/hardware'
-import { LICENSE_TYPE_LABEL, LICENSE_TYPE_TONE } from '@/types/license'
 import { PHONE_STATUS_LABEL, PHONE_STATUS_TONE } from '@/types/phone'
 import type { PhoneListItem } from '@/types/phone'
+import { SUB_STATUS_LABEL, SUB_STATUS_TONE } from '@/types/subscription'
+
+const SUB_TYPE_TO_VALUE: Record<string, number> = { Mobile: 0, Data: 1 }
+const SUB_STATUS_TO_VALUE: Record<string, number> = { Active: 0, Cancelled: 1, Inactive: 2, Incomplete: 3 }
 import type { LocationListItem } from '@/types/location'
 import type { ProcessTemplateListItem } from '@/types/processTemplate'
 import { HardwareModal } from '@/components/HardwareModal'
@@ -581,9 +584,10 @@ interface Props {
   onPhoneClick?: (phone: PhoneListItem) => void
   onSoftwareClick?: (licenseId: string) => void | Promise<void>
   onLicenseClick?: (licenseId: string) => void | Promise<void>
+  onSubscriptionClick?: (subscriptionId: string) => void | Promise<void>
 }
 
-export function UserDetailPanel({ user, canEdit, departments = [], managers = [], locations = [], teammates = [], checklistBasePath, historyPath, softwarePath, onChecklistToggle, onUserUpdated, onDelete, onHardwareClick, onPhoneClick, onSoftwareClick, onLicenseClick }: Props) {
+export function UserDetailPanel({ user, canEdit, departments = [], managers = [], locations = [], teammates = [], checklistBasePath, historyPath, softwarePath, onChecklistToggle, onUserUpdated, onDelete, onHardwareClick, onPhoneClick, onSoftwareClick, onLicenseClick, onSubscriptionClick }: Props) {
   const status = user.status as UserStatus
   const statusTone = status === 'InService' ? 'good' : status === 'StartPlanned' ? 'info' : status === 'LeavePlanned' ? 'warn' : 'bad'
 
@@ -714,6 +718,7 @@ export function UserDetailPanel({ user, canEdit, departments = [], managers = []
     supplier: null, purchaseValue: p.purchaseValue, status: p.status as PhoneListItem['status'],
     assignedToUserId: user.id, assignedToName: `${user.firstName} ${user.lastName}`,
     simCardId: null, simCardNumber: p.simCardNumber, simPhoneNumber: p.simPhoneNumber,
+    subscriptionName: p.subscriptionName, subscriptionProvider: p.subscriptionProvider, subscriptionStatus: p.subscriptionStatus,
     purchasedAt: p.purchasedAt, returnedAt: null, orderedAt: null, createdAt: '',
   })
 
@@ -776,6 +781,23 @@ export function UserDetailPanel({ user, canEdit, departments = [], managers = []
           status: 0, assignedToUserId: null,
           purchaseValue: p.purchaseValue ?? null,
           purchasedAt: p.purchasedAt ?? null, returnedAt: new Date().toISOString(),
+        })
+        onUserUpdated?.()
+      },
+    })
+  }
+
+  const openUnlinkSubscription = (s: ClientUserSubscriptionDto) => {
+    setConfirmUnlink({
+      name: s.name,
+      subtitle: 'Het abonnement wordt ontkoppeld van de medewerker.',
+      onConfirm: async () => {
+        await api.put(`/portal/subscriptions/${s.id}`, {
+          name: s.name, provider: s.provider, supplier: s.supplier,
+          type: SUB_TYPE_TO_VALUE[s.type] ?? 0, bundle: s.bundle,
+          phoneNumber: s.phoneNumber, monthlyCost: s.monthlyCost,
+          status: SUB_STATUS_TO_VALUE[s.status] ?? 0, location: '',
+          assignedToUserId: null,
         })
         onUserUpdated?.()
       },
@@ -1122,8 +1144,7 @@ export function UserDetailPanel({ user, canEdit, departments = [], managers = []
                     <div className="min-w-0">
                       <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 truncate">{h.name}</p>
                       <p className="text-xs text-slate-500 dark:text-slate-400">
-                        {h.brand && `${h.brand} · `}{HARDWARE_TYPE_LABEL[h.type] ?? h.type}
-                        {h.assetNumber && ` · ${h.assetNumber}`}
+                        {[h.brand, h.assetNumber].filter(Boolean).join(' · ') || '—'}
                       </p>
                     </div>
                     <span className={`flex-shrink-0 text-xs px-2 py-0.5 rounded-full font-medium ${HARDWARE_STATUS_TONE[h.status] ?? 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300'}`}>
@@ -1133,7 +1154,8 @@ export function UserDetailPanel({ user, canEdit, departments = [], managers = []
                   {h.issuedAt && (
                     <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">Uitgifte: {fmt(h.issuedAt)}</p>
                   )}
-                  <div className="mt-2 pt-2 border-t border-slate-200 dark:border-slate-700/60 flex justify-end">
+                  <div className="mt-2 pt-2 border-t border-slate-200 dark:border-slate-700/60 flex items-center justify-between">
+                    <span className="text-xs text-slate-500 dark:text-slate-400">{HARDWARE_TYPE_LABEL[h.type] ?? h.type}</span>
                     <button onClick={e => { e.stopPropagation(); openUnlinkHardware(h) }} className="text-xs font-medium text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 transition-colors">Ontkoppelen</button>
                   </div>
                 </div>
@@ -1171,12 +1193,49 @@ export function UserDetailPanel({ user, canEdit, departments = [], managers = []
                   {p.purchasedAt && (
                     <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">Aanschaf: {fmt(p.purchasedAt)}</p>
                   )}
-                  <div className="mt-2 pt-2 border-t border-slate-200 dark:border-slate-700/60 flex justify-end">
+                  <div className="mt-2 pt-2 border-t border-slate-200 dark:border-slate-700/60 flex items-center justify-between">
+                    <span className="text-xs text-slate-500 dark:text-slate-400">Mobiele telefoon</span>
                     <button onClick={e => { e.stopPropagation(); openUnlinkPhone(p) }} className="text-xs font-medium text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 transition-colors">Ontkoppelen</button>
                   </div>
                 </div>
               ))}
             </div>
+          )}
+
+          {user.subscriptions.length > 0 && (
+            <>
+              <div className="mt-4 space-y-3">
+                {user.subscriptions.map(s => {
+                  const clickable = !!s.simCardId && !!onSubscriptionClick
+                  return (
+                    <div
+                      key={s.id}
+                      onClick={clickable ? () => handleCatalogClick(onSubscriptionClick, s.id, s.id) : undefined}
+                      className={`rounded-xl border border-slate-200 dark:border-slate-700/60 bg-slate-50 dark:bg-slate-900/60 p-3 transition-all duration-200 ease-out ${clickable ? 'cursor-pointer hover:border-blue-300 dark:hover:border-blue-700/60 hover:bg-blue-50/60 dark:hover:bg-blue-900/20 hover:shadow-[0_0_0_1px_rgba(37,99,235,0.08),0_4px_14px_-4px_rgba(37,99,235,0.35)] dark:hover:shadow-[0_0_0_1px_rgba(59,130,246,0.12),0_4px_16px_-4px_rgba(59,130,246,0.25)]' : ''}`}
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 truncate">{s.name}</p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                            {[s.provider, s.phoneNumber].filter(Boolean).join(' · ') || '—'}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          {clickingKey === s.id && <Loader2 size={13} className="animate-spin text-blue-400" />}
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${SUB_STATUS_TONE[s.status] ?? 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300'}`}>
+                            {SUB_STATUS_LABEL[s.status] ?? s.status}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="mt-2 pt-2 border-t border-slate-200 dark:border-slate-700/60 flex items-center justify-between">
+                        <span className="text-xs text-slate-500 dark:text-slate-400">Abonnement</span>
+                        <button onClick={e => { e.stopPropagation(); openUnlinkSubscription(s) }} className="text-xs font-medium text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 transition-colors">Ontkoppelen</button>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </>
           )}
         </Section>
       </div>
@@ -1188,8 +1247,8 @@ export function UserDetailPanel({ user, canEdit, departments = [], managers = []
         const softwareLicenses = user.licenses.filter(l => l.isSoftwareLicense)
         const pureLicenses     = user.licenses.filter(l => !l.isSoftwareLicense)
         const allSoftware      = [
-          ...user.software.map(s => ({ key: s.id, name: s.name, sub: `${s.account ? s.account + ' • ' : ''}vanaf ${fmt(s.issuedAt)}`, active: s.isActive, tag: null as string | null, licenseId: null as string | null, onUnlink: () => openUnlinkSoftwareAssignment(s) })),
-          ...softwareLicenses.map(l => ({ key: l.userLicenseId, name: l.name, sub: `${l.vendor || 'Freeware'} • toegewezen ${fmt(l.assignedAt)}`, active: l.isActive, tag: LICENSE_TYPE_LABEL[l.type] ?? l.type, licenseId: l.licenseId as string | null, onUnlink: () => openUnlinkLicense(l) })),
+          ...user.software.map(s => ({ key: s.id, name: s.name, sub: `${s.account ? s.account + ' • ' : ''}vanaf ${fmt(s.issuedAt)}`, active: s.isActive, licenseId: null as string | null, onUnlink: () => openUnlinkSoftwareAssignment(s) })),
+          ...softwareLicenses.map(l => ({ key: l.userLicenseId, name: l.name, sub: `${l.vendor || 'Freeware'} • toegewezen ${fmt(l.assignedAt)}`, active: l.isActive, licenseId: l.licenseId as string | null, onUnlink: () => openUnlinkLicense(l) })),
         ]
         return (
           <div className="grid gap-4 xl:grid-cols-2">
@@ -1219,14 +1278,10 @@ export function UserDetailPanel({ user, canEdit, departments = [], managers = []
                           </div>
                           <div className="flex items-center gap-2 flex-shrink-0">
                             {clickingKey === s.key && <Loader2 size={13} className="animate-spin text-blue-400" />}
-                            {s.tag && (
-                              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${LICENSE_TYPE_TONE[s.tag] ?? 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300'}`}>
-                                {s.tag}
-                              </span>
-                            )}
                           </div>
                         </div>
-                        <div className="mt-2 pt-2 border-t border-slate-200 dark:border-slate-700/60 flex justify-end">
+                        <div className="mt-2 pt-2 border-t border-slate-200 dark:border-slate-700/60 flex items-center justify-between">
+                          <span className="text-xs text-slate-500 dark:text-slate-400">Software</span>
                           <button onClick={e => { e.stopPropagation(); s.onUnlink() }} className="text-xs font-medium text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 transition-colors">Ontkoppelen</button>
                         </div>
                       </div>
@@ -1260,12 +1315,10 @@ export function UserDetailPanel({ user, canEdit, departments = [], managers = []
                           </div>
                           <div className="flex items-center gap-2 flex-shrink-0">
                             {clickingKey === l.userLicenseId && <Loader2 size={13} className="animate-spin text-blue-400" />}
-                            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${LICENSE_TYPE_TONE[l.type] ?? 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300'}`}>
-                              {LICENSE_TYPE_LABEL[l.type] ?? l.type}
-                            </span>
                           </div>
                         </div>
-                        <div className="mt-2 pt-2 border-t border-slate-200 dark:border-slate-700/60 flex justify-end">
+                        <div className="mt-2 pt-2 border-t border-slate-200 dark:border-slate-700/60 flex items-center justify-between">
+                          <span className="text-xs text-slate-500 dark:text-slate-400">Licentie</span>
                           <button onClick={e => { e.stopPropagation(); openUnlinkLicense(l) }} className="text-xs font-medium text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 transition-colors">Ontkoppelen</button>
                         </div>
                       </div>

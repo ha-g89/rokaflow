@@ -12,6 +12,9 @@ export interface PhoneListItem {
   simCardId: string | null
   simCardNumber: string | null
   simPhoneNumber: string | null
+  subscriptionName: string | null
+  subscriptionProvider: string | null
+  subscriptionStatus: string | null
   purchasedAt: string | null
   returnedAt: string | null
   orderedAt: string | null

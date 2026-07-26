@@ -32,10 +32,10 @@ export const SUB_STATUS_LABEL: Record<string, string> = {
 }
 
 export const SUB_STATUS_TONE: Record<string, string> = {
-  Active: 'bg-emerald-100 text-emerald-700',
-  Cancelled: 'bg-red-100 text-red-600',
-  Inactive: 'bg-amber-100 text-amber-700',
-  Incomplete: 'bg-violet-100 text-violet-700',
+  Active: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
+  Cancelled: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
+  Inactive: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
+  Incomplete: 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300',
 }
 
 export const SUB_TYPE_OPTIONS = [
