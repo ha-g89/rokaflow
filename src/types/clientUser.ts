@@ -122,7 +122,6 @@ export interface ClientUserSubscriptionDto {
   provider: string
   supplier: string | null
   type: string
-  bundle: string
   phoneNumber: string
   monthlyCost: number | null
   status: string

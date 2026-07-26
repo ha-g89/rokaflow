@@ -4,7 +4,6 @@ export interface SubscriptionListItem {
   provider: string
   supplier: string | null
   type: 'Mobile' | 'Data'
-  bundle: string
   monthlyCost: number | null
   startsAt: string | null
   expiresAt: string | null
@@ -26,7 +25,7 @@ export const SUB_STATUS_LABEL: Record<string, string> = {
   Active: 'Actief',
   Cancelled: 'Opgezegd',
   Inactive: 'Inactief',
-  // Systeemstatus: door bulk-import gezet zolang prijs/bundel nog ontbreken. Niet
+  // Systeemstatus: door bulk-import gezet zolang de prijs nog ontbreekt. Niet
   // handmatig kiesbaar — zie SUB_STATUS_OPTIONS, die deze waarde bewust weglaat.
   Incomplete: 'Nog af te maken',
 }

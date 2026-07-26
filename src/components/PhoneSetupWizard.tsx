@@ -30,7 +30,6 @@ const subSchema = z.object({
   name:             z.string().min(1, 'Naam is verplicht').max(256),
   provider:         z.string().max(200),
   supplier:         z.string().max(200),
-  bundle:           z.string().max(200),
   phoneNumber:      z.string().max(50),
   assignedToUserId: z.string(),
   monthlyCost:      z.string(),
@@ -314,15 +313,9 @@ function SubStep({
           <input {...register('supplier')} className={f} placeholder="Belsimpel, Tele2…" />
         </div>
       </div>
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Bundel</label>
-          <input {...register('bundle')} className={f} placeholder="Onbeperkt bellen + 20GB" />
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Maandelijkse kosten (€)</label>
-          <input {...register('monthlyCost')} type="number" step="0.01" className={f} placeholder="25.00" />
-        </div>
+      <div>
+        <label className="block text-xs font-medium text-slate-600 mb-1">Maandelijkse kosten (€)</label>
+        <input {...register('monthlyCost')} type="number" step="0.01" className={f} placeholder="25.00" />
       </div>
       <div>
         <label className="block text-xs font-medium text-slate-600 mb-1">Toegewezen aan</label>
@@ -440,7 +433,7 @@ export function PhoneSetupWizard({ open, onClose, onSuccess, teammates, lockedUs
   useEffect(() => {
     if (open) {
       phoneForm.reset({ brand: '', model: '', serialNumber: '', imeiNumber: '', supplier: '', purchaseValue: '', status: lockedUser ? '1' : '0', assignedToUserId: lockedUser?.id ?? '', purchasedAt: '', returnedAt: '' })
-      subForm.reset({ name: '', provider: '', supplier: '', bundle: '', phoneNumber: '', assignedToUserId: lockedUser?.id ?? '', monthlyCost: '', startsAt: '', expiresAt: '', status: '0' })
+      subForm.reset({ name: '', provider: '', supplier: '', phoneNumber: '', assignedToUserId: lockedUser?.id ?? '', monthlyCost: '', startsAt: '', expiresAt: '', status: '0' })
       simForm.reset({ kaartNummer: '', type: '0', provider: '', status: '0' })
       pendingSub.current = null
       setStep(1)
@@ -529,7 +522,6 @@ export function PhoneSetupWizard({ open, onClose, onSuccess, teammates, lockedUs
           provider:         sv.provider || '',
           supplier:         sv.supplier || null,
           type:             0,
-          bundle:           sv.bundle || '',
           phoneNumber:      sv.phoneNumber || '',
           assignedToUserId: sv.assignedToUserId || null,
           monthlyCost:      sv.monthlyCost ? parseFloat(sv.monthlyCost) : null,

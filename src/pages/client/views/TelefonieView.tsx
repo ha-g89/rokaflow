@@ -23,7 +23,7 @@ import { PHONE_STATUS_LABEL, PHONE_STATUS_TONE } from '@/types/phone'
 import type { SimCardListItem } from '@/types/simcard'
 import { SIM_STATUS_LABEL, SIM_STATUS_TONE, SIM_TYPE_LABEL } from '@/types/simcard'
 import type { SubscriptionListItem } from '@/types/subscription'
-import { SUB_STATUS_LABEL, SUB_STATUS_TONE } from '@/types/subscription'
+import { SUB_STATUS_LABEL, SUB_STATUS_TONE, SUB_TYPE_LABEL } from '@/types/subscription'
 import type { ClientUserListItem } from '@/types/clientUser'
 
 type TelefonieTab = 'phones' | 'simcards'
@@ -387,15 +387,21 @@ function PhonesTab({ teammates, onExpand }: { teammates: ClientUserListItem[]; o
 
 // ── SimCards tab ──────────────────────────────────────────────────────────────
 
+interface AbonnementRow {
+  key: string
+  simCard: SimCardListItem | null
+  subscription: SubscriptionListItem | null
+}
+
 function SimCardsTab({ teammates, onExpand }: { teammates: ClientUserListItem[]; onExpand?: (simCard: SimCardListItem) => void }) {
   const [simCards, setSimCards]         = useState<SimCardListItem[]>([])
   const [phones, setPhones]             = useState<PhoneListItem[]>([])
   const [subscriptions, setSubscriptions] = useState<SubscriptionListItem[]>([])
   const [loading, setLoading]           = useState(true)
   const [search, setSearch]             = useState('')
-  const [selected, setSelected]         = useState<SimCardListItem | null>(null)
+  const [selected, setSelected]         = useState<AbonnementRow | null>(null)
   const [showModal, setShowModal]       = useState(false)
-  const [editTarget, setEditTarget]     = useState<SimCardListItem | null>(null)
+  const [editTarget, setEditTarget]     = useState<AbonnementRow | null>(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [historyKey, setHistoryKey]     = useState(0)
   const [activeTab, setActiveTab]       = useState<'notes' | 'history'>('notes')
@@ -416,46 +422,55 @@ function SimCardsTab({ teammates, onExpand }: { teammates: ClientUserListItem[];
 
   useEffect(() => { fetchData() }, [fetchData])
 
+  // Elke simkaart is een rij (met haar gekoppelde abonnement, indien aanwezig), aangevuld met
+  // abonnementen die geen simkaart hebben (bv. via de losse abonnementen-import) — die zouden
+  // anders nergens in deze lijst verschijnen.
+  const rows: AbonnementRow[] = [
+    ...simCards.map(s => ({ key: `sim-${s.id}`, simCard: s, subscription: subscriptions.find(sub => sub.simCardId === s.id) ?? null })),
+    ...subscriptions.filter(sub => !sub.simCardId).map(sub => ({ key: `sub-${sub.id}`, simCard: null, subscription: sub })),
+  ]
+
   useEffect(() => {
     if (selected) {
-      const updated = simCards.find(s => s.id === selected.id)
+      const updated = rows.find(r => r.key === selected.key)
       if (updated) setSelected(updated)
     }
-  }, [simCards])
+  }, [simCards, subscriptions])
 
   useEffect(() => {
     setConfirmDelete(false)
     setActiveTab('notes')
-  }, [selected?.id])
-
-  const subscriptionFor = (simId: string) => subscriptions.find(sub => sub.simCardId === simId) ?? null
+  }, [selected?.key])
 
   const [typeFilter, setTypeFilter]         = useState('')
   const [statusFilter, setStatusFilter]     = useState('')
   const [subStatusFilter, setSubStatusFilter] = useState('')
 
-  const filtered = simCards.filter(s => {
-    const sub = subscriptionFor(s.id)
-    return (!typeFilter || s.type === typeFilter) &&
-      (!statusFilter || s.status === statusFilter) &&
+  const filtered = rows.filter(({ simCard: s, subscription: sub }) => {
+    return (!typeFilter || s?.type === typeFilter) &&
+      (!statusFilter || s?.status === statusFilter) &&
       (!subStatusFilter || sub?.status === subStatusFilter) &&
-      `${s.kaartNummer} ${s.phoneNumber} ${s.assignedToName ?? ''} ${s.phoneName ?? ''} ${sub?.provider ?? ''} ${sub?.name ?? ''} ${sub?.supplier ?? ''}`
+      `${s?.kaartNummer ?? ''} ${s?.phoneNumber ?? sub?.simPhoneNumber ?? ''} ${s?.assignedToName ?? sub?.assignedToName ?? ''} ${s?.phoneName ?? ''} ${sub?.provider ?? ''} ${sub?.name ?? ''} ${sub?.supplier ?? ''}`
         .toLowerCase().includes(search.toLowerCase())
   })
 
   const { sorted, sortKey, sortDir, toggleSort } = useSort(filtered, {
-    provider:      s => subscriptionFor(s.id)?.provider || null,
-    naam:          s => subscriptionFor(s.id)?.name || null,
-    telefoonnummer: s => s.phoneNumber || null,
-    persoon:       s => s.assignedToName || null,
-    leverancier:   s => subscriptionFor(s.id)?.supplier || null,
-    kaartnummer:   s => s.kaartNummer,
-    status:        s => SIM_STATUS_LABEL[s.status] ?? s.status,
+    provider:      r => r.subscription?.provider || null,
+    naam:          r => r.subscription?.name || null,
+    telefoonnummer: r => r.simCard?.phoneNumber || r.subscription?.simPhoneNumber || null,
+    persoon:       r => r.simCard?.assignedToName || r.subscription?.assignedToName || null,
+    leverancier:   r => r.subscription?.supplier || null,
+    kaartnummer:   r => r.simCard?.kaartNummer || null,
+    status:        r => r.simCard ? (SIM_STATUS_LABEL[r.simCard.status] ?? r.simCard.status) : null,
   })
 
-  const handleDelete = async (id: string) => {
-    await api.delete(`/portal/simcards/${id}`)
-    setSimCards(prev => prev.filter(s => s.id !== id))
+  const handleDelete = async (row: AbonnementRow) => {
+    if (row.simCard) {
+      await api.delete(`/portal/simcards/${row.simCard.id}`)
+    } else if (row.subscription) {
+      await api.delete(`/portal/subscriptions/${row.subscription.id}`)
+    }
+    await fetchData()
     setSelected(null)
     setConfirmDelete(false)
   }
@@ -468,8 +483,6 @@ function SimCardsTab({ teammates, onExpand }: { teammates: ClientUserListItem[];
   }
 
   const SIM_COLS = 'grid-cols-[1fr_1.2fr_1fr_1.1fr_1fr_1.2fr_0.8fr]'
-
-  const selectedSubscription = selected ? subscriptionFor(selected.id) : null
 
   return (
     <div className="grid grid-cols-[1fr_22%] grid-rows-[auto_1fr] gap-x-4 gap-y-3 flex-1 min-h-0">
@@ -522,31 +535,36 @@ function SimCardsTab({ teammates, onExpand }: { teammates: ClientUserListItem[];
             </div>
           ) : (
             <ul className="divide-y divide-slate-100">
-              {sorted.map(s => {
-                const sub = subscriptionFor(s.id)
+              {sorted.map(row => {
+                const s = row.simCard
+                const sub = row.subscription
                 return (
                   <li
-                    key={s.id}
-                    onClick={() => { setSelected(s); setConfirmDelete(false) }}
-                    onDoubleClick={() => onExpand?.(s)}
-                    className={`grid ${SIM_COLS} gap-3 px-4 py-3 items-center cursor-pointer transition-colors hover:bg-slate-100 ${selected?.id === s.id ? 'bg-blue-50 border-l-2 border-blue-500' : ''}`}
+                    key={row.key}
+                    onClick={() => { setSelected(row); setConfirmDelete(false) }}
+                    onDoubleClick={() => { if (s) onExpand?.(s) }}
+                    className={`grid ${SIM_COLS} gap-3 px-4 py-3 items-center cursor-pointer transition-colors hover:bg-slate-100 ${selected?.key === row.key ? 'bg-blue-50 border-l-2 border-blue-500' : ''}`}
                   >
                     <p className="text-xs text-slate-600 dark:text-slate-400 truncate">{sub?.provider || '—'}</p>
                     <div className="flex items-center gap-1.5 min-w-0">
                       <p className="text-xs text-slate-600 dark:text-slate-400 truncate">{sub?.name || '—'}</p>
                       {sub?.status === 'Incomplete' && (
-                        <span title="Prijs/bundel nog niet ingevuld" className={`shrink-0 text-[10px] px-1.5 py-0.5 rounded-full font-medium ${SUB_STATUS_TONE.Incomplete}`}>
+                        <span title="Prijs nog niet ingevuld" className={`shrink-0 text-[10px] px-1.5 py-0.5 rounded-full font-medium ${SUB_STATUS_TONE.Incomplete}`}>
                           Nog af te maken
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-slate-600 dark:text-slate-400 truncate tabular-nums">{s.phoneNumber || '—'}</p>
-                    <p className="text-xs text-slate-600 dark:text-slate-400 truncate">{s.assignedToName || '—'}</p>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 truncate tabular-nums">{s?.phoneNumber || sub?.simPhoneNumber || '—'}</p>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 truncate">{s?.assignedToName || sub?.assignedToName || '—'}</p>
                     <p className="text-xs text-slate-600 dark:text-slate-400 truncate">{sub?.supplier || '—'}</p>
-                    <p className="text-sm font-semibold text-slate-800 truncate tabular-nums">{s.kaartNummer}</p>
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium truncate ${SIM_STATUS_TONE[s.status] ?? 'bg-slate-100 text-slate-500'}`}>
-                      {SIM_STATUS_LABEL[s.status] ?? s.status}
-                    </span>
+                    <p className="text-sm font-semibold text-slate-800 truncate tabular-nums">{s?.kaartNummer || '—'}</p>
+                    {s ? (
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium truncate ${SIM_STATUS_TONE[s.status] ?? 'bg-slate-100 text-slate-500'}`}>
+                        {SIM_STATUS_LABEL[s.status] ?? s.status}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-slate-400">—</span>
+                    )}
                   </li>
                 )
               })}
@@ -556,13 +574,16 @@ function SimCardsTab({ teammates, onExpand }: { teammates: ClientUserListItem[];
       </Card>
 
       <div className="min-h-0">
-        {selected ? (
+        {selected ? (() => {
+          const s = selected.simCard
+          const sub = selected.subscription
+          return (
           <Card className="h-full overflow-y-auto">
             <CardContent className="p-5">
               <div className="flex items-start justify-between mb-4 gap-2">
                 <div className="min-w-0">
-                  <h2 className="text-base font-bold text-slate-900 truncate tabular-nums">{selected.kaartNummer}</h2>
-                  <p className="text-xs text-slate-400 mt-0.5 truncate">{selected.assignedToName || 'Niet toegewezen'}</p>
+                  <h2 className="text-base font-bold text-slate-900 truncate tabular-nums">{s?.kaartNummer ?? sub?.name ?? '—'}</h2>
+                  <p className="text-xs text-slate-400 mt-0.5 truncate">{s?.assignedToName || sub?.assignedToName || 'Niet toegewezen'}</p>
                 </div>
                 <div className="flex items-center gap-1 flex-shrink-0">
                   <button onClick={() => { setEditTarget(selected); setShowModal(true) }} title="Wijzigen" className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors">
@@ -571,8 +592,8 @@ function SimCardsTab({ teammates, onExpand }: { teammates: ClientUserListItem[];
                   <button onClick={() => setConfirmDelete(true)} title="Verwijderen" className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors">
                     <Trash2 size={13} />
                   </button>
-                  {onExpand && (
-                    <button onClick={() => onExpand(selected)} title="Volledig openen" className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors">
+                  {onExpand && s && (
+                    <button onClick={() => onExpand(s)} title="Volledig openen" className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors">
                       <Maximize2 size={13} />
                     </button>
                   )}
@@ -580,33 +601,47 @@ function SimCardsTab({ teammates, onExpand }: { teammates: ClientUserListItem[];
               </div>
 
               <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 mb-2">Simkaart</p>
-              <div className="grid grid-cols-2 gap-2">
-                {[
-                  { label: 'Type',           value: SIM_TYPE_LABEL[selected.type] ?? selected.type },
-                  { label: 'Status',         value: SIM_STATUS_LABEL[selected.status] ?? selected.status },
-                  { label: 'Telefoonnummer', value: selected.phoneNumber || '—' },
-                ].map(row => (
-                  <div key={row.label} className="rounded-xl bg-slate-50 p-3">
-                    <p className="text-xs text-slate-400 mb-0.5">{row.label}</p>
-                    <p className="text-sm font-medium text-slate-800 truncate">{row.value}</p>
+              {s ? (
+                <>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { label: 'Type',           value: SIM_TYPE_LABEL[s.type] ?? s.type },
+                      { label: 'Status',         value: SIM_STATUS_LABEL[s.status] ?? s.status },
+                      { label: 'Telefoonnummer', value: s.phoneNumber || '—' },
+                    ].map(row => (
+                      <div key={row.label} className="rounded-xl bg-slate-50 p-3">
+                        <p className="text-xs text-slate-400 mb-0.5">{row.label}</p>
+                        <p className="text-sm font-medium text-slate-800 truncate">{row.value}</p>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-              {selected.phoneName && (
-                <div className="mt-2 rounded-xl bg-blue-50 border border-blue-100 px-3 py-2.5">
-                  <p className="text-xs text-blue-400 mb-0.5">Gekoppelde telefoon</p>
-                  <p className="text-sm font-medium text-blue-700 truncate">{selected.phoneName}</p>
-                </div>
+                  {s.phoneName && (
+                    <div className="mt-2 rounded-xl bg-blue-50 border border-blue-100 px-3 py-2.5">
+                      <p className="text-xs text-blue-400 mb-0.5">Gekoppelde telefoon</p>
+                      <p className="text-sm font-medium text-blue-700 truncate">{s.phoneName}</p>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <button
+                  onClick={() => { setEditTarget(selected); setShowModal(true) }}
+                  className="w-full flex items-center justify-between gap-2 rounded-xl border border-dashed border-slate-300 dark:border-slate-600 bg-transparent px-3 py-2.5 text-left hover:border-blue-400 hover:bg-blue-50/40 dark:hover:bg-blue-900/20 transition-colors"
+                >
+                  <span className="text-xs text-slate-500 dark:text-slate-400">Nog geen simkaart gekoppeld</span>
+                  <span className="flex items-center gap-1 text-xs font-semibold text-blue-600 dark:text-blue-400">
+                    <Plus size={13} /> Toevoegen
+                  </span>
+                </button>
               )}
 
               <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 mt-4 mb-2">Abonnement</p>
-              {selectedSubscription ? (
+              {sub ? (
                 <div className="grid grid-cols-2 gap-2">
                   {[
-                    { label: 'Provider',      value: selectedSubscription.provider || '—' },
-                    { label: 'Bundel',        value: selectedSubscription.bundle || '—' },
-                    { label: 'Kosten / mnd',  value: fmtCost(selectedSubscription.monthlyCost) },
-                    { label: 'Status',        value: SUB_STATUS_LABEL[selectedSubscription.status] ?? selectedSubscription.status },
+                    { label: 'Provider',      value: sub.provider || '—' },
+                    { label: 'Type',          value: SUB_TYPE_LABEL[sub.type] ?? sub.type },
+                    { label: 'Kosten / mnd',  value: fmtCost(sub.monthlyCost) },
+                    { label: 'Status',        value: SUB_STATUS_LABEL[sub.status] ?? sub.status },
                   ].map(row => (
                     <div key={row.label} className="rounded-xl bg-slate-50 p-3">
                       <p className="text-xs text-slate-400 mb-0.5">{row.label}</p>
@@ -629,8 +664,8 @@ function SimCardsTab({ teammates, onExpand }: { teammates: ClientUserListItem[];
               <ConfirmDeleteModal
                 open={confirmDelete}
                 onClose={() => setConfirmDelete(false)}
-                onConfirm={() => { setConfirmDelete(false); handleDelete(selected.id) }}
-                itemName={selected.kaartNummer}
+                onConfirm={() => { setConfirmDelete(false); handleDelete(selected) }}
+                itemName={s?.kaartNummer ?? sub?.name ?? ''}
               />
               <div className="border-t border-slate-100 mt-4 pt-4">
                 <div className="flex items-center gap-1 mb-4">
@@ -641,19 +676,26 @@ function SimCardsTab({ teammates, onExpand }: { teammates: ClientUserListItem[];
                     <History size={13} /> Historie
                   </button>
                 </div>
-                {activeTab === 'notes' && <NotesPanel entityType="SimCard" entityId={selected.id} />}
-                {activeTab === 'history' && (
-                  <ItemHistoryBlock
-                    key={`${selected.id}-${historyKey}`}
-                    url={`/portal/simcards/${selected.id}/history`}
-                    subtitle={selected.kaartNummer}
-                  />
+                {s ? (
+                  <>
+                    {activeTab === 'notes' && <NotesPanel entityType="SimCard" entityId={s.id} />}
+                    {activeTab === 'history' && (
+                      <ItemHistoryBlock
+                        key={`${s.id}-${historyKey}`}
+                        url={`/portal/simcards/${s.id}/history`}
+                        subtitle={s.kaartNummer}
+                      />
+                    )}
+                  </>
+                ) : (
+                  <p className="text-sm text-slate-400">Notities en historie zijn beschikbaar zodra er een simkaart gekoppeld is.</p>
                 )}
               </div>
-              <p className="text-[11px] text-slate-400 mt-3">Aangemaakt op {fmt(selected.createdAt)}</p>
+              <p className="text-[11px] text-slate-400 mt-3">Aangemaakt op {fmt(s?.createdAt ?? sub?.createdAt ?? '')}</p>
             </CardContent>
           </Card>
-        ) : (
+          )
+        })() : (
           <div className="h-full flex items-center justify-center">
             <div className="text-center">
               <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-slate-100 flex items-center justify-center">
@@ -671,8 +713,8 @@ function SimCardsTab({ teammates, onExpand }: { teammates: ClientUserListItem[];
         onSuccess={handleSaved}
         teammates={teammates}
         phones={phones}
-        simCard={editTarget}
-        subscription={editTarget ? subscriptionFor(editTarget.id) : null}
+        simCard={editTarget?.simCard ?? null}
+        subscription={editTarget?.subscription ?? null}
       />
 
       <ImportWizardModal<ImportSubscriptionRow, SubscriptionImportPreview>
@@ -688,11 +730,13 @@ function SimCardsTab({ teammates, onExpand }: { teammates: ClientUserListItem[];
           { key: 'provider', label: 'Provider' },
           { key: 'supplier', label: 'Leverancier' },
           { key: 'type', label: 'Type' },
-          { key: 'bundle', label: 'Bundel' },
           { key: 'phoneNumber', label: 'Telefoonnummer' },
           { key: 'monthlyCost', label: 'Kosten' },
           { key: 'status', label: 'Status' },
           { key: 'assignedToEmail', label: 'Toegewezen aan' },
+          { key: 'simKaartNummer', label: 'SIM kaartnummer' },
+          { key: 'simType', label: 'SIM type' },
+          { key: 'simStatus', label: 'SIM status' },
         ]}
         onClose={() => setShowImport(false)}
         onDone={() => { setShowImport(false); fetchData() }}
@@ -1156,7 +1200,7 @@ export function SimCardDetailFullView({ initialSimCard, teammates, onBack, onDel
               <div className="flex items-center gap-2">
                 <p className="text-sm font-semibold text-slate-800 truncate">{subscription.name}</p>
                 {subscription.status === 'Incomplete' && (
-                  <span title="Prijs/bundel nog niet ingevuld" className={`shrink-0 text-[10px] px-1.5 py-0.5 rounded-full font-medium ${SUB_STATUS_TONE.Incomplete}`}>
+                  <span title="Prijs nog niet ingevuld" className={`shrink-0 text-[10px] px-1.5 py-0.5 rounded-full font-medium ${SUB_STATUS_TONE.Incomplete}`}>
                     Nog af te maken
                   </span>
                 )}
@@ -1167,13 +1211,13 @@ export function SimCardDetailFullView({ initialSimCard, teammates, onBack, onDel
                   <p className="text-sm font-medium text-slate-800">{subscription.provider || '—'}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-slate-400 mb-0.5">Kosten / mnd</p>
-                  <p className="text-sm font-medium text-slate-800">{fmtCost(subscription.monthlyCost)}</p>
+                  <p className="text-xs text-slate-400 mb-0.5">Type</p>
+                  <p className="text-sm font-medium text-slate-800">{SUB_TYPE_LABEL[subscription.type] ?? subscription.type}</p>
                 </div>
               </div>
               <div>
-                <p className="text-xs text-slate-400 mb-0.5">Bundel</p>
-                <p className="text-sm font-medium text-slate-800">{subscription.bundle || '—'}</p>
+                <p className="text-xs text-slate-400 mb-0.5">Kosten / mnd</p>
+                <p className="text-sm font-medium text-slate-800">{fmtCost(subscription.monthlyCost)}</p>
               </div>
               <div>
                 <p className="text-xs text-slate-400 mb-0.5">Status</p>

@@ -123,13 +123,15 @@ export interface ImportSubscriptionRow {
   provider: string | null
   supplier: string | null
   type: string | null
-  bundle: string | null
   phoneNumber: string | null
   monthlyCost: number | null
   startsAt: string | null
   expiresAt: string | null
   status: string | null
   assignedToEmail: string | null
+  simKaartNummer: string | null
+  simType: string | null
+  simStatus: string | null
 }
 
 export interface SubscriptionImportPreview {

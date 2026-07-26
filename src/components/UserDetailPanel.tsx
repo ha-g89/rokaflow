@@ -794,7 +794,7 @@ export function UserDetailPanel({ user, canEdit, departments = [], managers = []
       onConfirm: async () => {
         await api.put(`/portal/subscriptions/${s.id}`, {
           name: s.name, provider: s.provider, supplier: s.supplier,
-          type: SUB_TYPE_TO_VALUE[s.type] ?? 0, bundle: s.bundle,
+          type: SUB_TYPE_TO_VALUE[s.type] ?? 0,
           phoneNumber: s.phoneNumber, monthlyCost: s.monthlyCost,
           status: SUB_STATUS_TO_VALUE[s.status] ?? 0, location: '',
           assignedToUserId: null,
