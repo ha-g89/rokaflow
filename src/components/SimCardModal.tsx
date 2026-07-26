@@ -160,13 +160,17 @@ export function SimCardModal({ open, onClose, onSuccess, teammates, phones, simC
 
   useEffect(() => {
     if (open) {
-      reset(simCard ? {
-        kaartNummer: simCard.kaartNummer,
-        type: simCard.type === 'Physical' ? '0' : '1',
-        phoneNumber: simCard.phoneNumber,
-        status: simCard.status === 'InUse' ? '0' : simCard.status === 'InStock' ? '1' : '2',
-        phoneId: simCard.phoneId ?? '',
-        assignedToUserId: simCard.assignedToUserId ?? '',
+      reset({
+        // Simkaart-velden: alleen gevuld als er een simkaart is, anders default.
+        kaartNummer: simCard?.kaartNummer ?? '',
+        type: simCard ? (simCard.type === 'Physical' ? '0' : '1') : '0',
+        phoneNumber: subscription?.simPhoneNumber ?? simCard?.phoneNumber ?? '',
+        status: simCard ? (simCard.status === 'InUse' ? '0' : simCard.status === 'InStock' ? '1' : '2') : '1',
+        phoneId: simCard?.phoneId ?? '',
+        assignedToUserId: simCard?.assignedToUserId ?? '',
+        // Abonnement-velden: alleen gevuld als er een abonnement is, anders default — los van
+        // of er een simkaart is, zodat wijzigen/koppelen van een simkaart de abonnementsdata
+        // van een bestaand abonnement zonder simkaart niet leegmaakt.
         subName: subscription?.name ?? '',
         subProvider: subscription?.provider ?? '',
         subSupplier: subscription?.supplier ?? '',
@@ -179,10 +183,6 @@ export function SimCardModal({ open, onClose, onSuccess, teammates, phones, simC
         subStatus: subscription
           ? (subscription.status === 'Cancelled' ? '1' : subscription.status === 'Inactive' ? '2' : '0')
           : '0',
-      } : {
-        kaartNummer: '', type: '0', phoneNumber: '', status: '1', phoneId: '', assignedToUserId: '',
-        subName: '', subProvider: '', subSupplier: '', subType: '0',
-        subMonthlyCost: '', subStartsAt: '', subExpiresAt: '', subStatus: '0',
       })
       setShowSimCard(!!simCard)
       setApiError(null)
