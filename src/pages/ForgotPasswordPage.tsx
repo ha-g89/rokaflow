@@ -111,12 +111,12 @@ const CSS = `
      geen handmatige schakelaar zoals in de ingelogde app ── */
   @media (prefers-color-scheme: dark) {
     .rfp-wrap {
-      --rfp-bg: #030812; --rfp-text: #eef0f6; --rfp-text-2: rgba(238,240,246,0.72);
+      --rfp-bg: #0f172a; --rfp-text: #eef0f6; --rfp-text-2: rgba(238,240,246,0.72);
       --rfp-muted: rgba(238,240,246,0.42); --rfp-accent-dk: #3b82f6;
       --rfp-line: rgba(238,240,246,0.07); --rfp-field-bg: rgba(238,240,246,0.05); --rfp-field-bd: rgba(238,240,246,0.10);
-      background-color: #030812;
+      background-color: #0f172a;
     }
-    .rfp-card { background: rgba(8,12,28,0.95); border-color: rgba(238,240,246,0.07); box-shadow: 0 24px 56px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.04); }
+    .rfp-card { background: rgba(30,41,59,0.95); border-color: rgba(238,240,246,0.07); box-shadow: 0 24px 56px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.04); }
     .rfp-logo-base { background: rgba(238,240,246,0.25); }
     .rfp-wrap .rfp-input { background: var(--rfp-field-bg); border-color: var(--rfp-field-bd); color: var(--rfp-text); }
     .rfp-wrap .rfp-input::placeholder { color: rgba(238,240,246,0.22); }

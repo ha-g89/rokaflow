@@ -153,12 +153,12 @@ const CSS = `
      geen handmatige schakelaar zoals in de ingelogde app ── */
   @media (prefers-color-scheme: dark) {
     .onb-wrap {
-      --onb-bg: #030812; --onb-text: #eef0f6; --onb-text-2: rgba(238,240,246,0.72);
+      --onb-bg: #0f172a; --onb-text: #eef0f6; --onb-text-2: rgba(238,240,246,0.72);
       --onb-muted: rgba(238,240,246,0.42); --onb-accent-dk: #3b82f6;
       --onb-line: rgba(238,240,246,0.07); --onb-field-bg: rgba(238,240,246,0.05); --onb-field-bd: rgba(238,240,246,0.10);
-      background-color: #030812;
+      background-color: #0f172a;
     }
-    .onb-card { background: rgba(8,12,28,0.95); border-color: rgba(238,240,246,0.07); box-shadow: 0 24px 56px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.04); }
+    .onb-card { background: rgba(30,41,59,0.95); border-color: rgba(238,240,246,0.07); box-shadow: 0 24px 56px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.04); }
     .onb-logo-base { background: rgba(238,240,246,0.25); }
     .onb-wrap .onb-input { background: rgba(238,240,246,0.05); border-color: rgba(238,240,246,0.10); color: var(--onb-text); box-shadow: inset 0 1px 3px 0 rgba(0,0,0,0.4); }
     .onb-wrap .onb-input::placeholder { color: rgba(238,240,246,0.22); }

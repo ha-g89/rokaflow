@@ -146,12 +146,12 @@ const CSS = `
      geen handmatige schakelaar zoals in de ingelogde app ── */
   @media (prefers-color-scheme: dark) {
     .rpr-wrap {
-      --rpr-bg: #030812; --rpr-text: #eef0f6; --rpr-text-2: rgba(238,240,246,0.72);
+      --rpr-bg: #0f172a; --rpr-text: #eef0f6; --rpr-text-2: rgba(238,240,246,0.72);
       --rpr-muted: rgba(238,240,246,0.42); --rpr-accent-dk: #3b82f6;
       --rpr-line: rgba(238,240,246,0.07); --rpr-field-bg: rgba(238,240,246,0.05); --rpr-field-bd: rgba(238,240,246,0.10);
-      background-color: #030812;
+      background-color: #0f172a;
     }
-    .rpr-card { background: rgba(8,12,28,0.95); border-color: rgba(238,240,246,0.07); box-shadow: 0 24px 56px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.04); }
+    .rpr-card { background: rgba(30,41,59,0.95); border-color: rgba(238,240,246,0.07); box-shadow: 0 24px 56px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.04); }
     .rpr-logo-base { background: rgba(238,240,246,0.25); }
     .rpr-badge { color: #60a5fa; background: rgba(37,99,235,0.12); border-color: rgba(37,99,235,0.25); }
     .rpr-wrap .rpr-input { background: var(--rpr-field-bg); border-color: var(--rpr-field-bd); color: var(--rpr-text); }

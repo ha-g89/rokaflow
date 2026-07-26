@@ -16,7 +16,7 @@ const CSS = `
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
-    --rfi-bg:        #030812;
+    --rfi-bg:        #0f172a;
     --rfi-text:      #eef0f6;
     --rfi-muted:     rgba(238,240,246,0.38);
     --rfi-accent:    #2563eb;
@@ -64,7 +64,7 @@ const CSS = `
   .rfi-card {
     width: 100%;
     max-width: 400px;
-    background: rgba(8,12,28,0.85);
+    background: rgba(30,41,59,0.85);
     border: 1px solid rgba(255,255,255,0.07);
     border-radius: 16px;
     padding: 36px 32px;
