@@ -12,6 +12,7 @@ export interface SubscriptionListItem {
   simCardId: string | null
   simCardNumber: string | null
   simPhoneNumber: string | null
+  assignedToUserId: string | null
   assignedToName: string | null
   createdAt: string
 }

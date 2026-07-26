@@ -167,10 +167,13 @@ export function SimCardModal({ open, onClose, onSuccess, teammates, phones, simC
         phoneNumber: subscription?.simPhoneNumber ?? simCard?.phoneNumber ?? '',
         status: simCard ? (simCard.status === 'InUse' ? '0' : simCard.status === 'InStock' ? '1' : '2') : '1',
         phoneId: simCard?.phoneId ?? '',
-        assignedToUserId: simCard?.assignedToUserId ?? '',
         // Abonnement-velden: alleen gevuld als er een abonnement is, anders default — los van
         // of er een simkaart is, zodat wijzigen/koppelen van een simkaart de abonnementsdata
-        // van een bestaand abonnement zonder simkaart niet leegmaakt.
+        // van een bestaand abonnement zonder simkaart niet leegmaakt. "Toegewezen aan" hoort
+        // bij het abonnement (Subscription.AssignedToUserId is de bron van waarheid) — niet
+        // bij de simkaart, die geeft alleen nog een gemirrorde waarde terug als er wél een
+        // gekoppeld abonnement is.
+        assignedToUserId: subscription?.assignedToUserId ?? simCard?.assignedToUserId ?? '',
         subName: subscription?.name ?? '',
         subProvider: subscription?.provider ?? '',
         subSupplier: subscription?.supplier ?? '',
