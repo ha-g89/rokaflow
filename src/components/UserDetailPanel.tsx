@@ -711,10 +711,10 @@ export function UserDetailPanel({ user, canEdit, departments = [], managers = []
   const toPhoneListItem = (p: typeof user.phones[0]): PhoneListItem => ({
     id: p.id, brand: p.brand, model: p.model,
     serialNumber: p.serialNumber, imeiNumber: p.imeiNumber,
-    supplier: null, status: p.status as PhoneListItem['status'],
+    supplier: null, purchaseValue: p.purchaseValue, status: p.status as PhoneListItem['status'],
     assignedToUserId: user.id, assignedToName: `${user.firstName} ${user.lastName}`,
     simCardId: null, simCardNumber: p.simCardNumber, simPhoneNumber: p.simPhoneNumber,
-    issuedAt: p.issuedAt, returnedAt: null, orderedAt: null, createdAt: '',
+    purchasedAt: p.purchasedAt, returnedAt: null, orderedAt: null, createdAt: '',
   })
 
   const toHardwareListItem = (h: typeof user.hardware[0]): HardwareAssetListItem => ({
@@ -774,7 +774,8 @@ export function UserDetailPanel({ user, canEdit, departments = [], managers = []
           brand: p.brand, model: p.model || '',
           serialNumber: p.serialNumber || '', imeiNumber: p.imeiNumber || '',
           status: 0, assignedToUserId: null,
-          issuedAt: p.issuedAt ?? null, returnedAt: new Date().toISOString(),
+          purchaseValue: p.purchaseValue ?? null,
+          purchasedAt: p.purchasedAt ?? null, returnedAt: new Date().toISOString(),
         })
         onUserUpdated?.()
       },
@@ -1167,8 +1168,8 @@ export function UserDetailPanel({ user, canEdit, departments = [], managers = []
                       {PHONE_STATUS_LABEL[p.status as keyof typeof PHONE_STATUS_LABEL] ?? p.status}
                     </span>
                   </div>
-                  {p.issuedAt && (
-                    <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">Uitgifte: {fmt(p.issuedAt)}</p>
+                  {p.purchasedAt && (
+                    <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">Aanschaf: {fmt(p.purchasedAt)}</p>
                   )}
                   <div className="mt-2 pt-2 border-t border-slate-200 dark:border-slate-700/60 flex justify-end">
                     <button onClick={e => { e.stopPropagation(); openUnlinkPhone(p) }} className="text-xs font-medium text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 transition-colors">Ontkoppelen</button>

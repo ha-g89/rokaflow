@@ -5,13 +5,14 @@ export interface PhoneListItem {
   serialNumber: string
   imeiNumber: string
   supplier: string | null
+  purchaseValue: number | null
   status: 'InStock' | 'InUse' | 'Decommissioned' | 'UnderRepair' | 'OnOrder'
   assignedToUserId: string | null
   assignedToName: string | null
   simCardId: string | null
   simCardNumber: string | null
   simPhoneNumber: string | null
-  issuedAt: string | null
+  purchasedAt: string | null
   returnedAt: string | null
   orderedAt: string | null
   createdAt: string

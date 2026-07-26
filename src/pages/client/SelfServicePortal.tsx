@@ -239,7 +239,7 @@ export default function SelfServicePortal() {
                               {PHONE_STATUS_LABEL[p.status as keyof typeof PHONE_STATUS_LABEL] ?? p.status}
                             </span>
                           </div>
-                          {p.issuedAt && <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">Uitgifte: {fmtDate(p.issuedAt)}</p>}
+                          {p.purchasedAt && <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">Aanschaf: {fmtDate(p.purchasedAt)}</p>}
                         </div>
                       ))}
                     </div>

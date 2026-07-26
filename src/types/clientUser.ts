@@ -105,7 +105,8 @@ export interface PhoneDto {
   serialNumber: string
   imeiNumber: string
   status: string
-  issuedAt: string | null
+  purchaseValue: number | null
+  purchasedAt: string | null
   simCardNumber: string | null
   simPhoneNumber: string | null
 }

@@ -19,9 +19,10 @@ const phoneSchema = z.object({
   serialNumber:     z.string().max(100),
   imeiNumber:       z.string().max(20),
   supplier:         z.string().max(200),
+  purchaseValue:    z.string(),
   status:           z.string(),
   assignedToUserId: z.string(),
-  issuedAt:         z.string(),
+  purchasedAt:      z.string(),
   returnedAt:       z.string(),
 })
 
@@ -132,8 +133,8 @@ function PhoneDetailCard({ phone }: { phone: PhoneListItem }) {
         {phone.simPhoneNumber && (
           <p><span className="text-slate-400">Nummer:</span> {phone.simPhoneNumber}</p>
         )}
-        {phone.issuedAt && (
-          <p><span className="text-slate-400">Uitgegeven:</span> {phone.issuedAt.substring(0, 10)}</p>
+        {phone.purchasedAt && (
+          <p><span className="text-slate-400">Aangeschaft:</span> {phone.purchasedAt.substring(0, 10)}</p>
         )}
       </div>
       {phone.simCardId && (
@@ -219,9 +220,15 @@ function PhoneStep({
           <input {...register('imeiNumber')} className={f} placeholder="35 123456…" />
         </div>
       </div>
-      <div>
-        <label className="block text-xs font-medium text-slate-600 mb-1">Leverancier</label>
-        <input {...register('supplier')} className={f} placeholder="Belsimpel, MediaMarkt…" />
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="block text-xs font-medium text-slate-600 mb-1">Leverancier</label>
+          <input {...register('supplier')} className={f} placeholder="Belsimpel, MediaMarkt…" />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-slate-600 mb-1">Aanschafwaarde (€)</label>
+          <input {...register('purchaseValue')} type="number" step="0.01" min="0" className={f} placeholder="0.00" />
+        </div>
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
@@ -255,8 +262,8 @@ function PhoneStep({
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Uitgiftedatum</label>
-          <input {...register('issuedAt')} type="date" className={f} />
+          <label className="block text-xs font-medium text-slate-600 mb-1">Aanschafdatum</label>
+          <input {...register('purchasedAt')} type="date" className={f} />
         </div>
         <div>
           <label className="block text-xs font-medium text-slate-600 mb-1">Inleverdatum</label>
@@ -428,7 +435,7 @@ export function PhoneSetupWizard({ open, onClose, onSuccess, teammates, lockedUs
   // Reset everything on open
   useEffect(() => {
     if (open) {
-      phoneForm.reset({ brand: '', model: '', serialNumber: '', imeiNumber: '', supplier: '', status: lockedUser ? '1' : '0', assignedToUserId: lockedUser?.id ?? '', issuedAt: '', returnedAt: '' })
+      phoneForm.reset({ brand: '', model: '', serialNumber: '', imeiNumber: '', supplier: '', purchaseValue: '', status: lockedUser ? '1' : '0', assignedToUserId: lockedUser?.id ?? '', purchasedAt: '', returnedAt: '' })
       subForm.reset({ name: '', provider: '', supplier: '', bundle: '', phoneNumber: '', assignedToUserId: lockedUser?.id ?? '', monthlyCost: '', startsAt: '', expiresAt: '', status: '0' })
       simForm.reset({ kaartNummer: '', type: '0', provider: '', status: '0' })
       pendingSub.current = null
@@ -466,7 +473,8 @@ export function PhoneSetupWizard({ open, onClose, onSuccess, teammates, lockedUs
         imeiNumber:       selectedPhone.imeiNumber || '',
         status:           1, // InUse
         assignedToUserId: lockedUser.id,
-        issuedAt:         selectedPhone.issuedAt ?? null,
+        purchaseValue:    selectedPhone.purchaseValue ?? null,
+        purchasedAt:      selectedPhone.purchasedAt ?? null,
         returnedAt:       null,
       })
       onSuccess()
@@ -490,9 +498,10 @@ export function PhoneSetupWizard({ open, onClose, onSuccess, teammates, lockedUs
         serialNumber:     pv.serialNumber || '',
         imeiNumber:       pv.imeiNumber || '',
         supplier:         pv.supplier || null,
+        purchaseValue:    pv.purchaseValue !== '' ? parseFloat(pv.purchaseValue) : null,
         status:           parseInt(pv.status, 10),
         assignedToUserId: pv.assignedToUserId || null,
-        issuedAt:         pv.issuedAt ? new Date(pv.issuedAt).toISOString() : null,
+        purchasedAt:      pv.purchasedAt ? new Date(pv.purchasedAt).toISOString() : null,
         returnedAt:       pv.returnedAt ? new Date(pv.returnedAt).toISOString() : null,
       })
       const phoneId = phoneRes.data.id as string

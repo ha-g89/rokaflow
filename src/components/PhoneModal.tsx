@@ -15,9 +15,10 @@ const schema = z.object({
   serialNumber: z.string().max(100),
   imeiNumber: z.string().max(20),
   supplier: z.string().max(200),
+  purchaseValue: z.string(),
   status: z.string(),
   assignedToUserId: z.string(),
-  issuedAt: z.string(),
+  purchasedAt: z.string(),
   returnedAt: z.string(),
   orderedAt: z.string(),
 })
@@ -67,14 +68,15 @@ export function PhoneModal({ open, onClose, onSuccess, teammates, phone }: Props
         serialNumber: phone.serialNumber,
         imeiNumber: phone.imeiNumber,
         supplier: phone.supplier ?? '',
+        purchaseValue: phone.purchaseValue != null ? String(phone.purchaseValue) : '',
         status: String(phoneStatusToValue(phone.status)),
         assignedToUserId: phone.assignedToUserId ?? '',
-        issuedAt: phone.issuedAt ? phone.issuedAt.substring(0, 10) : '',
+        purchasedAt: phone.purchasedAt ? phone.purchasedAt.substring(0, 10) : '',
         returnedAt: phone.returnedAt ? phone.returnedAt.substring(0, 10) : '',
         orderedAt: phone.orderedAt ? phone.orderedAt.substring(0, 10) : '',
       } : {
         brand: '', model: '', serialNumber: '', imeiNumber: '',
-        supplier: '', status: '0', assignedToUserId: '', issuedAt: '', returnedAt: '', orderedAt: '',
+        supplier: '', purchaseValue: '', status: '0', assignedToUserId: '', purchasedAt: '', returnedAt: '', orderedAt: '',
       })
       setApiError(null)
     }
@@ -91,9 +93,10 @@ export function PhoneModal({ open, onClose, onSuccess, teammates, phone }: Props
         serialNumber: values.serialNumber || '',
         imeiNumber: values.imeiNumber || '',
         supplier: values.supplier || null,
+        purchaseValue: values.purchaseValue !== '' ? parseFloat(values.purchaseValue) : null,
         status: parseInt(values.status, 10),
         assignedToUserId: values.assignedToUserId || null,
-        issuedAt: values.issuedAt ? new Date(values.issuedAt).toISOString() : null,
+        purchasedAt: values.purchasedAt ? new Date(values.purchasedAt).toISOString() : null,
         returnedAt: values.returnedAt ? new Date(values.returnedAt).toISOString() : null,
         orderedAt: values.orderedAt ? new Date(values.orderedAt).toISOString() : null,
       }
@@ -156,9 +159,15 @@ export function PhoneModal({ open, onClose, onSuccess, teammates, phone }: Props
           <p className="-mt-2 text-xs text-slate-400">Vul dit in zodra de telefoon is ontvangen.</p>
         )}
 
-        <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Leverancier</label>
-          <input {...register('supplier')} className={field} placeholder="Belsimpel, MediaMarkt…" />
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs font-medium text-slate-600 mb-1">Leverancier</label>
+            <input {...register('supplier')} className={field} placeholder="Belsimpel, MediaMarkt…" />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-slate-600 mb-1">Aanschafwaarde (€)</label>
+            <input {...register('purchaseValue')} type="number" step="0.01" min="0" className={field} placeholder="0.00" />
+          </div>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
@@ -197,8 +206,8 @@ export function PhoneModal({ open, onClose, onSuccess, teammates, phone }: Props
             </div>
           ) : (
             <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">Uitgiftedatum</label>
-              <input {...register('issuedAt')} type="date" className={field} />
+              <label className="block text-xs font-medium text-slate-600 mb-1">Aanschafdatum</label>
+              <input {...register('purchasedAt')} type="date" className={field} />
             </div>
           )}
           <div>
