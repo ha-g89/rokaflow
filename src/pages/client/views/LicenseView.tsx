@@ -540,6 +540,7 @@ export function LicenseView({ teammates, tabBar, onExpand }: { teammates: Client
                     <li
                       key={l.id}
                       onClick={() => setSelected(l)}
+                      onDoubleClick={() => onExpand?.(l)}
                       className={`grid grid-cols-[2fr_1fr_1.5fr_0.8fr_1fr_0.7fr] gap-3 px-4 py-3 items-center cursor-pointer transition-colors hover:bg-slate-100 ${
                         selected?.id === l.id ? 'bg-blue-50 border-l-2 border-blue-500' : ''
                       }`}

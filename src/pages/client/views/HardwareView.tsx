@@ -474,6 +474,7 @@ export function HardwareView({ teammates, onExpand }: { teammates: ClientUserLis
                   <li
                     key={a.id}
                     onClick={() => setSelected(a)}
+                    onDoubleClick={() => onExpand?.(a)}
                     className={`grid grid-cols-[1fr_1.2fr_2fr_1.2fr_1fr_1.5fr_0.9fr] gap-3 px-4 py-3 items-center cursor-pointer transition-colors hover:bg-slate-100 ${
                       selected?.id === a.id ? 'bg-blue-50 border-l-2 border-blue-500' : ''
                     }`}

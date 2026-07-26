@@ -1063,6 +1063,7 @@ function SoftwareCatalogTab({ teammates, tabBar, onExpand }: { teammates: Client
                   <li
                     key={s.id}
                     onClick={() => setSelected(s)}
+                    onDoubleClick={() => onExpand?.(s)}
                     className={`grid ${cols} gap-3 px-5 py-3.5 items-center cursor-pointer transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50 ${
                       selected?.id === s.id ? 'bg-blue-50 dark:bg-blue-900/10 border-l-2 border-blue-500' : ''
                     }`}
