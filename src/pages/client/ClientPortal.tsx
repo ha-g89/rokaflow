@@ -229,14 +229,28 @@ export default function ClientPortal() {
   const handlePhoneFromEmployee = (phone: import('@/types/phone').PhoneListItem) => { setSelectedPhone(phone); pushAndNavigate('phone-detail', 'Terug naar medewerker') }
 
   const [selectedSimCard, setSelectedSimCard] = useState<import('@/types/simcard').SimCardListItem | null>(null)
-  const handleExpandSimCard    = (simCard: import('@/types/simcard').SimCardListItem) => { setTelefonieTab('simcards'); setSelectedSimCard(simCard); pushAndNavigate('simcard-detail', 'Terug naar telefonie') }
-  const handleBackToSimCards   = () => { setView('phones'); setSelectedSimCard(null); setNavHistory([]) }
-  const handleSimCardDeleted   = () => { setView('phones'); setSelectedSimCard(null); setNavHistory([]) }
+  const [selectedSubscriptionForSimCard, setSelectedSubscriptionForSimCard] = useState<import('@/types/subscription').SubscriptionListItem | null>(null)
+  const handleExpandSimCard = (simCard: import('@/types/simcard').SimCardListItem | null, subscription: import('@/types/subscription').SubscriptionListItem | null) => {
+    setTelefonieTab('simcards')
+    setSelectedSimCard(simCard)
+    setSelectedSubscriptionForSimCard(subscription)
+    pushAndNavigate('simcard-detail', 'Terug naar telefonie')
+  }
+  const handleBackToSimCards   = () => { setView('phones'); setSelectedSimCard(null); setSelectedSubscriptionForSimCard(null); setNavHistory([]) }
+  const handleSimCardDeleted   = () => { setView('phones'); setSelectedSimCard(null); setSelectedSubscriptionForSimCard(null); setNavHistory([]) }
   const handleSubscriptionFromEmployee = async (subscriptionId: string) => {
     try {
-      const { data } = await api.get<import('@/types/simcard').SimCardListItem[]>('/portal/simcards')
-      const item = data.find(sc => sc.subscriptionId === subscriptionId)
-      if (item) { setTelefonieTab('simcards'); setSelectedSimCard(item); pushAndNavigate('simcard-detail', 'Terug naar medewerker') }
+      const [{ data: simCards }, { data: subscriptions }] = await Promise.all([
+        api.get<import('@/types/simcard').SimCardListItem[]>('/portal/simcards'),
+        api.get<import('@/types/subscription').SubscriptionListItem[]>('/portal/subscriptions'),
+      ])
+      const sub = subscriptions.find(s => s.id === subscriptionId)
+      if (!sub) return
+      const sim = simCards.find(sc => sc.subscriptionId === subscriptionId) ?? null
+      setTelefonieTab('simcards')
+      setSelectedSimCard(sim)
+      setSelectedSubscriptionForSimCard(sub)
+      pushAndNavigate('simcard-detail', 'Terug naar medewerker')
     } catch {
       // niet-kritiek — gebruiker blijft op de huidige view staan
     }
@@ -334,7 +348,7 @@ export default function ClientPortal() {
     if (v !== 'employee-detail') setSelectedUser(null)
     if (v !== 'hardware-detail') setSelectedHardwareAsset(null)
     if (v !== 'phone-detail') setSelectedPhone(null)
-    if (v !== 'simcard-detail') setSelectedSimCard(null)
+    if (v !== 'simcard-detail') { setSelectedSimCard(null); setSelectedSubscriptionForSimCard(null) }
     if (v === 'phones') setTelefonieTab('phones')
     fetchUsers()
     fetchDepartmentOptions()
@@ -601,9 +615,10 @@ export default function ClientPortal() {
                 backLabel={navHistory[navHistory.length - 1]?.backLabel ?? 'Terug naar telefonie'}
               />
             )}
-            {view === 'simcard-detail' && selectedSimCard && (
+            {view === 'simcard-detail' && (selectedSimCard || selectedSubscriptionForSimCard) && (
               <SimCardDetailFullView
                 initialSimCard={selectedSimCard}
+                initialSubscription={selectedSubscriptionForSimCard}
                 teammates={teammates}
                 onBack={navHistory.length > 0 ? goBack : handleBackToSimCards}
                 onDeleted={handleSimCardDeleted}

@@ -393,7 +393,7 @@ interface AbonnementRow {
   subscription: SubscriptionListItem | null
 }
 
-function SimCardsTab({ teammates, onExpand }: { teammates: ClientUserListItem[]; onExpand?: (simCard: SimCardListItem) => void }) {
+function SimCardsTab({ teammates, onExpand }: { teammates: ClientUserListItem[]; onExpand?: (simCard: SimCardListItem | null, subscription: SubscriptionListItem | null) => void }) {
   const [simCards, setSimCards]         = useState<SimCardListItem[]>([])
   const [phones, setPhones]             = useState<PhoneListItem[]>([])
   const [subscriptions, setSubscriptions] = useState<SubscriptionListItem[]>([])
@@ -542,7 +542,7 @@ function SimCardsTab({ teammates, onExpand }: { teammates: ClientUserListItem[];
                   <li
                     key={row.key}
                     onClick={() => { setSelected(row); setConfirmDelete(false) }}
-                    onDoubleClick={() => { if (s) onExpand?.(s) }}
+                    onDoubleClick={() => onExpand?.(s, sub)}
                     className={`grid ${SIM_COLS} gap-3 px-4 py-3 items-center cursor-pointer transition-colors hover:bg-slate-100 ${selected?.key === row.key ? 'bg-blue-50 border-l-2 border-blue-500' : ''}`}
                   >
                     <p className="text-xs text-slate-600 dark:text-slate-400 truncate">{sub?.provider || '—'}</p>
@@ -582,7 +582,7 @@ function SimCardsTab({ teammates, onExpand }: { teammates: ClientUserListItem[];
             <CardContent className="p-5">
               <div className="flex items-start justify-between mb-4 gap-2">
                 <div className="min-w-0">
-                  <h2 className="text-base font-bold text-slate-900 truncate tabular-nums">{s?.kaartNummer ?? sub?.name ?? '—'}</h2>
+                  <h2 className="text-base font-bold text-slate-900 truncate tabular-nums">{sub?.name ?? s?.kaartNummer ?? '—'}</h2>
                   <p className="text-xs text-slate-400 mt-0.5 truncate">{s?.assignedToName || sub?.assignedToName || 'Niet toegewezen'}</p>
                 </div>
                 <div className="flex items-center gap-1 flex-shrink-0">
@@ -592,8 +592,8 @@ function SimCardsTab({ teammates, onExpand }: { teammates: ClientUserListItem[];
                   <button onClick={() => setConfirmDelete(true)} title="Verwijderen" className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors">
                     <Trash2 size={13} />
                   </button>
-                  {onExpand && s && (
-                    <button onClick={() => onExpand(s)} title="Volledig openen" className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors">
+                  {onExpand && (
+                    <button onClick={() => onExpand(s, sub)} title="Volledig openen" className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors">
                       <Maximize2 size={13} />
                     </button>
                   )}
@@ -1038,7 +1038,7 @@ export function PhoneDetailFullView({ initialPhone, teammates, onBack, onDeleted
 export function TelefonieView({ teammates, onExpand, onExpandSimCard, initialTab }: {
   teammates: ClientUserListItem[]
   onExpand?: (phone: PhoneListItem) => void
-  onExpandSimCard?: (simCard: SimCardListItem) => void
+  onExpandSimCard?: (simCard: SimCardListItem | null, subscription: SubscriptionListItem | null) => void
   initialTab?: TelefonieTab
 }) {
   const [tab, setTab] = useState<TelefonieTab>(initialTab ?? 'phones')
@@ -1094,15 +1094,16 @@ export function TelefonieView({ teammates, onExpand, onExpandSimCard, initialTab
 
 // ── SimCardDetailFullView ─────────────────────────────────────────────────────
 
-export function SimCardDetailFullView({ initialSimCard, teammates, onBack, onDeleted, backLabel = 'Terug naar telefonie' }: {
-  initialSimCard: SimCardListItem
+export function SimCardDetailFullView({ initialSimCard, initialSubscription, teammates, onBack, onDeleted, backLabel = 'Terug naar telefonie' }: {
+  initialSimCard: SimCardListItem | null
+  initialSubscription: SubscriptionListItem | null
   teammates: ClientUserListItem[]
   onBack: () => void
   onDeleted: () => void
   backLabel?: string
 }) {
-  const [simCard, setSimCard]           = useState<SimCardListItem>(initialSimCard)
-  const [subscription, setSubscription] = useState<SubscriptionListItem | null>(null)
+  const [simCard, setSimCard]           = useState<SimCardListItem | null>(initialSimCard)
+  const [subscription, setSubscription] = useState<SubscriptionListItem | null>(initialSubscription)
   const [phones, setPhones]             = useState<PhoneListItem[]>([])
   const [showModal, setShowModal]       = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
@@ -1115,17 +1116,29 @@ export function SimCardDetailFullView({ initialSimCard, teammates, onBack, onDel
       api.get<PhoneListItem[]>('/portal/phones'),
       api.get<SubscriptionListItem[]>('/portal/subscriptions'),
     ])
-    const updated = simRes.data.find(s => s.id === simCard.id)
-    if (updated) setSimCard(updated)
     setPhones(phoneRes.data)
-    setSubscription(subRes.data.find(s => s.simCardId === simCard.id) ?? null)
+
+    // Welke van de twee de stabiele "anker" is, hangt af van waarmee dit scherm is geopend —
+    // een losstaand abonnement (nog) zonder simkaart heeft geen SimCard-rij om op te zoeken.
+    if (simCard) {
+      setSimCard(simRes.data.find(s => s.id === simCard.id) ?? null)
+      setSubscription(subRes.data.find(s => s.simCardId === simCard.id) ?? null)
+    } else if (subscription) {
+      const updatedSub = subRes.data.find(s => s.id === subscription.id) ?? null
+      setSubscription(updatedSub)
+      setSimCard(updatedSub?.simCardId ? (simRes.data.find(s => s.id === updatedSub.simCardId) ?? null) : null)
+    }
     setHistoryKey(k => k + 1)
   }
 
   useEffect(() => { refresh() }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleDelete = async () => {
-    await api.delete(`/portal/simcards/${simCard.id}`)
+    if (simCard) {
+      await api.delete(`/portal/simcards/${simCard.id}`)
+    } else if (subscription) {
+      await api.delete(`/portal/subscriptions/${subscription.id}`)
+    }
     onDeleted()
   }
 
@@ -1135,6 +1148,11 @@ export function SimCardDetailFullView({ initialSimCard, teammates, onBack, onDel
     if (cost == null) return '—'
     return `€ ${cost.toFixed(2)}`
   }
+
+  const title    = subscription?.name || simCard?.kaartNummer || '—'
+  const subtitle = subscription?.name
+    ? (simCard?.kaartNummer || 'Geen simkaart gekoppeld')
+    : (simCard?.phoneNumber || 'Op voorraad')
 
   return (
     <div className="flex flex-col gap-4 h-full">
@@ -1149,8 +1167,8 @@ export function SimCardDetailFullView({ initialSimCard, teammates, onBack, onDel
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 px-6 py-4">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
-            <h1 className="text-xl font-bold text-slate-900 truncate tabular-nums">{simCard.kaartNummer}</h1>
-            <p className="text-sm text-slate-400 mt-0.5 truncate">{subscription?.name || simCard.phoneNumber || 'Op voorraad'}</p>
+            <h1 className="text-xl font-bold text-slate-900 truncate tabular-nums">{title}</h1>
+            <p className="text-sm text-slate-400 mt-0.5 truncate">{subtitle}</p>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
             <button onClick={() => setShowModal(true)} className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors">
@@ -1168,28 +1186,40 @@ export function SimCardDetailFullView({ initialSimCard, teammates, onBack, onDel
         {/* Simkaart */}
         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
           <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4">Simkaart</h3>
-          <div className="grid grid-cols-2 gap-x-6 gap-y-4">
-            <div>
-              <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">Type</p>
-              <p className="text-sm font-medium text-slate-800">{SIM_TYPE_LABEL[simCard.type] ?? simCard.type}</p>
-            </div>
-            <div>
-              <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">Status</p>
-              <span className={`text-xs px-2.5 py-0.5 rounded-full font-semibold ${SIM_STATUS_TONE[simCard.status] ?? 'bg-slate-100 text-slate-600'}`}>
-                {SIM_STATUS_LABEL[simCard.status] ?? simCard.status}
-              </span>
-            </div>
-            <div>
-              <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">Telefoonnummer</p>
-              <p className="text-sm font-medium text-slate-800 tabular-nums">{simCard.phoneNumber || '—'}</p>
-            </div>
-            {simCard.phoneName && (
+          {simCard ? (
+            <div className="grid grid-cols-2 gap-x-6 gap-y-4">
               <div>
-                <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">Gekoppelde telefoon</p>
-                <p className="text-sm font-medium text-slate-800 truncate">{simCard.phoneName}</p>
+                <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">Type</p>
+                <p className="text-sm font-medium text-slate-800">{SIM_TYPE_LABEL[simCard.type] ?? simCard.type}</p>
               </div>
-            )}
-          </div>
+              <div>
+                <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">Status</p>
+                <span className={`text-xs px-2.5 py-0.5 rounded-full font-semibold ${SIM_STATUS_TONE[simCard.status] ?? 'bg-slate-100 text-slate-600'}`}>
+                  {SIM_STATUS_LABEL[simCard.status] ?? simCard.status}
+                </span>
+              </div>
+              <div>
+                <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">Telefoonnummer</p>
+                <p className="text-sm font-medium text-slate-800 tabular-nums">{simCard.phoneNumber || '—'}</p>
+              </div>
+              {simCard.phoneName && (
+                <div>
+                  <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">Gekoppelde telefoon</p>
+                  <p className="text-sm font-medium text-slate-800 truncate">{simCard.phoneName}</p>
+                </div>
+              )}
+            </div>
+          ) : (
+            <button
+              onClick={() => setShowModal(true)}
+              className="w-full flex items-center justify-between gap-2 rounded-xl border border-dashed border-slate-300 px-4 py-3 text-left hover:border-blue-400 hover:bg-blue-50/40 transition-colors"
+            >
+              <span className="text-sm text-slate-400">Nog geen simkaart gekoppeld</span>
+              <span className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-1.5 text-xs font-semibold text-white">
+                <Plus size={11} /> Toevoegen
+              </span>
+            </button>
+          )}
         </div>
 
         {/* Abonnement */}
@@ -1256,11 +1286,17 @@ export function SimCardDetailFullView({ initialSimCard, teammates, onBack, onDel
             <History size={13} /> Historie
           </button>
         </div>
-        {activeTab === 'notes' && <NotesPanel entityType="SimCard" entityId={simCard.id} canEdit />}
-        {activeTab === 'history' && (
-          <ItemHistoryBlock key={`${simCard.id}-${historyKey}`} url={`/portal/simcards/${simCard.id}/history`} subtitle={simCard.kaartNummer} />
+        {simCard ? (
+          <>
+            {activeTab === 'notes' && <NotesPanel entityType="SimCard" entityId={simCard.id} canEdit />}
+            {activeTab === 'history' && (
+              <ItemHistoryBlock key={`${simCard.id}-${historyKey}`} url={`/portal/simcards/${simCard.id}/history`} subtitle={simCard.kaartNummer} />
+            )}
+          </>
+        ) : (
+          <p className="text-sm text-slate-400">Notities en historie zijn beschikbaar zodra er een simkaart gekoppeld is.</p>
         )}
-        <p className="text-[11px] text-slate-400 mt-3">Aangemaakt op {fmt(simCard.createdAt)}</p>
+        <p className="text-[11px] text-slate-400 mt-3">Aangemaakt op {fmt(simCard?.createdAt ?? subscription?.createdAt ?? '')}</p>
       </div>
 
       <SimCardModal
@@ -1272,7 +1308,7 @@ export function SimCardDetailFullView({ initialSimCard, teammates, onBack, onDel
         simCard={simCard}
         subscription={subscription}
       />
-      <ConfirmDeleteModal open={confirmDelete} onClose={() => setConfirmDelete(false)} onConfirm={handleDelete} itemName={simCard.kaartNummer} />
+      <ConfirmDeleteModal open={confirmDelete} onClose={() => setConfirmDelete(false)} onConfirm={handleDelete} itemName={simCard?.kaartNummer ?? subscription?.name ?? ''} />
     </div>
   )
 }

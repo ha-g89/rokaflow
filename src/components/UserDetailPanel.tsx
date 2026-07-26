@@ -1206,7 +1206,7 @@ export function UserDetailPanel({ user, canEdit, departments = [], managers = []
             <>
               <div className="mt-4 space-y-3">
                 {user.subscriptions.map(s => {
-                  const clickable = !!s.simCardId && !!onSubscriptionClick
+                  const clickable = !!onSubscriptionClick
                   return (
                     <div
                       key={s.id}
