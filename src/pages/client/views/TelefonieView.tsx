@@ -625,12 +625,9 @@ function SimCardsTab({ teammates, onExpand }: { teammates: ClientUserListItem[];
               ) : (
                 <button
                   onClick={() => { setEditTarget(selected); setShowModal(true) }}
-                  className="w-full flex items-center justify-between gap-2 rounded-xl border border-dashed border-slate-300 dark:border-slate-600 bg-transparent px-3 py-2.5 text-left hover:border-blue-400 hover:bg-blue-50/40 dark:hover:bg-blue-900/20 transition-colors"
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
                 >
-                  <span className="text-xs text-slate-500 dark:text-slate-400">Nog geen simkaart gekoppeld</span>
-                  <span className="flex items-center gap-1 text-xs font-semibold text-blue-600 dark:text-blue-400">
-                    <Plus size={13} /> Toevoegen
-                  </span>
+                  <Plus size={13} /> Simkaart toevoegen
                 </button>
               )}
 
