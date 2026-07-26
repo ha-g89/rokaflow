@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { AlertTriangle, ChevronDown, Check, Plus, X } from 'lucide-react'
+import { AlertTriangle, ChevronDown, ChevronUp, Check, Plus, Trash2 } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import api from '@/lib/axios'
@@ -14,8 +14,8 @@ import type { SubscriptionListItem } from '@/types/subscription'
 import { SUB_TYPE_OPTIONS, SUB_STATUS_OPTIONS } from '@/types/subscription'
 
 const schema = z.object({
-  // Abonnement (primaire, altijd zichtbare velden)
-  subName: z.string().min(1, 'Naam is verplicht').max(256),
+  // Abonnement (alleen gevalideerd/verstuurd als het blok is uitgeklapt)
+  subName: z.string().max(256),
   subProvider: z.string().max(200),
   subSupplier: z.string().max(200),
   subType: z.string(),
@@ -148,6 +148,7 @@ export function SimCardModal({ open, onClose, onSuccess, teammates, phones, simC
   const isEdit = !!subscription
   const [apiError, setApiError] = useState<string | null>(null)
   const [showSimCard, setShowSimCard] = useState(false)
+  const [showAbonnement, setShowAbonnement] = useState(false)
 
   const {
     register,
@@ -188,6 +189,11 @@ export function SimCardModal({ open, onClose, onSuccess, teammates, phones, simC
           : '0',
       })
       setShowSimCard(!!simCard)
+      // Bij een gloednieuw item (geen sim, geen abonnement) staat Abonnement standaard open —
+      // dat is de primaire flow. Bestaat er al een abonnement, dan blijft dat ook open. Is er
+      // alleen een simkaart (nog geen abonnement), dan begint dit blok dichtgeklapt, net als
+      // Simkaart dat doet bij een kaal abonnement.
+      setShowAbonnement(!!subscription || !simCard)
       setApiError(null)
     }
   }, [open, simCard, subscription, reset])
@@ -225,25 +231,28 @@ export function SimCardModal({ open, onClose, onSuccess, teammates, phones, simC
         simCardId = null
       }
 
-      const subPayload = {
-        name: values.subName,
-        provider: values.subProvider || '',
-        supplier: values.subSupplier || null,
-        type: parseInt(values.subType, 10),
-        phoneNumber: values.phoneNumber || '',
-        assignedToUserId: values.assignedToUserId || null,
-        monthlyCost: values.subMonthlyCost ? parseFloat(values.subMonthlyCost) : null,
-        startsAt: values.subStartsAt ? new Date(values.subStartsAt).toISOString() : null,
-        expiresAt: values.subExpiresAt ? new Date(values.subExpiresAt).toISOString() : null,
-        status: parseInt(values.subStatus, 10),
-        location: '',
-        simCardId,
-      }
-
-      if (subscription) {
-        await api.put(`/portal/subscriptions/${subscription.id}`, subPayload)
-      } else {
-        await api.post('/portal/subscriptions', subPayload)
+      if (showAbonnement && values.subName.trim()) {
+        const subPayload = {
+          name: values.subName,
+          provider: values.subProvider || '',
+          supplier: values.subSupplier || null,
+          type: parseInt(values.subType, 10),
+          phoneNumber: values.phoneNumber || '',
+          assignedToUserId: values.assignedToUserId || null,
+          monthlyCost: values.subMonthlyCost ? parseFloat(values.subMonthlyCost) : null,
+          startsAt: values.subStartsAt ? new Date(values.subStartsAt).toISOString() : null,
+          expiresAt: values.subExpiresAt ? new Date(values.subExpiresAt).toISOString() : null,
+          status: parseInt(values.subStatus, 10),
+          location: '',
+          simCardId,
+        }
+        if (subscription) {
+          await api.put(`/portal/subscriptions/${subscription.id}`, subPayload)
+        } else {
+          await api.post('/portal/subscriptions', subPayload)
+        }
+      } else if (subscription && !showAbonnement) {
+        await api.delete(`/portal/subscriptions/${subscription.id}`)
       }
 
       reset()
@@ -262,83 +271,111 @@ export function SimCardModal({ open, onClose, onSuccess, teammates, phones, simC
       className="max-w-lg"
     >
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Abonnement</p>
-
-        {subscription?.status === 'Incomplete' && (
-          <div className="flex gap-2 rounded-lg bg-violet-50 border border-violet-200 px-3 py-2.5">
-            <AlertTriangle size={15} className="text-violet-500 flex-shrink-0 mt-0.5" />
-            <p className="text-xs text-violet-800">
-              Aangemaakt via import — prijs is nog niet bekend. Vul aan en kies de juiste status.
-            </p>
-          </div>
-        )}
-
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Naam *</label>
-            <input {...register('subName')} className={field} placeholder="KPN Unlimited" autoFocus />
-            {errors.subName && <p className="mt-1 text-xs text-red-600">{errors.subName.message}</p>}
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Provider</label>
-            <input {...register('subProvider')} className={field} placeholder="KPN, Vodafone…" />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Telefoonnummer</label>
-            <input {...register('phoneNumber')} className={field} placeholder="+31 6 12345678" />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Leverancier</label>
-            <input {...register('subSupplier')} className={field} placeholder="Belsimpel, Tele2…" />
-          </div>
-        </div>
-
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Toegewezen aan</label>
-          <select {...register('assignedToUserId')} className={field}>
-            <option value="">— Niemand —</option>
-            {teammates.map(u => (
-              <option key={u.id} value={u.id}>{u.firstName} {u.lastName}</option>
-            ))}
-          </select>
-        </div>
+          <div className="flex items-center justify-between mb-1">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Abonnement</p>
+            {showAbonnement && (
+              <button
+                type="button"
+                onClick={() => setShowAbonnement(false)}
+                className={`flex items-center gap-1 text-xs font-medium ${subscription ? 'text-red-500 hover:text-red-600' : 'text-slate-400 hover:text-slate-600'}`}
+              >
+                {subscription ? <><Trash2 size={12} /> Abonnement verwijderen</> : <><ChevronUp size={12} /> Inklappen</>}
+              </button>
+            )}
+          </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Type</label>
-            <select {...register('subType')} className={field}>
-              {SUB_TYPE_OPTIONS.map(o => (
-                <option key={o.value} value={o.value}>{o.label}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Maandelijkse kosten (€)</label>
-            <input {...register('subMonthlyCost')} type="number" step="0.01" className={field} placeholder="25.00" />
-          </div>
-        </div>
+          {!showAbonnement ? (
+            <button
+              type="button"
+              onClick={() => setShowAbonnement(true)}
+              className="w-full flex items-center justify-between gap-2 rounded-lg border border-dashed border-slate-300 px-3 py-2.5 text-left hover:border-blue-400 hover:bg-blue-50/40 transition-colors"
+            >
+              <span className="text-xs text-slate-500">Geen abonnement</span>
+              <span className="flex items-center gap-1 text-xs font-semibold text-blue-600">
+                <Plus size={13} /> Toevoegen
+              </span>
+            </button>
+          ) : (
+            <div className="space-y-3">
+              {subscription?.status === 'Incomplete' && (
+                <div className="flex gap-2 rounded-lg bg-violet-50 border border-violet-200 px-3 py-2.5">
+                  <AlertTriangle size={15} className="text-violet-500 flex-shrink-0 mt-0.5" />
+                  <p className="text-xs text-violet-800">
+                    Aangemaakt via import — prijs is nog niet bekend. Vul aan en kies de juiste status.
+                  </p>
+                </div>
+              )}
 
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Status</label>
-            <select {...register('subStatus')} className={field}>
-              {SUB_STATUS_OPTIONS.map(o => (
-                <option key={o.value} value={o.value}>{o.label}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Startdatum</label>
-            <input {...register('subStartsAt')} type="date" className={field} />
-          </div>
-        </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">Naam *</label>
+                  <input {...register('subName')} className={field} placeholder="KPN Unlimited" autoFocus />
+                  {errors.subName && <p className="mt-1 text-xs text-red-600">{errors.subName.message}</p>}
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">Provider</label>
+                  <input {...register('subProvider')} className={field} placeholder="KPN, Vodafone…" />
+                </div>
+              </div>
 
-        <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">Einddatum</label>
-          <input {...register('subExpiresAt')} type="date" className={field} />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">Telefoonnummer</label>
+                  <input {...register('phoneNumber')} className={field} placeholder="+31 6 12345678" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">Leverancier</label>
+                  <input {...register('subSupplier')} className={field} placeholder="Belsimpel, Tele2…" />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">Toegewezen aan</label>
+                <select {...register('assignedToUserId')} className={field}>
+                  <option value="">— Niemand —</option>
+                  {teammates.map(u => (
+                    <option key={u.id} value={u.id}>{u.firstName} {u.lastName}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">Type</label>
+                  <select {...register('subType')} className={field}>
+                    {SUB_TYPE_OPTIONS.map(o => (
+                      <option key={o.value} value={o.value}>{o.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">Maandelijkse kosten (€)</label>
+                  <input {...register('subMonthlyCost')} type="number" step="0.01" className={field} placeholder="25.00" />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">Status</label>
+                  <select {...register('subStatus')} className={field}>
+                    {SUB_STATUS_OPTIONS.map(o => (
+                      <option key={o.value} value={o.value}>{o.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">Startdatum</label>
+                  <input {...register('subStartsAt')} type="date" className={field} />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">Einddatum</label>
+                <input {...register('subExpiresAt')} type="date" className={field} />
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="pt-1 border-t border-slate-100">
@@ -348,9 +385,9 @@ export function SimCardModal({ open, onClose, onSuccess, teammates, phones, simC
               <button
                 type="button"
                 onClick={() => setShowSimCard(false)}
-                className="flex items-center gap-1 text-xs font-medium text-red-500 hover:text-red-600"
+                className={`flex items-center gap-1 text-xs font-medium ${simCard ? 'text-red-500 hover:text-red-600' : 'text-slate-400 hover:text-slate-600'}`}
               >
-                <X size={12} /> {simCard ? 'Simkaart verwijderen' : 'Annuleren'}
+                {simCard ? <><Trash2 size={12} /> Simkaart verwijderen</> : <><ChevronUp size={12} /> Inklappen</>}
               </button>
             )}
           </div>
