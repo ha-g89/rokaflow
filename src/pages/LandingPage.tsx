@@ -204,11 +204,6 @@ const CSS = `
     width: 53%;
     background: var(--bg-panel);
     z-index: 0;
-    /* subtle dot grid */
-    background-image:
-      radial-gradient(rgba(37,99,235,0.12) 1px, transparent 1px),
-      linear-gradient(var(--bg-panel), var(--bg-panel));
-    background-size: 24px 24px, auto;
   }
 
   /* ── Hero left (text) ───────────────────────────────────────── */
@@ -809,9 +804,7 @@ const CSS = `
     }
     .rf-hero::after { display: none; }
     .rf-hero-left { padding: 56px 28px 32px; }
-    .rf-hero-right { padding: 0 28px 48px; background: var(--bg-panel);
-      background-image: radial-gradient(rgba(37,99,235,0.12) 1px, transparent 1px);
-      background-size: 24px 24px; }
+    .rf-hero-right { padding: 0 28px 48px; background: var(--bg-panel); }
     .rf-screens-wrap { width: 100%; max-width: 540px; }
     .rf-features { padding: 64px 28px; }
     .rf-feat-grid { grid-template-columns: repeat(2, 1fr); }
