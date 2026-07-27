@@ -457,6 +457,17 @@ export default function SuperUserLoginPage() {
                   challengeToken={mfaChallenge.token}
                   setupRequired={mfaChallenge.setupRequired}
                   onDone={proceedWithSession}
+                  renderSubmit={({ onClick, disabled, loading }) => (
+                    <button type="button" onClick={onClick} disabled={disabled} className="rfa-submit">
+                      <span className="rfa-submit-inner">
+                        {loading ? (
+                          <><div className="rfa-spin" /> Bezig…</>
+                        ) : (
+                          <>Bevestigen <i className="rfa-btn-arr">→</i></>
+                        )}
+                      </span>
+                    </button>
+                  )}
                 />
               ) : (
               <form onSubmit={handleSubmit(onSubmit)} noValidate>

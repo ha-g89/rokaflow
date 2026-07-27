@@ -523,6 +523,16 @@ export default function LoginPage() {
                   challengeToken={mfaChallenge.token}
                   setupRequired={mfaChallenge.setupRequired}
                   onDone={proceedWithSession}
+                  renderSubmit={({ onClick, disabled, loading }) => (
+                    <button type="button" onClick={onClick} disabled={disabled} className="rfl-submit">
+                      <span className="rfl-submit-inner">
+                        {loading
+                          ? <><div className="rfl-spin" /> Bezig…</>
+                          : <>Bevestigen <i className="rfl-btn-arr">→</i></>
+                        }
+                      </span>
+                    </button>
+                  )}
                 />
               ) : (
               <form onSubmit={handleSubmit(onSubmit)} noValidate>

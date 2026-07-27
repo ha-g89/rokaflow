@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import QRCode from 'qrcode'
 import api from '@/lib/axios'
 import type { LoginResponse, MfaSetupResponse } from '@/types/auth'
@@ -7,9 +7,10 @@ interface Props {
   challengeToken: string
   setupRequired: boolean
   onDone: (session: LoginResponse) => void
+  renderSubmit?: (state: { onClick: () => void; disabled: boolean; loading: boolean }) => ReactNode
 }
 
-export function MfaChallenge({ challengeToken, setupRequired, onDone }: Props) {
+export function MfaChallenge({ challengeToken, setupRequired, onDone, renderSubmit }: Props) {
   const [otpAuthUri, setOtpAuthUri] = useState<string | null>(null)
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null)
   const [code, setCode] = useState('')
@@ -64,13 +65,17 @@ export function MfaChallenge({ challengeToken, setupRequired, onDone }: Props) {
         maxLength={6}
       />
       {error && <p className="text-xs text-red-600">{error}</p>}
-      <button
-        disabled={loading || !code}
-        onClick={submitCode}
-        className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
-      >
-        Bevestigen
-      </button>
+      {renderSubmit
+        ? renderSubmit({ onClick: submitCode, disabled: loading || !code, loading })
+        : (
+          <button
+            disabled={loading || !code}
+            onClick={submitCode}
+            className="w-full px-4 py-3.5 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+          >
+            Bevestigen
+          </button>
+        )}
     </div>
   )
 }
