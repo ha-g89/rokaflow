@@ -751,8 +751,6 @@ const CSS = `
   html.dark .rf-hero-left { background: #0d1117; }
   html.dark .rf-hero::after {
     background: #0a0f1e;
-    background-image: radial-gradient(rgba(37,99,235,0.18) 1px, transparent 1px), linear-gradient(#0a0f1e, #0a0f1e);
-    background-size: 24px 24px, auto;
   }
   html.dark .rf-hero-right { background: #0a0f1e; }
   html.dark .rf-headline { color: #eef0f6; }
