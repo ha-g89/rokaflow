@@ -420,15 +420,6 @@ const CSS = `
     position: relative;
     transition: background 0.3s, border-color 0.3s, box-shadow 0.3s;
   }
-  .rf-screen::after {
-    content: '';
-    position: absolute; inset: 0;
-    background: repeating-linear-gradient(
-      0deg, transparent, transparent 3px,
-      rgba(0,0,0,0.03) 3px, rgba(0,0,0,0.03) 4px
-    );
-    pointer-events: none; z-index: 20;
-  }
   .rf-screen-c  { width: 310px; }
   .rf-screen-ls { width: 208px; }
 
@@ -546,8 +537,7 @@ const CSS = `
     display: inline-block;
     font-size: 11px; font-weight: 700; letter-spacing: 0.1em;
     text-transform: uppercase; color: #60a5fa;
-    background: rgba(37,99,235,0.15); padding: 5px 12px;
-    border-radius: 20px; margin-bottom: 14px;
+    margin-bottom: 14px;
   }
   .rf-feat-title {
     font-family: 'Bricolage Grotesque', sans-serif;
@@ -591,23 +581,11 @@ const CSS = `
     border-color: rgba(37,99,235,0.3);
     transform: translateY(-3px);
   }
-  .rf-feat-item::before {
-    content: '';
-    position: absolute; top: 0; left: 0; right: 0; height: 3px;
-    background: linear-gradient(90deg, #2563eb, #38bdf8);
-    opacity: 0; transition: opacity 0.22s;
-    border-radius: 14px 14px 0 0;
-  }
-  .rf-feat-item:hover::before { opacity: 1; }
 
   .rf-feat-icon-wrap {
     width: 40px; height: 40px; border-radius: 10px;
     background: rgba(37,99,235,0.15); display: flex; align-items: center;
     justify-content: center; margin-bottom: 16px; color: #60a5fa;
-  }
-  .rf-feat-n {
-    font-size: 9.5px; font-weight: 700; letter-spacing: 0.14em;
-    color: #60a5fa; opacity: 0.7; margin-bottom: 6px;
   }
   .rf-feat-name {
     font-family: 'Bricolage Grotesque', sans-serif; font-size: 15.5px; font-weight: 700;
@@ -1025,7 +1003,7 @@ export default function LandingPage() {
             <div className="rf-feat-tag">Wat doet RokaFlow?</div>
             <h2 className="rf-feat-title">Alles wat uw IT-team nodig heeft</h2>
             <p className="rf-feat-sub">
-              Van één medewerker tot honderden — RokaFlow houdt alles overzichtelijk.
+              Van één medewerker tot honderden, RokaFlow houdt alles overzichtelijk.
             </p>
           </div>
           <div className="rf-feat-grid">
@@ -1035,7 +1013,6 @@ export default function LandingPage() {
               }`}>
                 <div className="rf-feat-icon-wrap">{f.icon}</div>
                 <div>
-                  <div className="rf-feat-n">{f.n}</div>
                   <div className="rf-feat-name">{f.name}</div>
                   <div className="rf-feat-desc">{f.desc}</div>
                 </div>
