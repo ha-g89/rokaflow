@@ -28,8 +28,9 @@ body {
 .dark .bg-blue-50      { background-color: rgb(59 130 246 / 0.15); } /* subtiel blue op dark */
 .dark .bg-blue-100     { background-color: rgb(59 130 246 / 0.25); }
 
-/* Hover states */
-.dark .hover\:bg-slate-50:hover  { background-color: #1e293b; }
+/* Hover states — bewust lichter dan .dark .bg-white/.bg-slate-100 hierboven (beide #1e293b),
+   anders licht een hover-knop niet zichtbaar op omdat rust- en hoverkleur gelijk zouden zijn. */
+.dark .hover\:bg-slate-50:hover  { background-color: #334155; }
 .dark .hover\:bg-slate-100:hover { background-color: #334155; }
 
 /* Randen */

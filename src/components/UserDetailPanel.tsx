@@ -405,9 +405,9 @@ function EditUserModal({ user, departments, managers, locations, onClose, onSave
   return (
     <div
       ref={overlayRef}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 modal-backdrop-animated"
     >
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg modal-panel-animated">
         <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-slate-100">
           <h2 className="text-base font-semibold text-slate-900">Medewerker wijzigen</h2>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition-colors">
@@ -1015,7 +1015,7 @@ export function UserDetailPanel({ user, canEdit, departments = [], managers = []
                     user.isPortalUser ? (
                       <button
                         onClick={() => setConfirmRevoke(true)}
-                        className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700 hover:bg-emerald-100 hover:border-emerald-300 transition-colors"
+                        className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-200 dark:border-emerald-700/50 bg-emerald-50 dark:bg-emerald-900/20 px-3 py-1.5 text-xs font-medium text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 hover:border-emerald-300 dark:hover:border-emerald-600 transition-colors"
                         title="Klik om portaaltoegang in te trekken"
                       >
                         <KeyRound size={12} />
@@ -1024,7 +1024,7 @@ export function UserDetailPanel({ user, canEdit, departments = [], managers = []
                     ) : (
                       <button
                         onClick={() => { setGrantError(null); setConfirmGrant(true) }}
-                        className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 hover:border-slate-300 transition-colors"
+                        className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 hover:border-slate-300 dark:hover:border-slate-500 transition-colors"
                       >
                         <KeyRound size={12} />
                         Geef portaaltoegang
@@ -1034,7 +1034,7 @@ export function UserDetailPanel({ user, canEdit, departments = [], managers = []
                   {user.isPortalUser && (
                     <button
                       onClick={() => { setMfaResetError(null); setConfirmMfaReset(true) }}
-                      className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 hover:border-slate-300 transition-colors"
+                      className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 hover:border-slate-300 dark:hover:border-slate-500 transition-colors"
                       title="Verwijdert de gekoppelde authenticator-app; gebruiker moet opnieuw instellen bij volgende login"
                     >
                       <ShieldCheck size={12} />
@@ -1043,7 +1043,7 @@ export function UserDetailPanel({ user, canEdit, departments = [], managers = []
                   )}
                   <button
                     onClick={() => setEditOpen(true)}
-                    className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 hover:border-slate-300 transition-colors"
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 hover:border-slate-300 dark:hover:border-slate-500 transition-colors"
                   >
                     <Pencil size={12} />
                     Wijzigen
@@ -1051,7 +1051,7 @@ export function UserDetailPanel({ user, canEdit, departments = [], managers = []
                   {onDelete && (
                     <button
                       onClick={onDelete}
-                      className="inline-flex items-center gap-1.5 rounded-xl border border-red-200 bg-white px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 hover:border-red-300 transition-colors"
+                      className="inline-flex items-center gap-1.5 rounded-xl border border-red-200 dark:border-red-800/60 bg-white px-3 py-1.5 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:border-red-300 dark:hover:border-red-600 transition-colors"
                     >
                       <Trash2 size={12} />
                       Verwijderen

@@ -190,7 +190,7 @@ export function DepartmentsView() {
                 <div className="flex gap-1 flex-shrink-0">
                   <button
                     onClick={() => { setEditTarget(d); setShowModal(true) }}
-                    className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
                     title="Bewerken"
                   >
                     <Pencil size={13} />
@@ -198,7 +198,7 @@ export function DepartmentsView() {
                   <button
                     onClick={() => handleDelete(d.id)}
                     disabled={deletingId === d.id}
-                    className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-40"
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors disabled:opacity-40"
                     title="Verwijderen"
                   >
                     <Trash2 size={13} />
