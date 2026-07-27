@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import {
-  Briefcase, Users, Plus, LogOut,
+  Briefcase, Users, Users2, Plus, LogOut,
   Building2, Search, ExternalLink, Loader2,
   MoreVertical, Pencil, X, ImagePlus,
   Moon, Sun, Settings, ChevronDown, ArrowLeftRight, Bell,
@@ -11,6 +11,7 @@ import { TransfersView } from './views/TransfersView'
 import { NotificationCenterView } from './views/NotificationCenterView'
 import { MspBillingView } from './views/MspBillingView'
 import { MspSubscriptionsView } from './views/MspSubscriptionsView'
+import { TeamUsersView } from './views/TeamUsersView'
 import { NotificationBell } from '@/components/NotificationBell'
 import { LoadingState } from '@/components/ui/LoadingState'
 import { Modal } from '@/components/ui/Modal'
@@ -71,7 +72,7 @@ function NavItem({ icon, label, active, onClick, badge }: {
 
 // ── main component ────────────────────────────────────────────────────────────
 
-type Section = 'clients' | 'transfers' | 'notifications' | 'billing' | 'subscriptions'
+type Section = 'clients' | 'transfers' | 'notifications' | 'billing' | 'subscriptions' | 'team'
 
 export default function OrgDashboard() {
   const { user, logout, switchToClient } = useAuthStore()
@@ -325,6 +326,9 @@ export default function OrgDashboard() {
           {user?.role === 'msp_admin' && (
             <NavItem icon={<Receipt size={14} />} label="Facturatie" active={activeSection === 'billing'} onClick={() => setActiveSection('billing')} />
           )}
+          {user?.role === 'msp_admin' && (
+            <NavItem icon={<Users2 size={14} />} label="Teamleden" active={activeSection === 'team'} onClick={() => setActiveSection('team')} />
+          )}
         </nav>
         <div className="px-2 pb-3 flex-shrink-0 border-t border-slate-800 pt-2 space-y-1">
           <NavItem icon={<Settings size={14} />} label="Instellingen" active={false} onClick={() => navigate('/org/settings')} />
@@ -341,6 +345,7 @@ export default function OrgDashboard() {
               : activeSection === 'transfers' ? 'Overdrachten'
               : activeSection === 'subscriptions' ? 'Abonnementen'
               : activeSection === 'billing' ? 'Facturatie'
+              : activeSection === 'team' ? 'Teamleden'
               : 'Berichtencentrum'}
           </h1>
           <div className="flex items-center gap-3">
@@ -440,6 +445,8 @@ export default function OrgDashboard() {
           <MspBillingView />
         ) : activeSection === 'subscriptions' ? (
           <MspSubscriptionsView />
+        ) : activeSection === 'team' ? (
+          <TeamUsersView />
         ) : (<>
 
         {/* Stats */}
