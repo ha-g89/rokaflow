@@ -40,19 +40,6 @@ const CSS = `
     overflow: hidden;
   }
 
-  /* Subtle glow behind card */
-  .rfi-wrap::before {
-    content: '';
-    position: fixed;
-    top: 35%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 520px;
-    height: 420px;
-    background: radial-gradient(ellipse at center, rgba(37,99,235,0.13) 0%, transparent 70%);
-    pointer-events: none;
-  }
-
   .rfi-logo {
     height: 56px;
     object-fit: contain;
@@ -142,9 +129,8 @@ const CSS = `
   .rfi-input.has-eye { padding-right: 40px; }
   .rfi-input::placeholder { color: rgba(238,240,246,0.20); }
   .rfi-input:focus {
-    border-color: rgba(37,99,235,0.6);
-    background: rgba(37,99,235,0.05);
-    box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
+    border-color: rgba(238,240,246,0.25);
+    background: var(--rfi-field-bg);
   }
   .rfi-input.rfi-err {
     border-color: rgba(239,68,68,0.45);
