@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react'
 import {
-  Laptop, CreditCard, ClipboardList, History, Ticket, FileText,
-  Mail, Phone as PhoneIcon, LogOut, CheckCircle2,
+  Laptop, ClipboardList, History, Ticket, FileText,
+  Mail, Phone as PhoneIcon, LogOut, CheckCircle2, Smartphone, ShieldCheck, KeyRound, ChevronDown,
 } from 'lucide-react'
 import api from '@/lib/axios'
 import { useAuthStore } from '@/store/authStore'
 import { LoadingState } from '@/components/ui/LoadingState'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
+import { Card, CardContent } from '@/components/ui/Card'
 import type { ClientUserDetailResponse } from '@/types/clientUser'
 import { STATUS_LABEL } from '@/types/clientUser'
 import { HARDWARE_STATUS_LABEL, HARDWARE_STATUS_TONE, HARDWARE_TYPE_LABEL } from '@/types/hardware'
@@ -29,9 +30,6 @@ function Pill({ children, tone = 'default' }: { children: React.ReactNode; tone?
   }
   return (
     <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${tones[tone] ?? tones.default}`}>
-      <span className={`w-1.5 h-1.5 rounded-full ${
-        tone === 'good' ? 'bg-emerald-500' : tone === 'info' ? 'bg-blue-500' : tone === 'warn' ? 'bg-amber-500' : tone === 'bad' ? 'bg-red-500' : 'bg-slate-400'
-      }`} />
       {children}
     </span>
   )
@@ -66,6 +64,39 @@ function StatBox({ value, label }: { value: number; label: string }) {
   )
 }
 
+function AssetSection({ title, icon, children, collapsible = false, defaultOpen = true, badge }: {
+  title: string
+  icon: React.ReactNode
+  children: React.ReactNode
+  collapsible?: boolean
+  defaultOpen?: boolean
+  badge?: string
+}) {
+  const [open, setOpen] = useState(defaultOpen)
+  return (
+    <Card className="rounded-2xl shadow-sm">
+      <CardContent className="p-5">
+        <h3
+          className={`flex items-center gap-2 text-sm font-bold text-slate-800 dark:text-slate-100 ${open ? 'mb-4' : ''} ${collapsible ? 'cursor-pointer select-none' : ''}`}
+          onClick={collapsible ? () => setOpen(o => !o) : undefined}
+        >
+          {icon}
+          {title}
+          {badge && <span className="text-xs font-medium text-slate-400 dark:text-slate-500">{badge}</span>}
+          {collapsible && (
+            <ChevronDown size={14} className={`ml-auto text-slate-400 transition-transform duration-300 ease-in-out ${open ? 'rotate-180' : ''}`} />
+          )}
+        </h3>
+        <div className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${open ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
+          <div className="overflow-hidden">
+            {children}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
 function EmptyTab({ icon, label }: { icon: React.ReactNode; label: string }) {
   return (
     <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
@@ -77,7 +108,7 @@ function EmptyTab({ icon, label }: { icon: React.ReactNode; label: string }) {
   )
 }
 
-type Tab = 'assets' | 'checklist' | 'tickets' | 'licenses' | 'history' | 'documents'
+type Tab = 'assets' | 'checklist' | 'tickets' | 'history' | 'documents'
 
 export default function SelfServicePortal() {
   const { user, logout } = useAuthStore()
@@ -96,16 +127,19 @@ export default function SelfServicePortal() {
 
   const softwareLicenses = me?.licenses.filter(l => l.isSoftwareLicense) ?? []
   const pureLicenses     = me?.licenses.filter(l => !l.isSoftwareLicense) ?? []
-  const assetCount       = (me?.hardware.length ?? 0) + (me?.phones.length ?? 0)
+  const softwareItems    = [
+    ...(me?.software ?? []).map(s => ({ key: `sw-${s.id}`, name: s.name, sub: `${s.account ? s.account + ' · ' : ''}vanaf ${fmtDate(s.issuedAt)}` })),
+    ...softwareLicenses.map(l => ({ key: `lic-${l.userLicenseId}`, name: l.name, sub: `${l.vendor || 'Freeware'} · toegewezen ${fmtDate(l.assignedAt)}` })),
+  ]
+  const licenseCount     = softwareItems.length + pureLicenses.length
+  const assetCount       = (me?.hardware.length ?? 0) + (me?.phones.length ?? 0) + licenseCount
   const checklistCount   = (me?.starterChecklist.length ?? 0) + (me?.leaverChecklist.length ?? 0)
-  const licenseCount     = (me?.software.length ?? 0) + softwareLicenses.length + pureLicenses.length
   const historyCount     = me?.history.length ?? 0
 
   const TABS: { key: Tab; label: string; count: number }[] = [
     { key: 'assets',    label: 'Assets',     count: assetCount },
     { key: 'checklist', label: 'Checklist',  count: checklistCount },
     { key: 'tickets',   label: 'Tickets',    count: 0 },
-    { key: 'licenses',  label: 'Licenties',  count: licenseCount },
     { key: 'history',   label: 'Historie',   count: historyCount },
     { key: 'documents', label: 'Documenten', count: 0 },
   ]
@@ -208,40 +242,94 @@ export default function SelfServicePortal() {
 
               <div className="p-6 flex-1 overflow-y-auto">
                 {tab === 'assets' && (
-                  me.hardware.length === 0 && me.phones.length === 0 ? (
+                  me.hardware.length === 0 && me.phones.length === 0 && softwareItems.length === 0 && pureLicenses.length === 0 ? (
                     <EmptyTab icon={<Laptop size={22} />} label="Geen assets toegewezen." />
                   ) : (
-                    <div className="space-y-3">
-                      {me.hardware.map(h => (
-                        <div key={h.id} className="rounded-xl border border-slate-200 dark:border-slate-700/60 bg-slate-50 dark:bg-slate-900/60 p-3">
-                          <div className="flex items-center justify-between gap-3">
-                            <div className="min-w-0">
-                              <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 truncate">{h.name}</p>
-                              <p className="text-xs text-slate-500 dark:text-slate-400">
-                                {[h.brand, HARDWARE_TYPE_LABEL[h.type] ?? h.type, h.serialNumber ? `S/N: ${h.serialNumber}` : null].filter(Boolean).join(' · ')}
-                              </p>
+                    <div className="space-y-4">
+                      <div className="space-y-4">
+                        <AssetSection title="Mijn hardware" icon={<Laptop size={16} />}>
+                          {me.hardware.length === 0 ? (
+                            <p className="text-sm text-slate-400">Geen hardware toegewezen.</p>
+                          ) : (
+                            <div className="space-y-3">
+                              {me.hardware.map(h => (
+                                <div key={h.id} className="rounded-xl border border-slate-200 dark:border-slate-700/60 bg-slate-50 dark:bg-slate-900/60 p-3">
+                                  <div className="flex items-center justify-between gap-3">
+                                    <div className="min-w-0">
+                                      <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 truncate">{h.name}</p>
+                                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                                        {[h.brand, HARDWARE_TYPE_LABEL[h.type] ?? h.type, h.serialNumber ? `S/N: ${h.serialNumber}` : null].filter(Boolean).join(' · ')}
+                                      </p>
+                                    </div>
+                                    <span className={`flex-shrink-0 text-xs px-2 py-0.5 rounded-full font-medium ${HARDWARE_STATUS_TONE[h.status] ?? 'bg-slate-100 text-slate-600'}`}>
+                                      {HARDWARE_STATUS_LABEL[h.status] ?? h.status}
+                                    </span>
+                                  </div>
+                                </div>
+                              ))}
                             </div>
-                            <span className={`flex-shrink-0 text-xs px-2 py-0.5 rounded-full font-medium ${HARDWARE_STATUS_TONE[h.status] ?? 'bg-slate-100 text-slate-600'}`}>
-                              {HARDWARE_STATUS_LABEL[h.status] ?? h.status}
-                            </span>
-                          </div>
-                          {h.issuedAt && <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">Uitgifte: {fmtDate(h.issuedAt)}</p>}
-                        </div>
-                      ))}
-                      {me.phones.map(p => (
-                        <div key={p.id} className="rounded-xl border border-slate-200 dark:border-slate-700/60 bg-slate-50 dark:bg-slate-900/60 p-3">
-                          <div className="flex items-center justify-between gap-3">
-                            <div className="min-w-0">
-                              <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 truncate">{p.brand} {p.model}</p>
-                              <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{p.simPhoneNumber || p.serialNumber || '—'}</p>
+                          )}
+                        </AssetSection>
+
+                        <AssetSection title="Mijn telefonie" icon={<Smartphone size={16} />}>
+                          {me.phones.length === 0 ? (
+                            <p className="text-sm text-slate-400">Geen telefoons toegewezen.</p>
+                          ) : (
+                            <div className="space-y-3">
+                              {me.phones.map(p => (
+                                <div key={p.id} className="rounded-xl border border-slate-200 dark:border-slate-700/60 bg-slate-50 dark:bg-slate-900/60 p-3">
+                                  <div className="flex items-center justify-between gap-3">
+                                    <div className="min-w-0">
+                                      <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 truncate">{p.brand} {p.model}</p>
+                                      <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{p.simPhoneNumber || p.serialNumber || '—'}</p>
+                                    </div>
+                                    <span className={`flex-shrink-0 text-xs px-2 py-0.5 rounded-full font-medium ${PHONE_STATUS_TONE[p.status as keyof typeof PHONE_STATUS_TONE] ?? 'bg-slate-100 text-slate-600'}`}>
+                                      {PHONE_STATUS_LABEL[p.status as keyof typeof PHONE_STATUS_LABEL] ?? p.status}
+                                    </span>
+                                  </div>
+                                </div>
+                              ))}
                             </div>
-                            <span className={`flex-shrink-0 text-xs px-2 py-0.5 rounded-full font-medium ${PHONE_STATUS_TONE[p.status as keyof typeof PHONE_STATUS_TONE] ?? 'bg-slate-100 text-slate-600'}`}>
-                              {PHONE_STATUS_LABEL[p.status as keyof typeof PHONE_STATUS_LABEL] ?? p.status}
-                            </span>
-                          </div>
-                          {p.purchasedAt && <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">Aanschaf: {fmtDate(p.purchasedAt)}</p>}
-                        </div>
-                      ))}
+                          )}
+                        </AssetSection>
+                      </div>
+
+                      <div className="space-y-4">
+                        <AssetSection title="Mijn software" icon={<ShieldCheck size={16} />}>
+                          {softwareItems.length === 0 ? (
+                            <p className="text-sm text-slate-400">Geen software gekoppeld.</p>
+                          ) : (
+                            <div className="space-y-3">
+                              {softwareItems.map(s => (
+                                <div key={s.key} className="rounded-xl border border-slate-200 dark:border-slate-700/60 bg-slate-50 dark:bg-slate-900/60 p-3">
+                                  <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">{s.name}</p>
+                                  <p className="text-xs text-slate-500 dark:text-slate-400">{s.sub}</p>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </AssetSection>
+
+                        <AssetSection title="Mijn licenties" icon={<KeyRound size={16} />}>
+                          {pureLicenses.length === 0 ? (
+                            <p className="text-sm text-slate-400">Geen licenties gekoppeld.</p>
+                          ) : (
+                            <div className="space-y-3">
+                              {pureLicenses.map(l => (
+                                <div key={l.userLicenseId} className="rounded-xl border border-slate-200 dark:border-slate-700/60 bg-slate-50 dark:bg-slate-900/60 p-3">
+                                  <div className="flex items-center justify-between gap-3">
+                                    <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 truncate">{l.name}</p>
+                                    <span className={`flex-shrink-0 text-xs px-2 py-0.5 rounded-full font-medium ${LICENSE_TYPE_TONE[l.type] ?? 'bg-slate-100 text-slate-600'}`}>
+                                      {LICENSE_TYPE_LABEL[l.type] ?? l.type}
+                                    </span>
+                                  </div>
+                                  <p className="text-xs text-slate-500 dark:text-slate-400">{l.vendor || 'Freeware'} · toegewezen {fmtDate(l.assignedAt)}</p>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </AssetSection>
+                      </div>
                     </div>
                   )
                 )}
@@ -250,41 +338,46 @@ export default function SelfServicePortal() {
                   me.starterChecklist.length === 0 && me.leaverChecklist.length === 0 ? (
                     <EmptyTab icon={<ClipboardList size={22} />} label="Geen checklist beschikbaar." />
                   ) : (
-                    <div className="space-y-2">
-                      {[...me.starterChecklist, ...me.leaverChecklist].sort((a, b) => a.sortOrder - b.sortOrder).map(item => (
-                        <div key={item.id} className="flex items-center gap-3 rounded-xl border border-slate-200 dark:border-slate-700/60 bg-slate-50 dark:bg-slate-900/60 px-3 py-2.5">
-                          <CheckCircle2 size={16} className={item.isChecked ? 'text-emerald-500' : 'text-slate-300 dark:text-slate-600'} />
-                          <span className={`text-sm ${item.isChecked ? 'text-slate-500 dark:text-slate-400 line-through' : 'text-slate-700 dark:text-slate-200'}`}>
-                            {item.item}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  )
-                )}
-
-                {tab === 'licenses' && (
-                  me.software.length === 0 && softwareLicenses.length === 0 && pureLicenses.length === 0 ? (
-                    <EmptyTab icon={<CreditCard size={22} />} label="Geen software of licenties toegewezen." />
-                  ) : (
-                    <div className="space-y-3">
-                      {me.software.map(s => (
-                        <div key={s.id} className="rounded-xl border border-slate-200 dark:border-slate-700/60 bg-slate-50 dark:bg-slate-900/60 p-3">
-                          <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">{s.name}</p>
-                          <p className="text-xs text-slate-500 dark:text-slate-400">{s.account ? `${s.account} · ` : ''}vanaf {fmtDate(s.issuedAt)}</p>
-                        </div>
-                      ))}
-                      {[...softwareLicenses, ...pureLicenses].map(l => (
-                        <div key={l.userLicenseId} className="rounded-xl border border-slate-200 dark:border-slate-700/60 bg-slate-50 dark:bg-slate-900/60 p-3">
-                          <div className="flex items-center justify-between gap-3">
-                            <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 truncate">{l.name}</p>
-                            <span className={`flex-shrink-0 text-xs px-2 py-0.5 rounded-full font-medium ${LICENSE_TYPE_TONE[l.type] ?? 'bg-slate-100 text-slate-600'}`}>
-                              {LICENSE_TYPE_LABEL[l.type] ?? l.type}
-                            </span>
+                    <div className="space-y-4">
+                      {me.starterChecklist.length > 0 && (
+                        <AssetSection
+                          title="Checklist aantreden"
+                          icon={<ClipboardList size={16} />}
+                          collapsible
+                          badge={`${me.starterChecklist.filter(i => i.isChecked).length}/${me.starterChecklist.length} afgevinkt`}
+                        >
+                          <div className="space-y-2">
+                            {[...me.starterChecklist].sort((a, b) => a.sortOrder - b.sortOrder).map(item => (
+                              <div key={item.id} className="flex items-center gap-3 rounded-xl border border-slate-200 dark:border-slate-700/60 bg-slate-50 dark:bg-slate-900/60 px-3 py-2.5">
+                                <CheckCircle2 size={16} className={item.isChecked ? 'text-emerald-500' : 'text-slate-300 dark:text-slate-600'} />
+                                <span className={`text-sm ${item.isChecked ? 'text-slate-500 dark:text-slate-400 line-through' : 'text-slate-700 dark:text-slate-200'}`}>
+                                  {item.item}
+                                </span>
+                              </div>
+                            ))}
                           </div>
-                          <p className="text-xs text-slate-500 dark:text-slate-400">{l.vendor || 'Freeware'} · toegewezen {fmtDate(l.assignedAt)}</p>
-                        </div>
-                      ))}
+                        </AssetSection>
+                      )}
+
+                      {me.leaverChecklist.length > 0 && (
+                        <AssetSection
+                          title="Checklist aftreden"
+                          icon={<LogOut size={16} />}
+                          collapsible
+                          badge={`${me.leaverChecklist.filter(i => i.isChecked).length}/${me.leaverChecklist.length} afgevinkt`}
+                        >
+                          <div className="space-y-2">
+                            {[...me.leaverChecklist].sort((a, b) => a.sortOrder - b.sortOrder).map(item => (
+                              <div key={item.id} className="flex items-center gap-3 rounded-xl border border-slate-200 dark:border-slate-700/60 bg-slate-50 dark:bg-slate-900/60 px-3 py-2.5">
+                                <CheckCircle2 size={16} className={item.isChecked ? 'text-emerald-500' : 'text-slate-300 dark:text-slate-600'} />
+                                <span className={`text-sm ${item.isChecked ? 'text-slate-500 dark:text-slate-400 line-through' : 'text-slate-700 dark:text-slate-200'}`}>
+                                  {item.item}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </AssetSection>
+                      )}
                     </div>
                   )
                 )}
