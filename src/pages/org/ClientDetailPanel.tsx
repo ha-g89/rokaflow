@@ -8,6 +8,8 @@ import {
 import api from '@/lib/axios'
 import { Card, CardContent } from '@/components/ui/Card'
 import { LoadingState } from '@/components/ui/LoadingState'
+import { Modal } from '@/components/ui/Modal'
+import { Button } from '@/components/ui/Button'
 import type { ClientListItem } from '@/types/client'
 import type { ClientUserListItem, ClientUserDetailResponse } from '@/types/clientUser'
 import type { MyPlanDto, TenantPlanDto, TenantPlanStatus } from '@/types/platformPlan'
@@ -118,6 +120,7 @@ function PortalUserPanel({ user, clientId, onUserUpdated }: {
 }) {
   const [blocking, setBlocking] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
+  const [confirmBlock, setConfirmBlock] = useState(false)
 
   const toggleActive = async () => {
     setBlocking(true)
@@ -127,9 +130,50 @@ function PortalUserPanel({ user, clientId, onUserUpdated }: {
     } finally { setBlocking(false) }
   }
 
+  const handleToggleClick = () => {
+    if (user.isActive) setConfirmBlock(true)
+    else toggleActive()
+  }
+
+  const handleConfirmBlock = async () => {
+    await toggleActive()
+    setConfirmBlock(false)
+  }
+
   return (
     <>
       {editOpen && <EditUserModal user={user} clientId={clientId} onClose={() => setEditOpen(false)} onSaved={onUserUpdated} />}
+
+      <Modal
+        open={confirmBlock}
+        onClose={() => !blocking && setConfirmBlock(false)}
+        title="Gebruiker blokkeren"
+        className="max-w-sm"
+      >
+        <div className="flex flex-col items-center text-center gap-4 py-2">
+          <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center">
+            <Ban size={22} className="text-red-500" />
+          </div>
+          <div>
+            <p className="text-sm text-slate-700 leading-relaxed">
+              Weet je zeker dat je{' '}
+              <span className="font-semibold">"{user.firstName} {user.lastName}"</span>{' '}
+              wilt blokkeren?
+            </p>
+            <p className="text-xs text-slate-400 mt-1">
+              Deze gebruiker kan hierna niet meer inloggen. Kan later weer gedeblokkeerd worden.
+            </p>
+          </div>
+        </div>
+        <div className="flex gap-2 mt-6">
+          <Button variant="secondary" className="flex-1" onClick={() => setConfirmBlock(false)} disabled={blocking}>
+            Annuleren
+          </Button>
+          <Button variant="danger" className="flex-1" onClick={handleConfirmBlock} disabled={blocking}>
+            {blocking ? 'Bezig…' : 'Blokkeren'}
+          </Button>
+        </div>
+      </Modal>
       <Card className="rounded-2xl shadow-sm">
         <CardContent className="p-5">
           <div className="flex items-start gap-4">
@@ -140,7 +184,6 @@ function PortalUserPanel({ user, clientId, onUserUpdated }: {
               <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 leading-tight truncate">{user.firstName} {user.lastName}</h3>
               <p className="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">{user.email || '—'}</p>
               <span className={`inline-flex items-center gap-1 mt-1.5 text-xs px-2 py-0.5 rounded-full font-medium ${user.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
-                <span className={`w-1.5 h-1.5 rounded-full ${user.isActive ? 'bg-emerald-500' : 'bg-red-500'}`} />
                 {user.isActive ? 'Actief' : 'Inactief'}
               </span>
             </div>
@@ -164,7 +207,7 @@ function PortalUserPanel({ user, clientId, onUserUpdated }: {
               className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-600 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
               <Pencil size={13} /> Wijzigen
             </button>
-            <button onClick={toggleActive} disabled={blocking}
+            <button onClick={handleToggleClick} disabled={blocking}
               className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-xl border text-xs font-medium transition-colors disabled:opacity-60 ${
                 user.isActive ? 'border-red-200 text-red-600 hover:bg-red-50' : 'border-emerald-200 text-emerald-600 hover:bg-emerald-50'}`}>
               {blocking ? <Loader2 size={13} className="animate-spin" /> : user.isActive ? <Ban size={13} /> : <ShieldCheck size={13} />}
@@ -230,7 +273,6 @@ function DetailsTab({ client, onSwitchToClient, switchingClientId, onEditClient 
           <span className={`inline-flex items-center gap-1 mt-1 text-xs px-2 py-0.5 rounded-full font-medium ${
             client.isActive ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
                             : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'}`}>
-            <span className={`w-1.5 h-1.5 rounded-full ${client.isActive ? 'bg-emerald-500' : 'bg-red-500'}`} />
             {client.isActive ? 'Actief' : 'Inactief'}
           </span>
         </div>
@@ -310,10 +352,10 @@ function AbonnementTab({ plan, planDetail, onManageSubscription }: {
       <div className={`rounded-xl border p-4 ${meta.bg}`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <span className={meta.cls}>{meta.icon}</span>
+            {plan.status !== 'Active' && <span className={meta.cls}>{meta.icon}</span>}
             <div>
               <p className={`text-sm font-bold ${meta.cls}`}>
-                {plan.status === 'Active' ? (plan.planName ?? 'Actief abonnement') : meta.label}
+                {plan.status === 'Active' ? `Plan: ${plan.planName ?? 'Actief abonnement'}` : meta.label}
               </p>
               {plan.status === 'Active' && plan.planName && (
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Actief abonnement</p>
@@ -329,16 +371,6 @@ function AbonnementTab({ plan, planDetail, onManageSubscription }: {
           )}
         </div>
       </div>
-
-      {onManageSubscription && (
-        <button
-          onClick={onManageSubscription}
-          className="flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
-        >
-          <CreditCard size={13} />
-          Abonnement beheren
-        </button>
-      )}
 
       {/* Usage bars */}
       <div>
@@ -368,6 +400,16 @@ function AbonnementTab({ plan, planDetail, onManageSubscription }: {
           ))}
         </div>
       </div>
+
+      {onManageSubscription && (
+        <button
+          onClick={onManageSubscription}
+          className="flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+        >
+          <CreditCard size={13} />
+          Abonnement beheren
+        </button>
+      )}
     </div>
   )
 }
@@ -433,7 +475,6 @@ function GebruikersTab({ client, users, loadingUsers, selectedUser, loadingDetai
                         <p className="text-xs font-semibold text-slate-800 dark:text-slate-100 truncate">{u.firstName} {u.lastName}</p>
                         <p className="text-xs text-slate-400 truncate">{u.email}</p>
                       </div>
-                      <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${u.isActive ? 'bg-emerald-400' : 'bg-red-400'}`} />
                     </div>
                   </button>
                 </li>
@@ -515,9 +556,8 @@ export function ClientDetailPanel({
           <div className="min-w-0">
             <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100 truncate">{client.name}</h2>
             {plan && (
-              <p className="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
-                <Shield size={10} />
-                {plan.status === 'Active' ? (plan.planName ?? 'Actief') : STATUS_META[plan.status].label}
+              <p className="text-xs text-slate-400 mt-0.5">
+                Plan: {plan.status === 'Active' ? (plan.planName ?? 'Actief') : STATUS_META[plan.status].label}
               </p>
             )}
           </div>
