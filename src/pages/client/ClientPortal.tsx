@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import {
   Users, LogOut, Laptop, Shield, Phone as PhoneIcon,
   ClipboardList, BarChart3, History, FileText,
-  Settings, Building2, MapPin,
+  Settings, Building2, MapPin, Wifi,
   ChevronDown, ChevronRight, Moon, Sun, ArrowLeftCircle,
 } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
@@ -22,6 +22,7 @@ import { LicenseDetailFullView } from './views/LicenseView'
 import { TelefonieView, PhoneDetailFullView, SimCardDetailFullView } from './views/TelefonieView'
 import { DepartmentsView } from './views/DepartmentsView'
 import { LocationsView } from './views/LocationsView'
+import { InternetConnectionsView } from './views/InternetConnectionsView'
 import { EmployeeListView, EmployeeDetailView, DeleteEmployeeModal } from './views/EmployeesView'
 import { NotificationBell } from '@/components/NotificationBell'
 import { NotificationDropdown } from '@/components/NotificationDropdown'
@@ -37,6 +38,7 @@ import type { MyPlanDto } from '@/types/platformPlan'
 type View =
   | 'employees' | 'employee-detail'
   | 'departments' | 'locations'
+  | 'internet-connections'
   | 'hardware' | 'hardware-detail' | 'software' | 'software-detail' | 'license-detail' | 'phones' | 'phone-detail' | 'simcard-detail'
   | 'processes'
   | 'overviews' | 'history' | 'contracts'
@@ -47,6 +49,7 @@ const VIEW_TITLES: Record<View, string> = {
   'employee-detail': 'Medewerker details',
   departments:       'Afdelingen',
   locations:         'Locaties',
+  'internet-connections': 'Vaste internet',
   hardware:          'Hardware',
   'hardware-detail': 'Hardware details',
   software:          'Software',
@@ -500,6 +503,9 @@ export default function ClientPortal() {
             <NavItem icon={<Building2 size={14} />} label="Afdelingen"  active={view === 'departments'}   onClick={() => handleNavClick('departments')} />
             <NavItem icon={<MapPin size={14} />}    label="Locaties"    active={view === 'locations'}     onClick={() => handleNavClick('locations')} />
 
+            <SectionLabel label="Bedrijfsassets" />
+            <NavItem icon={<Wifi size={14} />} label="Vaste internet" active={view === 'internet-connections'} onClick={() => handleNavClick('internet-connections')} />
+
             <SectionLabel label="Assets" />
             <NavItem icon={<Laptop size={14} />}   label="Hardware"   active={hardwareActive}     onClick={() => handleNavClick('hardware')} />
             <NavItem icon={<Shield size={14} />}   label="Software"   active={view === 'software'} onClick={() => handleNavClick('software')} />
@@ -627,6 +633,7 @@ export default function ClientPortal() {
             )}
             {view === 'departments'  && <DepartmentsView />}
             {view === 'locations'    && <LocationsView />}
+            {view === 'internet-connections' && <InternetConnectionsView />}
             {view === 'overviews'    && <OverviewView />}
             {view === 'history'      && <HistoryView />}
             {view === 'processes'    && <ProcessesView />}
