@@ -6,7 +6,10 @@ import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import api from '@/lib/axios'
 import type { InternetConnectionListItem } from '@/types/internetConnection'
-import { CONNECTION_TYPE_OPTIONS, INTERNET_CONNECTION_STATUS_OPTIONS } from '@/types/internetConnection'
+import {
+  CONNECTION_TYPE_OPTIONS, INTERNET_CONNECTION_STATUS_OPTIONS,
+  CONNECTION_TYPE_VALUE, INTERNET_CONNECTION_STATUS_VALUE,
+} from '@/types/internetConnection'
 
 const schema = z.object({
   product: z.string().min(1, 'Product is verplicht').max(200),
@@ -14,10 +17,13 @@ const schema = z.object({
   supplier: z.string().max(200),
   type: z.string(),
   status: z.string(),
+  requestedAt: z.string(),
   activatedAt: z.string(),
   termMonths: z.string(),
+  monthlyCost: z.string(),
   postalCode: z.string().max(10),
   houseNumber: z.string().max(20),
+  city: z.string().max(100),
   ipAddress: z.string().max(45),
   hostCount: z.string(),
   notes: z.string(),
@@ -49,12 +55,15 @@ export function InternetConnectionModal({ open, onClose, onSuccess, connection }
           product: connection.product,
           provider: connection.provider ?? '',
           supplier: connection.supplier ?? '',
-          type: String(CONNECTION_TYPE_OPTIONS.find(o => o.label === connection.type)?.value ?? 0),
-          status: String(INTERNET_CONNECTION_STATUS_OPTIONS.find(o => o.label === connection.status)?.value ?? 0),
+          type: String(CONNECTION_TYPE_VALUE[connection.type] ?? 0),
+          status: String(INTERNET_CONNECTION_STATUS_VALUE[connection.status] ?? 0),
+          requestedAt: connection.requestedAt.slice(0, 10),
           activatedAt: connection.activatedAt ? connection.activatedAt.slice(0, 10) : '',
           termMonths: connection.termMonths?.toString() ?? '',
+          monthlyCost: connection.monthlyCost?.toString() ?? '',
           postalCode: connection.postalCode,
           houseNumber: connection.houseNumber,
+          city: connection.city,
           ipAddress: connection.ipAddress ?? '',
           hostCount: connection.hostCount?.toString() ?? '',
           notes: connection.notes ?? '',
@@ -62,7 +71,8 @@ export function InternetConnectionModal({ open, onClose, onSuccess, connection }
       } else {
         reset({
           product: '', provider: '', supplier: '', type: '0', status: '0',
-          activatedAt: '', termMonths: '', postalCode: '', houseNumber: '',
+          requestedAt: new Date().toISOString().slice(0, 10),
+          activatedAt: '', termMonths: '', monthlyCost: '', postalCode: '', houseNumber: '', city: '',
           ipAddress: '', hostCount: '', notes: '',
         })
       }
@@ -81,10 +91,13 @@ export function InternetConnectionModal({ open, onClose, onSuccess, connection }
         supplier: values.supplier || null,
         type: Number(values.type),
         status: Number(values.status),
+        requestedAt: values.requestedAt || null,
         activatedAt: values.activatedAt || null,
         termMonths: values.termMonths ? Number(values.termMonths) : null,
+        monthlyCost: values.monthlyCost ? Number(values.monthlyCost) : null,
         postalCode: values.postalCode || '',
         houseNumber: values.houseNumber || '',
+        city: values.city || '',
         ipAddress: values.ipAddress || null,
         hostCount: values.hostCount ? Number(values.hostCount) : null,
         notes: values.notes || null,
@@ -144,16 +157,27 @@ export function InternetConnectionModal({ open, onClose, onSuccess, connection }
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Activatiedatum</label>
-            <input type="date" {...register('activatedAt')} className={field} />
+            <label className="block text-xs font-medium text-slate-600 mb-1">Aanvraagdatum</label>
+            <input type="date" {...register('requestedAt')} className={field} />
           </div>
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Looptijd (maanden)</label>
-            <input {...register('termMonths')} className={field} placeholder="24" inputMode="numeric" />
+            <label className="block text-xs font-medium text-slate-600 mb-1">Activatiedatum</label>
+            <input type="date" {...register('activatedAt')} className={field} />
           </div>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs font-medium text-slate-600 mb-1">Looptijd (maanden)</label>
+            <input {...register('termMonths')} className={field} placeholder="24" inputMode="numeric" />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-slate-600 mb-1">Maandelijkse kosten</label>
+            <input {...register('monthlyCost')} className={field} placeholder="49.95" inputMode="decimal" />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-3 gap-3">
           <div>
             <label className="block text-xs font-medium text-slate-600 mb-1">Postcode</label>
             <input {...register('postalCode')} className={field} placeholder="1234 AB" />
@@ -161,6 +185,10 @@ export function InternetConnectionModal({ open, onClose, onSuccess, connection }
           <div>
             <label className="block text-xs font-medium text-slate-600 mb-1">Huisnummer</label>
             <input {...register('houseNumber')} className={field} placeholder="12A" />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-slate-600 mb-1">Plaats</label>
+            <input {...register('city')} className={field} placeholder="Amsterdam" />
           </div>
         </div>
 

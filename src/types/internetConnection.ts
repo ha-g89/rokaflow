@@ -5,10 +5,13 @@ export interface InternetConnectionListItem {
   supplier: string | null
   type: string
   status: string
+  requestedAt: string
   activatedAt: string | null
   termMonths: number | null
+  monthlyCost: number | null
   postalCode: string
   houseNumber: string
+  city: string
   ipAddress: string | null
   hostCount: number | null
   notes: string | null
@@ -27,6 +30,10 @@ export const CONNECTION_TYPE_OPTIONS = [
   { value: 8, label: 'Starlink' },
   { value: 9, label: 'Anders' },
 ] as const
+
+export const CONNECTION_TYPE_VALUE: Record<string, number> = {
+  Ftth: 0, Fttb: 1, Fiber: 2, Dsl: 3, Coax: 4, FourG: 5, FiveG: 6, Straal: 7, Starlink: 8, Anders: 9,
+}
 
 export const CONNECTION_TYPE_LABEL: Record<string, string> = {
   Ftth: 'FTTH',
@@ -47,6 +54,10 @@ export const INTERNET_CONNECTION_STATUS_OPTIONS = [
   { value: 2, label: 'Inactief' },
   { value: 3, label: 'Opgezegd' },
 ] as const
+
+export const INTERNET_CONNECTION_STATUS_VALUE: Record<string, number> = {
+  Requested: 0, Active: 1, Inactive: 2, Cancelled: 3,
+}
 
 export const INTERNET_CONNECTION_STATUS_LABEL: Record<string, string> = {
   Requested: 'Aangevraagd',

@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import {
   Users, LogOut, Laptop, Shield, Phone as PhoneIcon,
   ClipboardList, BarChart3, History, FileText,
-  Settings, Building2, MapPin, Wifi,
+  Settings, Building2, MapPin, EthernetPort,
   ChevronDown, ChevronRight, Moon, Sun, ArrowLeftCircle,
 } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
@@ -49,7 +49,7 @@ const VIEW_TITLES: Record<View, string> = {
   'employee-detail': 'Medewerker details',
   departments:       'Afdelingen',
   locations:         'Locaties',
-  'internet-connections': 'Vaste internet',
+  'internet-connections': 'Internetverbinding',
   hardware:          'Hardware',
   'hardware-detail': 'Hardware details',
   software:          'Software',
@@ -504,7 +504,8 @@ export default function ClientPortal() {
             <NavItem icon={<MapPin size={14} />}    label="Locaties"    active={view === 'locations'}     onClick={() => handleNavClick('locations')} />
 
             <SectionLabel label="Bedrijfsassets" />
-            <NavItem icon={<Wifi size={14} />} label="Vaste internet" active={view === 'internet-connections'} onClick={() => handleNavClick('internet-connections')} />
+            <NavItem icon={<EthernetPort size={14} />} label="Internetverbinding" active={view === 'internet-connections'} onClick={() => handleNavClick('internet-connections')} />
+            <NavItem icon={<FileText size={14} />}  label="Contracten"  active={view === 'contracts'} onClick={() => handleNavClick('contracts')} />
 
             <SectionLabel label="Assets" />
             <NavItem icon={<Laptop size={14} />}   label="Hardware"   active={hardwareActive}     onClick={() => handleNavClick('hardware')} />
@@ -517,7 +518,6 @@ export default function ClientPortal() {
             <SectionLabel label="Rapportages" />
             <NavItem icon={<BarChart3 size={14} />} label="Overzichten" active={view === 'overviews'} onClick={() => handleNavClick('overviews')} />
             <NavItem icon={<History size={14} />}   label="Historie"    active={view === 'history'}   onClick={() => handleNavClick('history')} />
-            <NavItem icon={<FileText size={14} />}  label="Contracten"  active={view === 'contracts'} onClick={() => handleNavClick('contracts')} />
           </nav>
 
           <div className="px-2 pb-3 flex-shrink-0 border-t border-slate-800 pt-2 space-y-1">
