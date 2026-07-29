@@ -138,7 +138,7 @@ const MSP = [
 // ── CSS ───────────────────────────────────────────────────────────────────────
 
 const CSS = `
-  @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Hanken+Grotesk:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap');
 
   @property --pr-angle {
     syntax: '<angle>';
@@ -153,7 +153,7 @@ const CSS = `
     min-height: 100vh;
     background: #050d1a;
     color: #e8f1ff;
-    font-family: 'DM Sans', system-ui, sans-serif;
+    font-family: 'Hanken Grotesk', system-ui, sans-serif;
     overflow-x: hidden;
     position: relative;
   }
@@ -219,7 +219,7 @@ const CSS = `
   @keyframes prSlideUp  { from{opacity:0;transform:translateY(22px)} to{opacity:1;transform:translateY(0)} }
 
   .pr-hero-h {
-    font-family: 'Bricolage Grotesque', sans-serif;
+    font-family: 'Hanken Grotesk', sans-serif;
     font-size: clamp(38px, 4.6vw, 68px);
     font-weight: 800; line-height: 1.06; letter-spacing: -0.02em;
     color: #f0f7ff;
@@ -386,12 +386,12 @@ const CSS = `
     margin-bottom: 5px; position: relative; z-index: 2;
   }
   .pr-currency {
-    font-family: 'Bricolage Grotesque', sans-serif;
+    font-family: 'Hanken Grotesk', sans-serif;
     font-size: 20px; font-weight: 700;
     color: rgba(240,247,255,0.6); margin-bottom: 6px;
   }
   .pr-price-num {
-    font-family: 'Bricolage Grotesque', sans-serif;
+    font-family: 'Hanken Grotesk', sans-serif;
     font-size: 56px; font-weight: 800; letter-spacing: -0.03em;
     color: #f0f7ff; line-height: 1;
   }
@@ -435,7 +435,7 @@ const CSS = `
   /* Buttons */
   .pr-btn {
     width: 100%; padding: 13px 18px; border-radius: 12px;
-    font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 600;
+    font-family: 'Hanken Grotesk', sans-serif; font-size: 14px; font-weight: 600;
     cursor: pointer; border: none;
     transition: all 0.2s ease;
     position: relative; z-index: 2;
@@ -485,7 +485,7 @@ const CSS = `
     display: flex; align-items: center; justify-content: center; font-size: 20px;
   }
   .pr-transfer-text h4 {
-    font-family: 'Bricolage Grotesque', sans-serif;
+    font-family: 'Hanken Grotesk', sans-serif;
     font-size: 16px; font-weight: 700; color: #e8f1ff; margin-bottom: 6px;
   }
   .pr-transfer-text p { font-size: 13px; color: rgba(232,241,255,0.45); line-height: 1.6; }
@@ -499,7 +499,7 @@ const CSS = `
     border-top: 1px solid rgba(255,255,255,0.045);
   }
   .pr-cta h3 {
-    font-family: 'Bricolage Grotesque', sans-serif;
+    font-family: 'Hanken Grotesk', sans-serif;
     font-size: 30px; font-weight: 700; color: #f0f7ff; letter-spacing: -0.01em;
   }
   .pr-cta p { font-size: 14px; color: rgba(232,241,255,0.38); max-width: 360px; line-height: 1.65; }
@@ -584,7 +584,7 @@ export default function PricingPage() {
           </h1>
           <p className="pr-hero-sub">
             Eenvoudige abonnementen zonder verborgen kosten.
-            Schaal mee met uw organisatie — of uw klantenbestand.
+            Schaal mee met uw organisatie of uw klantenbestand.
           </p>
         </section>
 

@@ -1,9 +1,6 @@
-import { useEffect } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import {
-  Users, Laptop, KeyRound, Smartphone, ClipboardCheck, Building2,
-  ShieldCheck, Zap, Monitor,
-} from 'lucide-react'
+import { Laptop, Monitor, Smartphone } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import logo from '@/assets/RokaFlow_icon_dark_transparent.png'
@@ -17,18 +14,27 @@ const ROLE_HOME: Record<string, string> = {
 }
 
 const FEATURES = [
-  { n: '01', icon: <Users size={19} />,          name: 'Medewerkerbeheer',        layout: 'wide',
-    desc: 'Van aantreden tot vertrek. Lifecycle, afdeling, manager en contract in één overzicht — inclusief automatische statusovergangen op start- en vertrekdatum.' },
-  { n: '02', icon: <Laptop size={19} />,         name: 'Hardware & Assets',       layout: 'normal',
-    desc: 'Laptops en apparatuur per medewerker. Uitgifte- en inleverhistorie altijd beschikbaar.' },
-  { n: '03', icon: <KeyRound size={19} />,       name: 'Licenties & Software',    layout: 'normal',
-    desc: 'Inzicht in software-toewijzingen, licentiekosten en bezettingsgraad per seat.' },
-  { n: '04', icon: <Smartphone size={19} />,     name: 'Telefonie',               layout: 'normal',
-    desc: 'Telefoons, simkaarten en abonnementen gecombineerd — inclusief koppelingen en contracten.' },
-  { n: '05', icon: <ClipboardCheck size={19} />, name: 'Onboarding & Offboarding', layout: 'normal',
-    desc: 'Gestructureerde checklists zodat niets wordt vergeten bij in- of uitdienst.' },
-  { n: '06', icon: <Building2 size={22} />,      name: 'MSP-platform',            layout: 'full',
-    desc: 'Beheer meerdere organisaties vanuit één dashboard. Volledig multi-tenant, met context-wisselen per klant, geconsolideerde notificaties en eenvoudige klantoverdrachten.' },
+  { n: '01', name: 'Medewerkerbeheer',
+    desc: 'Van aantreden tot vertrek: lifecycle, afdeling, manager en contract in één overzicht, met automatische statusovergangen op start- en vertrekdatum.' },
+  { n: '02', name: 'Hardware & Assets',
+    desc: 'Laptops en apparatuur per medewerker, met uitgifte- en inleverhistorie die zichzelf bijhoudt.' },
+  { n: '03', name: 'Licenties & Software',
+    desc: 'Bezetting per seat, kosten per licentie en signalen voordat een limiet in zicht komt.' },
+  { n: '04', name: 'Telefonie & Internet',
+    desc: 'Telefoons, simkaarten, abonnementen en vaste internetverbindingen in samenhang, inclusief kosten en contracten.' },
+  { n: '05', name: 'Onboarding & Offboarding',
+    desc: 'Checklists die meelopen met start- en vertrekdatum, zodat niets wordt vergeten.' },
+  { n: '06', name: 'MSP-platform',
+    desc: 'Beheer meerdere organisaties vanuit één dashboard: context-wisselen per klant, geconsolideerde notificaties en eenvoudige overdrachten.' },
+]
+
+const STEPS = [
+  { n: '1', title: 'Nieuwe collega? Eén formulier.',
+    desc: 'Afdeling, startdatum en onboarding-checklist staan meteen goed. De rest volgt vanzelf.' },
+  { n: '2', title: 'Hardware koppelen in twee klikken',
+    desc: 'Kies het apparaat, kies de medewerker. Uitgifte en historie schrijven zichzelf.' },
+  { n: '3', title: 'Licenties bewaken zichzelf',
+    desc: 'Bezetting per seat in beeld. RokaFlow signaleert het voordat u een limiet overschrijdt.' },
 ]
 
 // ── Mock screen sub-components ────────────────────────────────────────────────
@@ -46,10 +52,10 @@ const EmpRow = ({ color, w1 = '62%', w2 = '42%', badge, bCls }: {
   </div>
 )
 
-const HwRow = ({ icon, w1 = '55%', w2 = '38%', pct, barClr, badge, bCls }: {
-  icon: React.ReactNode; w1?: string; w2?: string; pct: number; barClr: string; badge: string; bCls: string
+const HwRow = ({ icon, w1 = '55%', w2 = '38%', pct, barClr, badge, bCls, className }: {
+  icon: React.ReactNode; w1?: string; w2?: string; pct: number; barClr: string; badge: string; bCls: string; className?: string
 }) => (
-  <div className="rf-sc-row">
+  <div className={`rf-sc-row ${className ?? ''}`}>
     <div className="rf-sc-icon">{icon}</div>
     <div className="rf-sc-lines">
       <div className="rf-sc-line" style={{ width: w1 }} />
@@ -79,28 +85,110 @@ const LicCard = ({ name, vendor, used, max, pct, barClr, delay }: {
   </div>
 )
 
+const Chrome = ({ title }: { title: string }) => (
+  <div className="rf-sc-chrome">
+    <span className="rf-sc-dot rf-sc-dot-r" />
+    <span className="rf-sc-dot rf-sc-dot-y" />
+    <span className="rf-sc-dot rf-sc-dot-g" />
+    <span className="rf-sc-title">{title}</span>
+  </div>
+)
+
+const CursorIcon = () => (
+  <svg width="15" height="17" viewBox="0 0 15 17" fill="none" aria-hidden="true">
+    <path d="M1 1l4.2 14 2.4-5.7L13.5 7 1 1z" fill="#fff" stroke="#1e293b" strokeWidth="1.4" strokeLinejoin="round" />
+  </svg>
+)
+
+// ── Screens ───────────────────────────────────────────────────────────────────
+
+const EmployeesScreen = () => (
+  <div className="rf-screen rf-screen-md">
+    <Chrome title="Medewerkers" />
+    <div className="rf-sc-body">
+      <div className="rf-sc-tabs">
+        <div className="rf-sc-tab active">Alle</div>
+        <div className="rf-sc-tab">In dienst</div>
+        <div className="rf-sc-tab">Vertrek</div>
+      </div>
+      <EmpRow color="#10b981" badge="In dienst" bCls="rf-badge-g" />
+      <EmpRow color="#2563eb" w1="52%" w2="38%" badge="In dienst" bCls="rf-badge-g" />
+      <EmpRow color="#f59e0b" w1="64%" w2="44%" badge="Vertrek" bCls="rf-badge-a" />
+      <EmpRow color="#8b5cf6" w1="48%" w2="36%" badge="In dienst" bCls="rf-badge-g" />
+      <EmpRow color="#06b6d4" w1="56%" w2="40%" badge="Start" bCls="rf-badge-b" />
+    </div>
+  </div>
+)
+
+const HardwareScreen = ({ hero }: { hero?: boolean }) => (
+  <div className={`rf-screen ${hero ? 'rf-screen-hero' : 'rf-screen-md'}`}>
+    <Chrome title="Hardware Assets" />
+    {hero && (
+      <div className="rf-sc-toolbar">
+        <div className="rf-sc-search"><span /></div>
+        <div className="rf-sc-btn">+ Toevoegen</div>
+        <div className="rf-cursor"><CursorIcon /></div>
+      </div>
+    )}
+    <div className="rf-sc-body">
+      <div className="rf-sc-stats">
+        <div className="rf-sc-stat">
+          <div className="rf-sc-stat-n">47</div>
+          <div className="rf-sc-stat-l">Totaal</div>
+        </div>
+        <div className="rf-sc-stat">
+          <div className="rf-sc-stat-n">31</div>
+          <div className="rf-sc-stat-l">In gebruik</div>
+        </div>
+        <div className="rf-sc-stat">
+          <div className="rf-sc-stat-n">€24.8k</div>
+          <div className="rf-sc-stat-l">Waarde</div>
+        </div>
+      </div>
+      <div className="rf-sc-bar-main-track">
+        <div className="rf-sc-bar-main-fill" style={{ width: '66%', background: 'linear-gradient(90deg, #2563eb, #38bdf8)' }} />
+      </div>
+      {hero && (
+        <HwRow className="rf-row-new" icon={<Laptop size={hero ? 14 : 12} />} w1="54%" w2="34%" pct={100} barClr="#10b981" badge="Nieuw" bCls="rf-badge-g" />
+      )}
+      <HwRow icon={<Laptop size={hero ? 14 : 12} />}     w1="58%" w2="36%" pct={100} barClr="#2563eb" badge="In gebruik" bCls="rf-badge-b" />
+      <HwRow icon={<Laptop size={hero ? 14 : 12} />}     w1="50%" w2="42%" pct={100} barClr="#2563eb" badge="In gebruik" bCls="rf-badge-b" />
+      <HwRow icon={<Monitor size={hero ? 14 : 12} />}    w1="52%" w2="30%" pct={0}   barClr="#10b981" badge="Op voorraad" bCls="rf-badge-g" />
+      <HwRow icon={<Smartphone size={hero ? 14 : 12} />} w1="45%" w2="38%" pct={100} barClr="#f59e0b" badge="In reparatie" bCls="rf-badge-a" />
+    </div>
+  </div>
+)
+
+const LicensesScreen = () => (
+  <div className="rf-screen rf-screen-md">
+    <Chrome title="Licenties" />
+    <div className="rf-sc-body">
+      <LicCard name="Microsoft 365" vendor="Microsoft" used={45} max={50} pct={90} barClr="#f59e0b" delay="0.3s" />
+      <LicCard name="Adobe Creative Cloud" vendor="Adobe" used={8} max={25} pct={32} barClr="#2563eb" delay="0.5s" />
+      <LicCard name="Slack Pro" vendor="Salesforce" used={24} max={24} pct={100} barClr="#ef4444" delay="0.7s" />
+    </div>
+  </div>
+)
+
 // ── CSS ───────────────────────────────────────────────────────────────────────
 
 const CSS = `
-  @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Hanken+Grotesk:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap');
 
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
-    --bg:        #ffffff;
-    --bg-alt:    #f8fafc;
-    --bg-deep:   #f1f5f9;
-    --bg-panel:  #f0f4ff;
-    --text:      #0f172a;
-    --text-2:    #334155;
-    --muted:     #64748b;
-    --accent:    #2563eb;
-    --accent-lt: #3b82f6;
-    --accent-dim:#eff6ff;
-    --line:      rgba(15,23,42,0.08);
-    --line-md:   rgba(15,23,42,0.12);
-    --green:     #059669;
-    --amber:     #d97706;
+    --bg:          #fbfcfe;
+    --bg-soft:     #f4f6fb;
+    --text:        #0e1526;
+    --text-2:      #3b4358;
+    --muted:       #6b7488;
+    --line:        rgba(14,21,38,0.08);
+    --line-md:     rgba(14,21,38,0.14);
+    --accent:      #2563eb;
+    --accent-deep: #1d4ed8;
+    --accent-soft: rgba(37,99,235,0.07);
+    --nav-bg:      rgba(251,252,254,0.9);
     /* mock screens follow the active theme: light = product light UI */
     --sc-bg:         #ffffff;
     --sc-top:        #f8fafc;
@@ -121,6 +209,17 @@ const CSS = `
     --sc-badge-b-bg: rgba(37,99,235,0.12);   --sc-badge-b-tx: #2563eb;
   }
   html.dark {
+    --bg:          #0b1020;
+    --bg-soft:     #0e1528;
+    --text:        #e8ecf7;
+    --text-2:      #b6bfd4;
+    --muted:       #8b94ab;
+    --line:        rgba(232,236,247,0.08);
+    --line-md:     rgba(232,236,247,0.15);
+    --accent:      #60a5fa;
+    --accent-deep: #3b82f6;
+    --accent-soft: rgba(96,165,250,0.09);
+    --nav-bg:      rgba(11,16,32,0.88);
     --sc-bg:         #071628;
     --sc-top:        #0d2244;
     --sc-border:     rgba(255,255,255,0.06);
@@ -145,25 +244,27 @@ const CSS = `
     min-height: 100vh;
     background: var(--bg);
     color: var(--text);
-    font-family: 'DM Sans', system-ui, sans-serif;
-    overflow-x: hidden;
+    font-family: 'Hanken Grotesk', system-ui, sans-serif;
+    overflow-x: clip;
+  }
+  .rf-land button:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
   }
 
   /* ── Nav ────────────────────────────────────────────────────── */
   .rf-nav {
     position: fixed; top: 0; left: 0; right: 0; z-index: 200;
     display: flex; align-items: center; justify-content: space-between;
-    padding: 0 56px; height: 62px;
-    background: rgba(255,255,255,0.92);
-    backdrop-filter: blur(18px);
-    -webkit-backdrop-filter: blur(18px);
+    padding: 0 clamp(20px, 4vw, 56px); height: 62px;
+    background: var(--nav-bg);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     border-bottom: 1px solid var(--line);
     animation: rfFade 0.4s ease both;
   }
-  .rf-nav-logo {
-    height: 48px; object-fit: contain;
-    filter: brightness(0) opacity(0.82);
-  }
+  .rf-nav-logo { height: 46px; object-fit: contain; filter: brightness(0) opacity(0.82); }
+  html.dark .rf-nav-logo { filter: brightness(0) invert(1) opacity(0.85); }
   .rf-nav-actions { display: flex; align-items: center; gap: 16px; }
 
   .rf-nav-link {
@@ -174,10 +275,11 @@ const CSS = `
   .rf-nav-link:hover { color: var(--text); }
   .rf-nav-link em { font-style: normal; transition: transform 0.16s; }
   .rf-nav-link:hover em { transform: translateX(3px); }
+  .rf-nav-sep { width: 1px; height: 18px; background: var(--line-md); }
 
   .rf-nav-cta {
     font-size: 13.5px; font-weight: 600;
-    color: #fff; background: var(--accent);
+    color: #fff; background: #2563eb;
     border: none; cursor: pointer;
     padding: 8px 18px; border-radius: 8px;
     transition: background 0.18s, box-shadow 0.18s;
@@ -187,83 +289,58 @@ const CSS = `
   .rf-nav-cta em { font-style: normal; transition: transform 0.16s; }
   .rf-nav-cta:hover em { transform: translateX(3px); }
 
+  .rf-theme-toggle {
+    display: flex; align-items: center; justify-content: center;
+    width: 32px; height: 32px; background: none;
+    border: 1px solid var(--line-md); border-radius: 8px;
+    cursor: pointer; color: var(--muted); padding: 0; flex-shrink: 0;
+    transition: color 0.16s, border-color 0.16s, background 0.16s;
+  }
+  .rf-theme-toggle:hover { color: var(--text); border-color: var(--accent); background: var(--accent-soft); }
+
   /* ── Hero ───────────────────────────────────────────────────── */
   .rf-hero {
     min-height: 100vh;
-    display: grid;
-    grid-template-columns: 1fr 1.12fr;
-    padding-top: 62px;
+    padding: 100px clamp(20px, 4vw, 56px) 48px;
+    max-width: 1320px; margin: 0 auto;
+    display: grid; grid-template-columns: 1.05fr 1fr;
+    gap: clamp(32px, 5vw, 80px);
+    align-items: center; align-content: center;
+    text-align: left;
     position: relative;
   }
-
-  /* right panel bg */
-  .rf-hero::after {
-    content: '';
-    position: absolute;
-    right: 0; top: 0; bottom: 0;
-    width: 53%;
-    background: var(--bg-panel);
-    z-index: 0;
-  }
-
-  /* ── Hero left (text) ───────────────────────────────────────── */
-  .rf-hero-left {
-    display: flex; flex-direction: column; justify-content: center; align-items: center;
-    text-align: center;
-    padding: 72px 56px 72px 56px;
-    position: relative; z-index: 1;
-  }
-
-  .rf-eyebrow {
-    display: inline-flex; align-items: center; gap: 8px;
-    font-size: 11px; font-weight: 700; letter-spacing: 0.1em;
-    text-transform: uppercase; color: var(--accent);
-    margin-bottom: 28px;
-    animation: rfReveal 0.7s cubic-bezier(0.16,1,0.3,1) 0.1s both;
-  }
-  .rf-eyebrow-dot {
-    width: 6px; height: 6px; border-radius: 50%;
-    background: var(--accent); opacity: 0.7;
-    animation: rfDotPulse 2s ease-in-out 0.8s infinite;
-  }
-  @keyframes rfDotPulse {
-    0%,100% { opacity: 0.7; transform: scale(1); }
-    50%      { opacity: 1;   transform: scale(1.3); }
-  }
+  .rf-hero-copy { display: flex; flex-direction: column; align-items: flex-start; }
 
   .rf-headline {
-    font-family: 'Bricolage Grotesque', sans-serif;
-    font-size: clamp(42px, 4.4vw, 76px);
-    font-weight: 800; line-height: 1.08;
-    letter-spacing: -0.01em; color: var(--text);
-    margin-bottom: 22px;
+    font-family: 'Hanken Grotesk', sans-serif;
+    font-size: clamp(40px, 4.6vw, 68px);
+    font-weight: 800; line-height: 1.04;
+    letter-spacing: -0.025em; color: var(--text);
+    margin-bottom: 26px;
+    max-width: 15ch;
   }
-  .rf-lw { overflow: hidden; line-height: 1.1; }
-  .rf-lw + .rf-lw { margin-top: 0.04em; }
-  .rf-l1 { display: block; animation: rfReveal 0.8s cubic-bezier(0.16,1,0.3,1) 0.2s both; }
-  .rf-l2 { display: block; animation: rfReveal 0.8s cubic-bezier(0.16,1,0.3,1) 0.32s both; }
-  .rf-l3 {
-    display: block; color: var(--accent);
-    animation: rfReveal 0.8s cubic-bezier(0.16,1,0.3,1) 0.44s both;
-  }
+  .rf-lw { overflow: hidden; }
+  .rf-l1 { display: block; animation: rfReveal 0.8s cubic-bezier(0.16,1,0.3,1) 0.12s both; }
+  .rf-l2 { display: block; animation: rfReveal 0.8s cubic-bezier(0.16,1,0.3,1) 0.24s both; }
+  .rf-l3 { display: block; color: var(--accent); animation: rfReveal 0.8s cubic-bezier(0.16,1,0.3,1) 0.36s both; }
 
   .rf-sub {
-    font-size: 16px; line-height: 1.72;
-    color: var(--muted); max-width: 420px;
+    font-size: clamp(15px, 1.6vw, 17px); line-height: 1.72;
+    color: var(--muted); max-width: 52ch;
     margin-bottom: 36px;
-    animation: rfReveal 0.7s cubic-bezier(0.16,1,0.3,1) 0.58s both;
+    animation: rfReveal 0.7s cubic-bezier(0.16,1,0.3,1) 0.5s both;
   }
 
   .rf-ctas {
     display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
-    animation: rfReveal 0.7s cubic-bezier(0.16,1,0.3,1) 0.72s both;
+    animation: rfReveal 0.7s cubic-bezier(0.16,1,0.3,1) 0.62s both;
   }
 
   .rf-btn-primary {
     display: inline-flex; align-items: center; gap: 8px;
-    padding: 12px 24px; font-size: 14px; font-weight: 600;
-    font-family: 'DM Sans', sans-serif;
-    color: #fff; background: var(--accent);
+    padding: 13px 26px; font-size: 14.5px; font-weight: 600;
+    font-family: 'Hanken Grotesk', sans-serif;
+    color: #fff; background: #2563eb;
     border: none; border-radius: 9px; cursor: pointer;
     transition: background 0.18s, box-shadow 0.18s, transform 0.12s;
     box-shadow: 0 1px 2px rgba(37,99,235,0.25);
@@ -278,194 +355,160 @@ const CSS = `
 
   .rf-btn-ghost {
     display: inline-flex; align-items: center; gap: 8px;
-    padding: 12px 22px; font-size: 14px; font-weight: 500;
-    font-family: 'DM Sans', sans-serif;
+    padding: 13px 24px; font-size: 14.5px; font-weight: 500;
+    font-family: 'Hanken Grotesk', sans-serif;
     color: var(--text-2);
-    background: var(--bg); border: 1.5px solid var(--line-md);
+    background: transparent; border: 1.5px solid var(--line-md);
     border-radius: 9px; cursor: pointer;
     transition: border-color 0.18s, color 0.18s, background 0.18s;
   }
   .rf-btn-ghost:hover {
-    border-color: var(--accent-lt);
+    border-color: var(--accent);
     color: var(--accent);
-    background: var(--accent-dim);
+    background: var(--accent-soft);
   }
   .rf-btn-ghost em { font-style: normal; transition: transform 0.16s; }
   .rf-btn-ghost:hover em { transform: translateX(3px); }
 
-  .rf-notice {
-    margin-top: 14px; font-size: 12px; color: var(--muted);
-    opacity: 0.7; line-height: 1.6;
-    animation: rfReveal 0.6s ease 0.9s both;
+  .rf-trustline {
+    margin-top: 20px; font-size: 12.5px; color: var(--muted);
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    animation: rfReveal 0.6s ease 0.78s both;
   }
+  .rf-trustline b { font-weight: 500; color: var(--text-2); }
+  .rf-trustline span { opacity: 0.45; }
 
-  /* Trust badges */
-  .rf-trust {
-    display: flex; align-items: center; gap: 20px;
-    margin-top: 44px; padding-top: 28px;
-    border-top: 1px solid var(--line);
-    animation: rfReveal 0.6s ease 1.05s both;
+  /* ── Hero window ────────────────────────────────────────────── */
+  .rf-hero-stage {
+    perspective: 1200px;
+    perspective-origin: 20% 30%;
+    display: flex; justify-content: center;
+    animation: rfRise 1s cubic-bezier(0.16,1,0.3,1) 0.55s both;
   }
-  .rf-trust-item {
-    font-size: 12px; font-weight: 500;
-    color: var(--muted); display: flex; align-items: center; gap: 6px;
-  }
-  .rf-trust-icon {
-    width: 18px; height: 18px; border-radius: 50%;
-    background: var(--bg-deep); display: flex; align-items: center; justify-content: center;
-    color: var(--accent);
-  }
-
-  /* ── Hero right (screens) ───────────────────────────────────── */
-  .rf-hero-right {
-    position: relative; z-index: 1;
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    padding: 48px 28px 40px;
-  }
-
-  /* App icon badge */
-  .rf-app-badge {
-    display: flex; align-items: center; gap: 10px;
-    background: var(--sc-bg);
-    border: 1px solid var(--sc-tile-bd);
-    border-radius: 12px; padding: 8px 14px 8px 10px;
-    margin-bottom: 28px;
-    box-shadow: 0 4px 16px rgba(15,23,42,0.1);
-    animation: rfReveal 0.8s cubic-bezier(0.16,1,0.3,1) 0.35s both;
-    transition: background 0.3s, border-color 0.3s;
-  }
-  html.dark .rf-app-badge { box-shadow: 0 4px 16px rgba(0,0,0,0.18); }
-  .rf-app-badge-logo {
-    width: 28px; height: 28px; object-fit: contain;
-    filter: brightness(0) opacity(0.82);
-  }
-  html.dark .rf-app-badge-logo { filter: none; }
-  .rf-app-badge-label {
-    font-family: 'Bricolage Grotesque', sans-serif;
-    font-size: 13px; font-weight: 700;
-    color: var(--sc-text); letter-spacing: 0.01em;
-  }
-  /* ── 3D Screens ──────────────────────────────────────────────── */
-  .rf-screens-wrap {
-    perspective: 1100px;
-    perspective-origin: 50% -15%;
-    display: flex;
-    flex-direction: row;
-    align-items: flex-end;
-    justify-content: center;
-    gap: 14px;
-    flex-shrink: 0;
-    padding-bottom: 80px;
-  }
-
-  .rf-so {
-    position: relative;
-    transform: rotateX(10deg);
-    transition: transform 0.5s cubic-bezier(0.16,1,0.3,1);
+  .rf-hero-window {
+    transform: rotateX(6deg) rotateY(-6deg);
     will-change: transform;
   }
-  .rf-so:hover {
-    transform: rotateX(2deg) translateY(-28px);
+  @keyframes rfRise {
+    from { opacity: 0; transform: translateY(48px); }
+    to   { opacity: 1; transform: translateY(0); }
   }
 
-  .rf-so-caption {
-    position: absolute;
-    bottom: -58px;
-    left: 50%;
-    transform: translateX(-50%) translateY(8px);
-    width: max-content;
-    max-width: 215px;
-    text-align: center;
-    font-size: 11px;
-    line-height: 1.65;
-    color: rgba(238,242,255,0.82);
-    background: rgba(4,9,20,0.82);
-    backdrop-filter: blur(8px);
-    border: 1px solid rgba(255,255,255,0.07);
-    border-radius: 8px;
-    padding: 7px 12px;
-    opacity: 0;
-    transition: opacity 0.32s ease 0.18s,
-                transform 0.42s cubic-bezier(0.16,1,0.3,1) 0.18s;
-    pointer-events: none;
-  }
-  .rf-so:hover .rf-so-caption {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0);
-  }
-
-  .rf-so-c {
-    animation: rfSoFade 0.9s cubic-bezier(0.16,1,0.3,1) 0.45s both;
-  }
-  .rf-so-l {
-    opacity: 0.9;
-    animation: rfSoFade 0.9s cubic-bezier(0.16,1,0.3,1) 0.65s both;
-  }
-  .rf-so-r {
-    opacity: 0.9;
-    animation: rfSoFade 0.9s cubic-bezier(0.16,1,0.3,1) 0.57s both;
-  }
-
-  @keyframes rfSoFade {
-    from { opacity: 0; }
-  }
-
-  /* ── Screen shell ────────────────────────────────────────────── */
+  /* ── Screen shells ──────────────────────────────────────────── */
   .rf-screen {
-    border-radius: 10px; overflow: hidden;
+    border-radius: 12px; overflow: hidden;
     background: var(--sc-bg);
     border: 1px solid var(--sc-border);
     box-shadow: var(--sc-shadow);
     position: relative;
+    text-align: left;
     transition: background 0.3s, border-color 0.3s, box-shadow 0.3s;
   }
-  .rf-screen-c  { width: 310px; }
-  .rf-screen-ls { width: 208px; }
+  .rf-screen-md   { width: 320px; }
+  .rf-screen-hero { width: min(580px, 92vw); }
 
   .rf-sc-chrome {
-    height: 27px; background: var(--sc-top);
+    height: 28px; background: var(--sc-top);
     border-bottom: 1px solid var(--sc-border);
-    display: flex; align-items: center; gap: 5px; padding: 0 10px;
+    display: flex; align-items: center; gap: 5px; padding: 0 11px;
     transition: background 0.3s, border-color 0.3s;
   }
+  .rf-screen-hero .rf-sc-chrome { height: 34px; padding: 0 13px; }
   .rf-sc-dot { width: 7px; height: 7px; border-radius: 50%; }
   .rf-sc-dot-r { background: #ff5f57; }
   .rf-sc-dot-y { background: #febc2e; }
   .rf-sc-dot-g { background: #28c840; }
   .rf-sc-title {
-    font-family: 'DM Sans', sans-serif;
+    font-family: 'Hanken Grotesk', sans-serif;
     font-size: 10px; font-weight: 600;
     color: var(--sc-title); margin-left: 7px; letter-spacing: 0.04em;
   }
-  .rf-sc-body { padding: 9px 10px 10px; }
+  .rf-screen-hero .rf-sc-title { font-size: 11.5px; }
+  .rf-sc-body { padding: 10px 11px 11px; }
+  .rf-screen-hero .rf-sc-body { padding: 12px 14px 14px; }
+
+  /* toolbar (hero window only) */
+  .rf-sc-toolbar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 14px 0;
+    position: relative;
+  }
+  .rf-sc-search {
+    flex: 1; height: 24px; border-radius: 6px;
+    background: var(--sc-track);
+    display: flex; align-items: center; padding: 0 9px;
+  }
+  .rf-sc-search span { width: 42%; height: 5px; border-radius: 3px; background: var(--sc-line-s); }
+  .rf-sc-btn {
+    font-family: 'Hanken Grotesk', sans-serif;
+    font-size: 10.5px; font-weight: 700; color: #fff;
+    background: #2563eb; border-radius: 6px;
+    padding: 5px 11px; white-space: nowrap;
+    animation: rfBtnPress 9s cubic-bezier(0.16,1,0.3,1) 1.4s infinite;
+  }
+  .rf-cursor {
+    position: absolute; top: 12px; right: 44px;
+    z-index: 3; pointer-events: none;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+    animation: rfCursorPath 9s cubic-bezier(0.45,0,0.2,1) 1.4s infinite both;
+    opacity: 0;
+  }
+  @keyframes rfCursorPath {
+    0%       { opacity: 0; transform: translate(150px, 140px); }
+    8%       { opacity: 0; transform: translate(150px, 140px); }
+    16%      { opacity: 1; }
+    26%      { opacity: 1; transform: translate(4px, 6px); }
+    29%      { opacity: 1; transform: translate(4px, 6px) scale(0.86); }
+    33%      { opacity: 1; transform: translate(4px, 6px) scale(1); }
+    46%      { opacity: 1; transform: translate(-30px, 78px); }
+    56%,100% { opacity: 0; transform: translate(150px, 140px); }
+  }
+  @keyframes rfBtnPress {
+    0%, 27.5%, 33%, 100% { transform: scale(1); }
+    30%                  { transform: scale(0.92); }
+  }
+  .rf-row-new {
+    animation: rfRowIn 9s cubic-bezier(0.16,1,0.3,1) 1.4s infinite both;
+    opacity: 0;
+  }
+  @keyframes rfRowIn {
+    0%, 32%   { opacity: 0; transform: translateY(-5px); }
+    40%, 74%  { opacity: 1; transform: translateY(0); }
+    84%, 100% { opacity: 0; transform: translateY(-5px); }
+  }
 
   .rf-sc-stats { display: flex; gap: 5px; margin-bottom: 8px; }
+  .rf-screen-hero .rf-sc-stats { gap: 8px; margin-bottom: 10px; }
   .rf-sc-stat {
     flex: 1; background: var(--sc-tile-bg);
     border: 1px solid var(--sc-tile-bd);
-    border-radius: 5px; padding: 5px 6px;
+    border-radius: 6px; padding: 5px 7px;
   }
+  .rf-screen-hero .rf-sc-stat { padding: 8px 10px; }
   .rf-sc-stat-n {
-    font-family: 'Bricolage Grotesque', sans-serif;
+    font-family: 'Hanken Grotesk', sans-serif;
     font-size: 13px; font-weight: 700; color: var(--sc-accent); line-height: 1;
   }
+  .rf-screen-hero .rf-sc-stat-n { font-size: 18px; }
   .rf-sc-stat-l { font-size: 7.5px; color: var(--sc-text-dim); margin-top: 2px; }
+  .rf-screen-hero .rf-sc-stat-l { font-size: 9.5px; margin-top: 3px; }
 
   .rf-sc-bar-main-track {
     background: var(--sc-track); height: 5px;
     border-radius: 3px; overflow: hidden; margin-bottom: 8px;
   }
+  .rf-screen-hero .rf-sc-bar-main-track { height: 6px; margin-bottom: 10px; }
   .rf-sc-bar-main-fill {
     height: 100%; border-radius: 3px;
     transform-origin: left center; transform: scaleX(0);
-    animation: rfBarReveal 1s cubic-bezier(0.16,1,0.3,1) 1.2s both;
+    animation: rfBarReveal 1s cubic-bezier(0.16,1,0.3,1) 1.1s both;
   }
 
   .rf-sc-row {
     display: flex; align-items: center; gap: 7px;
     padding: 4px 0; border-bottom: 1px solid var(--sc-row-border);
   }
+  .rf-screen-hero .rf-sc-row { padding: 6px 0; gap: 10px; }
   .rf-sc-row:last-child { border-bottom: none; }
   .rf-sc-av { width: 20px; height: 20px; border-radius: 50%; flex-shrink: 0; }
   .rf-sc-icon {
@@ -474,21 +517,24 @@ const CSS = `
   }
   .rf-sc-lines { flex: 1; }
   .rf-sc-line { height: 5px; border-radius: 2px; background: var(--sc-line); margin-bottom: 3px; }
-  .rf-sc-line-s { background: var(--sc-line-s); margin-bottom: 0; }
+  .rf-screen-hero .rf-sc-line { height: 6px; margin-bottom: 4px; }
+  .rf-sc-line-s { background: var(--sc-line-s); margin-bottom: 0 !important; }
 
   .rf-sc-badge {
     font-size: 7px; font-weight: 700;
     padding: 2px 5px; border-radius: 3px;
     white-space: nowrap; flex-shrink: 0;
   }
+  .rf-screen-hero .rf-sc-badge { font-size: 8.5px; padding: 2.5px 7px; }
   .rf-badge-g { background: var(--sc-badge-g-bg); color: var(--sc-badge-g-tx); }
   .rf-badge-a { background: var(--sc-badge-a-bg); color: var(--sc-badge-a-tx); }
   .rf-badge-b { background: var(--sc-badge-b-bg); color: var(--sc-badge-b-tx); }
 
   .rf-sc-bar-mini-track { width: 38px; height: 3px; border-radius: 2px; background: var(--sc-track); overflow: hidden; }
+  .rf-screen-hero .rf-sc-bar-mini-track { width: 52px; }
   .rf-sc-bar-mini-fill  { height: 100%; border-radius: 2px; }
 
-  .rf-sc-lic { background: var(--sc-tile-bg); border: 1px solid var(--sc-tile-bd); border-radius: 5px; padding: 7px 8px; margin-bottom: 5px; }
+  .rf-sc-lic { background: var(--sc-tile-bg); border: 1px solid var(--sc-tile-bd); border-radius: 6px; padding: 8px 9px; margin-bottom: 6px; }
   .rf-sc-lic:last-child { margin-bottom: 0; }
   .rf-sc-lic-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1px; }
   .rf-sc-lic-name { font-size: 9px; font-weight: 700; color: var(--sc-text); }
@@ -506,185 +552,180 @@ const CSS = `
 
   @keyframes rfBarReveal { to { transform: scaleX(1); } }
 
-  /* ── Feature strip ───────────────────────────────────────────── */
-  .rf-strip {
-    display: flex; border-top: 1px solid var(--line);
-    position: relative; z-index: 1;
-    background: var(--bg);
-    animation: rfFade 0.8s ease 1.1s both;
+  /* ── Scroll story ───────────────────────────────────────────── */
+  .rf-story {
+    border-top: 1px solid var(--line);
+    background: var(--bg-soft);
+    padding: 96px clamp(20px, 4vw, 56px) 40px;
   }
-  .rf-strip-item {
-    flex: 1; padding: 14px 18px;
-    font-size: 10.5px; font-weight: 600; letter-spacing: 0.08em;
-    text-transform: uppercase; color: var(--muted);
-    border-right: 1px solid var(--line);
-    transition: color 0.18s, background 0.18s; cursor: default; white-space: nowrap;
+  .rf-story-head { max-width: 1080px; margin: 0 auto 24px; }
+  .rf-story-title {
+    font-family: 'Hanken Grotesk', sans-serif;
+    font-size: clamp(30px, 3.6vw, 48px); font-weight: 800;
+    letter-spacing: -0.02em; line-height: 1.1; color: var(--text);
+    max-width: 14ch;
   }
-  .rf-strip-item:last-child { border-right: none; }
-  .rf-strip-item:hover { color: var(--accent); background: var(--accent-dim); }
+  .rf-story-sub { font-size: 15.5px; color: var(--muted); margin-top: 12px; max-width: 46ch; line-height: 1.7; }
 
-  /* ── Features ───────────────────────────────────────────────── */
-  .rf-features {
-    background: #060d1a;
-    padding: 88px 56px 88px;
+  .rf-story-grid {
+    max-width: 1080px; margin: 0 auto;
+    display: grid; grid-template-columns: 1fr 1fr; gap: clamp(32px, 6vw, 96px);
   }
 
-  .rf-feat-head {
-    text-align: center; margin-bottom: 56px;
-    max-width: 1160px; margin-left: auto; margin-right: auto;
-  }
-  .rf-feat-tag {
-    display: inline-block;
-    font-size: 11px; font-weight: 700; letter-spacing: 0.1em;
-    text-transform: uppercase; color: #60a5fa;
-    margin-bottom: 14px;
-  }
-  .rf-feat-title {
-    font-family: 'Bricolage Grotesque', sans-serif;
-    font-size: clamp(28px, 3vw, 42px); font-weight: 800;
-    color: #eef2ff; letter-spacing: -0.02em; line-height: 1.12;
-  }
-  .rf-feat-sub {
-    font-size: 15px; color: rgba(238,242,255,0.52);
-    margin-top: 10px; max-width: 500px; margin-left: auto; margin-right: auto;
-    line-height: 1.65;
-  }
-
-  .rf-feat-grid {
-    display: grid; grid-template-columns: repeat(3, 1fr);
-    gap: 14px;
-    max-width: 1160px; margin: 0 auto;
-  }
-  /* Bento: eerste kaart breed, MSP-kaart als brede afsluiter */
-  .rf-feat-item--wide { grid-column: span 2; display: flex; align-items: flex-start; gap: 22px; }
-  .rf-feat-item--wide .rf-feat-icon-wrap { margin-bottom: 0; flex-shrink: 0; width: 48px; height: 48px; }
-  .rf-feat-item--full {
-    grid-column: 1 / -1; display: flex; align-items: center; gap: 26px;
-    background: rgba(37,99,235,0.08); border-color: rgba(37,99,235,0.22);
-  }
-  .rf-feat-item--full .rf-feat-icon-wrap { margin-bottom: 0; flex-shrink: 0; width: 52px; height: 52px; }
-  .rf-feat-item--full .rf-feat-name { font-size: 18px; }
-  .rf-feat-item--full .rf-feat-desc { max-width: 560px; }
-
-  .rf-feat-item {
-    background: rgba(255,255,255,0.03);
-    border: 1px solid rgba(255,255,255,0.07);
-    border-radius: 14px; padding: 28px 24px;
-    transition: box-shadow 0.22s, border-color 0.22s, transform 0.2s,
-                opacity 0.5s ease, translateY 0.5s ease;
-    opacity: 0; transform: translateY(16px);
-    cursor: default; position: relative; overflow: hidden;
-  }
-  .rf-feat-item.rf-visible { opacity: 1; transform: translateY(0); }
-  .rf-feat-item:hover {
-    box-shadow: 0 8px 32px rgba(37,99,235,0.18);
-    border-color: rgba(37,99,235,0.3);
-    transform: translateY(-3px);
-  }
-
-  .rf-feat-icon-wrap {
-    width: 40px; height: 40px; border-radius: 10px;
-    background: rgba(37,99,235,0.15); display: flex; align-items: center;
-    justify-content: center; margin-bottom: 16px; color: #60a5fa;
-  }
-  .rf-feat-name {
-    font-family: 'Bricolage Grotesque', sans-serif; font-size: 15.5px; font-weight: 700;
-    color: #eef2ff; letter-spacing: -0.01em; margin-bottom: 8px;
-  }
-  .rf-feat-desc { font-size: 13px; line-height: 1.7; color: rgba(238,242,255,0.48); }
-
-  /* ── MSP Transfer ────────────────────────────────────────────── */
-  .rf-msp-xfer {
-    background: #060d1a;
-    padding: 80px 56px 88px;
-    border-top: 1px solid rgba(255,255,255,0.05);
-  }
-  .rf-msp-xfer-inner {
-    max-width: 1160px; margin: 0 auto;
-    display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center;
-  }
-  .rf-msp-xfer-tag {
-    display: inline-flex; align-items: center; gap: 7px;
-    font-size: 10.5px; font-weight: 700; letter-spacing: 0.11em; text-transform: uppercase;
-    color: #60a5fa;
-    background: rgba(37,99,235,0.12); border: 1px solid rgba(37,99,235,0.25);
-    padding: 4px 12px; border-radius: 99px; margin-bottom: 20px;
-  }
-  .rf-msp-xfer-dot { width: 4px; height: 4px; border-radius: 50%; background: #60a5fa; animation: rfDotPulse 2s ease-in-out infinite; }
-  .rf-msp-xfer-h {
-    font-family: 'Bricolage Grotesque', sans-serif;
-    font-size: clamp(26px, 2.8vw, 40px); font-weight: 800;
-    color: #eef2ff; letter-spacing: -0.02em; line-height: 1.1; margin-bottom: 18px;
-  }
-  .rf-msp-xfer-h em { font-style: normal; color: #60a5fa; }
-  .rf-msp-xfer-p {
-    font-size: 15px; color: rgba(238,242,255,0.5); line-height: 1.72; margin-bottom: 32px;
-  }
-  .rf-msp-xfer-link {
-    display: inline-flex; align-items: center; gap: 8px;
-    font-size: 14px; font-weight: 600; color: #60a5fa;
-    background: rgba(37,99,235,0.12); border: 1px solid rgba(37,99,235,0.28);
-    padding: 10px 22px; border-radius: 10px; cursor: pointer;
-    border-width: 0; transition: background 0.18s, border-color 0.18s;
-  }
-  .rf-msp-xfer-link em { font-style: normal; transition: transform 0.15s; }
-  .rf-msp-xfer-link:hover { background: rgba(37,99,235,0.2); }
-  .rf-msp-xfer-link:hover em { transform: translateX(3px); }
-
-  /* Flow diagram */
-  .rf-flow {
-    display: flex; flex-direction: column; gap: 12px;
-  }
-  .rf-flow-step {
-    display: flex; align-items: flex-start; gap: 16px;
-    background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07);
-    border-radius: 14px; padding: 18px 20px;
-    transition: border-color 0.25s, background 0.25s;
-  }
-  .rf-flow-step:hover { background: rgba(37,99,235,0.07); border-color: rgba(37,99,235,0.25); }
-  .rf-flow-num {
-    width: 28px; height: 28px; border-radius: 8px; flex-shrink: 0;
-    background: rgba(37,99,235,0.18); border: 1px solid rgba(37,99,235,0.35);
+  .rf-story-stage {
+    position: sticky; top: 0;
+    height: 100vh;
+    align-self: start;
     display: flex; align-items: center; justify-content: center;
-    font-size: 11px; font-weight: 700; color: #60a5fa; font-family: 'Bricolage Grotesque', sans-serif;
   }
-  .rf-flow-body {}
-  .rf-flow-title { font-size: 13.5px; font-weight: 600; color: #eef2ff; margin-bottom: 3px; }
-  .rf-flow-desc  { font-size: 12.5px; color: rgba(238,242,255,0.45); line-height: 1.55; }
-  .rf-flow-arrow {
-    text-align: center; color: rgba(37,99,235,0.4); font-size: 14px; letter-spacing: 0.1em;
-    padding: 0 20px;
-  }
-
-  /* ── Pricing nav link ─────────────────────────────────────────── */
-  .rf-nav-sep { width: 1px; height: 18px; background: var(--line-md); }
-
-  /* ── CTA banner ──────────────────────────────────────────────── */
-  .rf-cta-band {
-    background: var(--accent); padding: 64px 56px;
-    display: flex; align-items: center; justify-content: space-between; gap: 32px;
-    position: relative; overflow: hidden;
-  }
-  .rf-cta-band::before {
-    content: '';
+  .rf-story-frame { position: relative; width: 460px; height: 430px; max-width: 100%; }
+  .rf-story-shot {
     position: absolute; inset: 0;
-    background: radial-gradient(ellipse at 80% 50%, rgba(255,255,255,0.1), transparent 60%);
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; transform: translateY(20px) scale(0.97);
+    transition: opacity 0.55s cubic-bezier(0.16,1,0.3,1), transform 0.55s cubic-bezier(0.16,1,0.3,1);
     pointer-events: none;
   }
-  .rf-cta-band-text { position: relative; }
-  .rf-cta-band-h {
-    font-family: 'Bricolage Grotesque', sans-serif;
-    font-size: clamp(24px, 2.8vw, 38px); font-weight: 800;
-    color: #fff; letter-spacing: -0.02em; margin-bottom: 8px;
+  .rf-story-shot.active { opacity: 1; transform: translateY(0) scale(1); }
+  .rf-story-shot .rf-screen { transform: scale(1.4); }
+  @media (max-width: 1160px) {
+    .rf-story-frame { width: 390px; }
+    .rf-story-shot .rf-screen { transform: scale(1.18); }
   }
-  .rf-cta-band-sub { font-size: 15px; color: rgba(255,255,255,0.72); }
-  .rf-cta-band-actions { display: flex; gap: 12px; flex-shrink: 0; position: relative; }
+
+  .rf-story-steps { padding: 8vh 0 16vh; }
+  .rf-step {
+    min-height: 62vh;
+    display: flex; flex-direction: column; justify-content: center;
+    opacity: 0.32;
+    transition: opacity 0.4s ease;
+  }
+  .rf-step.active { opacity: 1; }
+  .rf-step-n {
+    font-family: 'Hanken Grotesk', sans-serif;
+    font-size: 13px; font-weight: 700; color: var(--accent);
+    margin-bottom: 12px;
+  }
+  .rf-step-title {
+    font-family: 'Hanken Grotesk', sans-serif;
+    font-size: clamp(22px, 2.4vw, 30px); font-weight: 700;
+    letter-spacing: -0.015em; color: var(--text); margin-bottom: 10px;
+  }
+  .rf-step-desc { font-size: 15px; line-height: 1.72; color: var(--muted); max-width: 40ch; }
+  .rf-step-shot { display: none; margin-bottom: 28px; }
+
+  /* ── Statement ──────────────────────────────────────────────── */
+  .rf-statement {
+    padding: 140px clamp(20px, 4vw, 56px);
+    text-align: center;
+    border-top: 1px solid var(--line);
+  }
+  .rf-statement-h {
+    font-family: 'Hanken Grotesk', sans-serif;
+    font-size: clamp(28px, 4.2vw, 58px); font-weight: 800;
+    letter-spacing: -0.02em; line-height: 1.14;
+    color: var(--text);
+    max-width: 22ch; margin: 0 auto;
+  }
+  .rf-statement-h em { font-style: normal; color: var(--accent); }
+  .rf-statement-sub {
+    font-size: 15.5px; color: var(--muted); line-height: 1.7;
+    max-width: 52ch; margin: 20px auto 0;
+  }
+
+  /* ── Features index ─────────────────────────────────────────── */
+  .rf-features {
+    padding: 110px clamp(20px, 4vw, 56px) 120px;
+    border-top: 1px solid var(--line);
+    background: var(--bg-soft);
+  }
+  .rf-feat-head {
+    max-width: 1080px; margin: 0 auto 48px;
+    display: flex; align-items: baseline; justify-content: space-between; gap: 24px; flex-wrap: wrap;
+  }
+  .rf-feat-title {
+    font-family: 'Hanken Grotesk', sans-serif;
+    font-size: clamp(28px, 3.2vw, 44px); font-weight: 800;
+    letter-spacing: -0.02em; color: var(--text);
+  }
+  .rf-feat-link {
+    font-size: 14px; font-weight: 600; color: var(--accent);
+    background: none; border: none; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .rf-feat-link em { font-style: normal; transition: transform 0.16s; }
+  .rf-feat-link:hover em { transform: translateX(3px); }
+
+  .rf-feat-list { max-width: 1080px; margin: 0 auto; }
+  .rf-feat-row {
+    display: grid; grid-template-columns: 64px 0.9fr 1.1fr;
+    gap: clamp(16px, 3vw, 48px); align-items: baseline;
+    padding: 26px 8px;
+    border-top: 1px solid var(--line-md);
+    opacity: 0; transform: translateY(14px);
+    transition: opacity 0.55s cubic-bezier(0.16,1,0.3,1), transform 0.55s cubic-bezier(0.16,1,0.3,1),
+                background 0.2s ease;
+  }
+  .rf-feat-row:last-child { border-bottom: 1px solid var(--line-md); }
+  .rf-feat-row.rf-visible { opacity: 1; transform: translateY(0); }
+  .rf-feat-row:hover { background: var(--accent-soft); }
+  .rf-feat-n {
+    font-family: 'Hanken Grotesk', sans-serif;
+    font-size: 13px; font-weight: 700; color: var(--muted);
+  }
+  .rf-feat-name {
+    font-family: 'Hanken Grotesk', sans-serif;
+    font-size: clamp(17px, 1.9vw, 22px); font-weight: 700;
+    letter-spacing: -0.01em; color: var(--text);
+    transition: color 0.18s, transform 0.25s cubic-bezier(0.16,1,0.3,1);
+  }
+  .rf-feat-row:hover .rf-feat-name { color: var(--accent); transform: translateX(6px); }
+  .rf-feat-desc { font-size: 14px; line-height: 1.7; color: var(--muted); max-width: 58ch; }
+
+  /* ── MSP ────────────────────────────────────────────────────── */
+  .rf-msp {
+    padding: 110px clamp(20px, 4vw, 56px);
+    text-align: center;
+  }
+  .rf-msp-h {
+    font-family: 'Hanken Grotesk', sans-serif;
+    font-size: clamp(26px, 3vw, 40px); font-weight: 800;
+    letter-spacing: -0.02em; color: var(--text); margin-bottom: 14px;
+  }
+  .rf-msp-p {
+    font-size: 15.5px; color: var(--muted); line-height: 1.72;
+    max-width: 52ch; margin: 0 auto 30px;
+  }
+  .rf-msp-link {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 14px; font-weight: 600; color: var(--accent);
+    background: var(--accent-soft); border: 1px solid var(--line-md);
+    padding: 11px 24px; border-radius: 10px; cursor: pointer;
+    transition: border-color 0.18s, background 0.18s;
+  }
+  .rf-msp-link:hover { border-color: var(--accent); }
+  .rf-msp-link em { font-style: normal; transition: transform 0.15s; }
+  .rf-msp-link:hover em { transform: translateX(3px); }
+
+  /* ── CTA band ───────────────────────────────────────────────── */
+  .rf-cta-band {
+    background: #2563eb;
+    padding: 96px clamp(20px, 4vw, 56px);
+    text-align: center;
+  }
+  .rf-cta-band-h {
+    font-family: 'Hanken Grotesk', sans-serif;
+    font-size: clamp(30px, 4vw, 54px); font-weight: 800;
+    color: #fff; letter-spacing: -0.02em; margin-bottom: 12px;
+  }
+  .rf-cta-band-sub { font-size: 15.5px; color: rgba(255,255,255,0.75); margin-bottom: 34px; }
+  .rf-cta-band-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
 
   .rf-btn-white {
     display: inline-flex; align-items: center; gap: 8px;
-    padding: 12px 22px; font-size: 14px; font-weight: 600;
-    font-family: 'DM Sans', sans-serif;
-    color: var(--accent); background: #fff;
+    padding: 13px 26px; font-size: 14.5px; font-weight: 600;
+    font-family: 'Hanken Grotesk', sans-serif;
+    color: #1d4ed8; background: #fff;
     border: none; border-radius: 9px; cursor: pointer;
     transition: box-shadow 0.18s, transform 0.12s;
   }
@@ -694,22 +735,23 @@ const CSS = `
 
   .rf-btn-outline-w {
     display: inline-flex; align-items: center; gap: 8px;
-    padding: 12px 22px; font-size: 14px; font-weight: 500;
-    font-family: 'DM Sans', sans-serif;
+    padding: 13px 24px; font-size: 14.5px; font-weight: 500;
+    font-family: 'Hanken Grotesk', sans-serif;
     color: #fff; background: transparent;
     border: 1.5px solid rgba(255,255,255,0.4);
     border-radius: 9px; cursor: pointer;
     transition: border-color 0.18s, background 0.18s;
   }
-  .rf-btn-outline-w:hover { border-color: rgba(255,255,255,0.8); background: rgba(255,255,255,0.08); }
+  .rf-btn-outline-w:hover { border-color: rgba(255,255,255,0.85); background: rgba(255,255,255,0.08); }
 
   /* ── Footer ─────────────────────────────────────────────────── */
   .rf-footer {
-    background: var(--bg); padding: 28px 56px;
+    background: var(--bg); padding: 28px clamp(20px, 4vw, 56px);
     border-top: 1px solid var(--line);
     display: flex; align-items: center; justify-content: space-between; gap: 20px;
   }
   .rf-footer-logo { height: 22px; object-fit: contain; filter: brightness(0) opacity(0.35); }
+  html.dark .rf-footer-logo { filter: brightness(0) invert(1) opacity(0.3); }
   .rf-footer-copy { font-size: 12px; color: var(--muted); }
   .rf-footer-link {
     font-size: 13px; font-weight: 500; color: var(--muted);
@@ -720,81 +762,57 @@ const CSS = `
   .rf-footer-link em { font-style: normal; transition: transform 0.16s; }
   .rf-footer-link:hover em { transform: translateX(3px); }
 
-  /* ── Theme toggle ─────────────────────────────────────────────── */
-  .rf-theme-toggle {
-    display: flex; align-items: center; justify-content: center;
-    width: 32px; height: 32px; background: none;
-    border: 1px solid var(--line-md); border-radius: 8px;
-    cursor: pointer; color: var(--muted); padding: 0; flex-shrink: 0;
-    transition: color 0.16s, border-color 0.16s, background 0.16s;
-  }
-  .rf-theme-toggle:hover { color: var(--text); border-color: var(--accent); background: var(--accent-dim); }
-
   /* ── Shared animations ──────────────────────────────────────── */
   @keyframes rfReveal {
     from { opacity: 0; transform: translateY(24px); }
     to   { opacity: 1; transform: translateY(0); }
   }
-  @keyframes rfFade {
-    from { opacity: 0; } to { opacity: 1; }
-  }
-
-  /* ── Dark mode — light sections ─────────────────────────────── */
-  html.dark .rf-nav { background: rgba(5,9,20,0.92); border-bottom-color: rgba(238,240,246,0.06); }
-  html.dark .rf-nav-logo { filter: brightness(0) invert(1) opacity(0.82); }
-  html.dark .rf-nav-link { color: rgba(238,240,246,0.5); }
-  html.dark .rf-nav-link:hover { color: rgba(238,240,246,0.9); }
-  html.dark .rf-nav-sep { background: rgba(238,240,246,0.1); }
-  html.dark .rf-theme-toggle { color: rgba(238,240,246,0.45); border-color: rgba(238,240,246,0.12); }
-  html.dark .rf-theme-toggle:hover { color: rgba(238,240,246,0.9); border-color: rgba(37,99,235,0.5); background: rgba(37,99,235,0.1); }
-  html.dark .rf-land { background: #0d1117; color: #eef0f6; }
-  html.dark .rf-hero-left { background: #0d1117; }
-  html.dark .rf-hero::after {
-    background: #0a0f1e;
-  }
-  html.dark .rf-hero-right { background: #0a0f1e; }
-  html.dark .rf-headline { color: #eef0f6; }
-  html.dark .rf-l3 { color: #60a5fa; }
-  html.dark .rf-eyebrow { color: #60a5fa; }
-  html.dark .rf-sub { color: rgba(238,240,246,0.5); }
-  html.dark .rf-notice { color: rgba(238,240,246,0.35); }
-  html.dark .rf-trust-item { color: rgba(238,240,246,0.4); }
-  html.dark .rf-trust-icon { background: rgba(238,240,246,0.06); }
-  html.dark .rf-trust { border-top-color: rgba(238,240,246,0.07); }
-  html.dark .rf-btn-ghost { color: rgba(238,240,246,0.6); background: rgba(238,240,246,0.04); border-color: rgba(238,240,246,0.14); }
-  html.dark .rf-btn-ghost:hover { color: #60a5fa; background: rgba(37,99,235,0.12); border-color: rgba(37,99,235,0.3); }
-  html.dark .rf-strip { background: #060d1a; border-top-color: rgba(238,240,246,0.05); }
-  html.dark .rf-strip-item { color: rgba(238,240,246,0.3); border-right-color: rgba(238,240,246,0.05); }
-  html.dark .rf-strip-item:hover { color: #60a5fa; background: rgba(37,99,235,0.08); }
-  html.dark .rf-footer { background: #060d1a; border-top-color: rgba(238,240,246,0.05); }
-  html.dark .rf-footer-logo { filter: brightness(0) invert(1) opacity(0.22); }
-  html.dark .rf-footer-copy { color: rgba(238,240,246,0.32); }
-  html.dark .rf-footer-link { color: rgba(238,240,246,0.35); }
-  html.dark .rf-footer-link:hover { color: #60a5fa; }
+  @keyframes rfFade { from { opacity: 0; } to { opacity: 1; } }
 
   /* ── Responsive ─────────────────────────────────────────────── */
-  @media (max-width: 1060px) {
-    .rf-nav { padding: 0 28px; }
+  @media (max-width: 900px) {
     .rf-hero {
-      grid-template-columns: 1fr; min-height: auto;
+      min-height: 0;
+      padding-top: 120px; padding-bottom: 72px;
+      grid-template-columns: 1fr; gap: 48px;
+      text-align: center;
     }
-    .rf-hero::after { display: none; }
-    .rf-hero-left { padding: 56px 28px 32px; }
-    .rf-hero-right { padding: 0 28px 48px; background: var(--bg-panel); }
-    .rf-screens-wrap { width: 100%; max-width: 540px; }
-    .rf-features { padding: 64px 28px; }
-    .rf-feat-grid { grid-template-columns: repeat(2, 1fr); }
-    .rf-footer { padding: 22px 28px; }
-    .rf-strip { display: none; }
-    .rf-cta-band { padding: 48px 28px; flex-direction: column; gap: 24px; }
+    .rf-hero-copy { align-items: center; }
+    .rf-ctas { justify-content: center; }
+    .rf-trustline { justify-content: center; }
+    .rf-hero-window { transform: none !important; }
+    .rf-story { padding-top: 72px; }
+    .rf-story-grid { grid-template-columns: 1fr; }
+    .rf-story-stage { display: none; }
+    .rf-story-steps { padding: 0; }
+    .rf-step { min-height: 0; padding: 40px 0; opacity: 1; }
+    .rf-step-shot { display: flex; justify-content: center; }
+    .rf-feat-row { grid-template-columns: 44px 1fr; }
+    .rf-feat-desc { grid-column: 2; }
+    .rf-statement { padding: 96px clamp(20px, 4vw, 56px); }
+    .rf-msp { padding: 80px clamp(20px, 4vw, 56px); }
+    .rf-cta-band { padding: 72px clamp(20px, 4vw, 56px); }
   }
   @media (max-width: 640px) {
-    .rf-feat-grid { grid-template-columns: 1fr; }
-    .rf-feat-item--wide, .rf-feat-item--full { grid-column: auto; flex-direction: column; align-items: flex-start; gap: 16px; }
-    .rf-headline  { font-size: 40px; }
-    .rf-footer    { flex-direction: column; gap: 8px; text-align: center; }
-    .rf-so-l, .rf-so-r { display: none; }
-    .rf-cta-band-actions { flex-direction: column; width: 100%; }
+    .rf-nav { padding: 0 14px; }
+    .rf-nav-actions { gap: 10px; }
+    .rf-nav-link { font-size: 12.5px; }
+    .rf-nav-cta { padding: 7px 12px; font-size: 12.5px; white-space: nowrap; }
+    .rf-footer { flex-direction: column; gap: 8px; text-align: center; }
+    .rf-ctas { width: 100%; }
+    .rf-ctas button { width: 100%; justify-content: center; }
+  }
+
+  /* ── Reduced motion ─────────────────────────────────────────── */
+  @media (prefers-reduced-motion: reduce) {
+    .rf-land *, .rf-land *::before, .rf-land *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+    .rf-cursor { display: none; }
+    .rf-row-new { opacity: 1; }
+    .rf-hero-window { transform: none !important; }
   }
 `
 
@@ -803,6 +821,9 @@ const CSS = `
 export default function LandingPage() {
   const navigate = useNavigate()
   const { _hasHydrated, accessToken, user } = useAuthStore()
+  const [step, setStep] = useState(0)
+  const winRef = useRef<HTMLDivElement>(null)
+  const stepRefs = useRef<(HTMLDivElement | null)[]>([])
 
   const isLoggedIn = _hasHydrated && !!accessToken && !!user
   const ctaLabel   = isLoggedIn ? 'Naar portaal' : 'Inloggen'
@@ -810,15 +831,49 @@ export default function LandingPage() {
   const handleLogin    = () => navigate(isLoggedIn && user ? (ROLE_HOME[user.role] ?? '/login') : '/login')
   const handleRegister = () => navigate('/register')
 
+  // Hero window straightens as you scroll
   useEffect(() => {
-    const items = document.querySelectorAll<HTMLElement>('.rf-feat-item')
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    let raf = 0
+    const onScroll = () => {
+      if (raf) return
+      raf = requestAnimationFrame(() => {
+        raf = 0
+        const el = winRef.current
+        if (!el) return
+        const t = Math.min(1, window.scrollY / 420)
+        el.style.transform = `rotateX(${(1 - t) * 6}deg) rotateY(${(1 - t) * -6}deg) translateY(${t * -8}px)`
+      })
+    }
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => { window.removeEventListener('scroll', onScroll); if (raf) cancelAnimationFrame(raf) }
+  }, [])
+
+  // Scroll story: active step follows the block nearest the viewport center
+  useEffect(() => {
     const io = new IntersectionObserver(
-      entries => entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('rf-visible') }),
-      { threshold: 0.08 }
+      entries => entries.forEach(e => {
+        if (e.isIntersecting) setStep(Number((e.target as HTMLElement).dataset.step))
+      }),
+      { rootMargin: '-45% 0px -45% 0px', threshold: 0 }
     )
-    items.forEach((el, i) => { el.style.transitionDelay = `${i * 0.07}s`; io.observe(el) })
+    stepRefs.current.forEach(el => el && io.observe(el))
     return () => io.disconnect()
   }, [])
+
+  // Features index reveal
+  useEffect(() => {
+    const rows = document.querySelectorAll<HTMLElement>('.rf-feat-row')
+    const io = new IntersectionObserver(
+      entries => entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('rf-visible') }),
+      { threshold: 0.15 }
+    )
+    rows.forEach((el, i) => { el.style.transitionDelay = `${i * 0.06}s`; io.observe(el) })
+    return () => io.disconnect()
+  }, [])
+
+  const stepScreens = [<EmployeesScreen key="e" />, <HardwareScreen key="h" />, <LicensesScreen key="l" />]
 
   return (
     <>
@@ -847,198 +902,129 @@ export default function LandingPage() {
 
         {/* ── Hero ── */}
         <section className="rf-hero">
+          <div className="rf-hero-copy">
+          <h1 className="rf-headline">
+            <div className="rf-lw"><span className="rf-l1">Heel uw IT.</span></div>
+            <div className="rf-lw"><span className="rf-l2">Eén systeem.</span></div>
+            <div className="rf-lw"><span className="rf-l3">Nul gedoe.</span></div>
+          </h1>
 
-          {/* LEFT — text */}
-          <div className="rf-hero-left">
-            <h1 className="rf-headline">
-              <div className="rf-lw"><span className="rf-l1">Alles over uw</span></div>
-              <div className="rf-lw"><span className="rf-l2">medewerkers</span></div>
-              <div className="rf-lw"><span className="rf-l3">op één plek.</span></div>
-            </h1>
+          <p className="rf-sub">
+            Hardware, software, licenties, telefonie en internetverbindingen:
+            alles wat uw organisatie aan IT heeft, bijgehouden op één plek.
+            Zo eenvoudig dat het zichzelf wijst.
+          </p>
 
-            <p className="rf-sub">
-              IT-beheer van onboarding tot offboarding — hardware, licenties
-              en telefonie voor elke medewerker in uw organisatie.
-            </p>
-
-            <div className="rf-ctas">
-              <button className="rf-btn-primary" onClick={handleLogin}>
-                {ctaLabel} <em>→</em>
-              </button>
-              {!isLoggedIn && (
-                <button className="rf-btn-ghost" onClick={handleRegister}>
-                  Gratis starten <em>→</em>
-                </button>
-              )}
-            </div>
-
+          <div className="rf-ctas">
+            <button className="rf-btn-primary" onClick={handleLogin}>
+              {ctaLabel} <em>→</em>
+            </button>
             {!isLoggedIn && (
-              <p className="rf-notice">30 dagen gratis uitproberen</p>
+              <button className="rf-btn-ghost" onClick={handleRegister}>
+                Gratis starten <em>→</em>
+              </button>
             )}
-
-            <div className="rf-trust">
-              <div className="rf-trust-item">
-                <div className="rf-trust-icon"><ShieldCheck size={11} /></div>
-                Veilig & versleuteld
-              </div>
-              <div className="rf-trust-item">
-                <div className="rf-trust-icon"><Zap size={11} /></div>
-                Direct operationeel
-              </div>
-              <div className="rf-trust-item">
-                <div className="rf-trust-icon"><Building2 size={11} /></div>
-                Multi-tenant MSP beheer
-              </div>
-            </div>
           </div>
 
-          {/* RIGHT — screens */}
-          <div className="rf-hero-right" aria-hidden="true">
-
-            {/* App badge */}
-            <div className="rf-app-badge">
-              <img src={logo} alt="" className="rf-app-badge-logo" />
-              <span className="rf-app-badge-label">RokaFlow</span>
-            </div>
-
-            {/* 3-D screen cluster */}
-            <div className="rf-screens-wrap">
-
-              {/* Left — Medewerkers */}
-              <div className="rf-so rf-so-l">
-                <div className="rf-screen rf-screen-ls">
-                  <div className="rf-sc-chrome">
-                    <span className="rf-sc-dot rf-sc-dot-r" />
-                    <span className="rf-sc-dot rf-sc-dot-y" />
-                    <span className="rf-sc-dot rf-sc-dot-g" />
-                    <span className="rf-sc-title">Medewerkers</span>
-                  </div>
-                  <div className="rf-sc-body">
-                    <div className="rf-sc-tabs">
-                      <div className="rf-sc-tab active">Alle</div>
-                      <div className="rf-sc-tab">In dienst</div>
-                      <div className="rf-sc-tab">Vertrek</div>
-                    </div>
-                    <EmpRow color="#10b981" badge="In dienst" bCls="rf-badge-g" />
-                    <EmpRow color="#2563eb" w1="52%" w2="38%" badge="In dienst" bCls="rf-badge-g" />
-                    <EmpRow color="#f59e0b" w1="64%" w2="44%" badge="Vertrek" bCls="rf-badge-a" />
-                    <EmpRow color="#8b5cf6" w1="48%" w2="36%" badge="In dienst" bCls="rf-badge-g" />
-                    <EmpRow color="#06b6d4" w1="56%" w2="40%" badge="Start" bCls="rf-badge-b" />
-                  </div>
-                </div>
-                <span className="rf-so-caption">Alle medewerkers in één overzicht — van onboarding tot vertrek altijd bijgewerkt.</span>
-              </div>
-
-              {/* Center — Hardware */}
-              <div className="rf-so rf-so-c">
-                <div className="rf-screen rf-screen-c">
-                  <div className="rf-sc-chrome">
-                    <span className="rf-sc-dot rf-sc-dot-r" />
-                    <span className="rf-sc-dot rf-sc-dot-y" />
-                    <span className="rf-sc-dot rf-sc-dot-g" />
-                    <span className="rf-sc-title">Hardware Assets</span>
-                  </div>
-                  <div className="rf-sc-body">
-                    <div className="rf-sc-stats">
-                      <div className="rf-sc-stat">
-                        <div className="rf-sc-stat-n">47</div>
-                        <div className="rf-sc-stat-l">Totaal</div>
-                      </div>
-                      <div className="rf-sc-stat">
-                        <div className="rf-sc-stat-n">31</div>
-                        <div className="rf-sc-stat-l">In gebruik</div>
-                      </div>
-                      <div className="rf-sc-stat">
-                        <div className="rf-sc-stat-n">€24.8k</div>
-                        <div className="rf-sc-stat-l">Waarde</div>
-                      </div>
-                    </div>
-                    <div className="rf-sc-bar-main-track">
-                      <div className="rf-sc-bar-main-fill"
-                        style={{ width: '66%', background: 'linear-gradient(90deg, #2563eb, #38bdf8)' }} />
-                    </div>
-                    <HwRow icon={<Laptop size={12} />}     w1="58%" w2="36%" pct={100} barClr="#2563eb" badge="In gebruik" bCls="rf-badge-b" />
-                    <HwRow icon={<Laptop size={12} />}     w1="50%" w2="42%" pct={100} barClr="#2563eb" badge="In gebruik" bCls="rf-badge-b" />
-                    <HwRow icon={<Monitor size={12} />}    w1="52%" w2="30%" pct={0}   barClr="#10b981" badge="Op voorraad" bCls="rf-badge-g" />
-                    <HwRow icon={<Smartphone size={12} />} w1="45%" w2="38%" pct={100} barClr="#f59e0b" badge="In reparatie" bCls="rf-badge-a" />
-                  </div>
-                </div>
-                <span className="rf-so-caption">Elke laptop, telefoon en monitor inzichtelijk — statussen en waarde altijd up-to-date.</span>
-              </div>
-
-              {/* Right — Licenties */}
-              <div className="rf-so rf-so-r">
-                <div className="rf-screen rf-screen-ls">
-                  <div className="rf-sc-chrome">
-                    <span className="rf-sc-dot rf-sc-dot-r" />
-                    <span className="rf-sc-dot rf-sc-dot-y" />
-                    <span className="rf-sc-dot rf-sc-dot-g" />
-                    <span className="rf-sc-title">Licenties</span>
-                  </div>
-                  <div className="rf-sc-body">
-                    <LicCard name="Microsoft 365" vendor="Microsoft" used={45} max={50} pct={90} barClr="#f59e0b" delay="1.3s" />
-                    <LicCard name="Adobe Creative Cloud" vendor="Adobe" used={8} max={25} pct={32} barClr="#2563eb" delay="1.5s" />
-                    <LicCard name="Slack Pro" vendor="Salesforce" used={24} max={24} pct={100} barClr="#ef4444" delay="1.7s" />
-                  </div>
-                </div>
-                <span className="rf-so-caption">Nooit meer een licentie overschrijden — gebruik per medewerker in één oogopslag.</span>
-              </div>
-
-            </div>
+          <p className="rf-trustline">
+            {!isLoggedIn && <><b>30 dagen gratis uitproberen</b><span>·</span></>}
+            <b>Veilig &amp; versleuteld</b><span>·</span>
+            <b>Direct operationeel</b><span>·</span>
+            <b>Multi-tenant MSP-beheer</b>
+          </p>
           </div>
 
-          {/* Bottom strip */}
-          <div className="rf-strip" style={{ gridColumn: '1 / -1' }}>
-            {['Medewerkerbeheer','Hardware & Assets','Licenties','Telefonie','Onboarding','MSP-platform'].map(s => (
-              <div key={s} className="rf-strip-item">{s}</div>
-            ))}
+          {/* Live product window */}
+          <div className="rf-hero-stage" aria-hidden="true">
+            <div className="rf-hero-window" ref={winRef}>
+              <HardwareScreen hero />
+            </div>
           </div>
         </section>
 
-        {/* ── Features ── */}
+        {/* ── Scroll story ── */}
+        <section className="rf-story">
+          <div className="rf-story-head">
+            <h2 className="rf-story-title">Zo eenvoudig werkt het</h2>
+            <p className="rf-story-sub">Drie dagelijkse handelingen, zonder training of handleiding.</p>
+          </div>
+          <div className="rf-story-grid">
+            <div className="rf-story-stage" aria-hidden="true">
+              <div className="rf-story-frame">
+                {stepScreens.map((screen, i) => (
+                  <div key={i} className={`rf-story-shot ${step === i ? 'active' : ''}`}>
+                    {screen}
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="rf-story-steps">
+              {STEPS.map((s, i) => (
+                <div
+                  key={s.n}
+                  data-step={i}
+                  ref={el => { stepRefs.current[i] = el }}
+                  className={`rf-step ${step === i ? 'active' : ''}`}
+                >
+                  <div className="rf-step-shot" aria-hidden="true">{stepScreens[i]}</div>
+                  <div className="rf-step-n">Stap {s.n}</div>
+                  <h3 className="rf-step-title">{s.title}</h3>
+                  <p className="rf-step-desc">{s.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ── Statement ── */}
+        <section className="rf-statement">
+          <h2 className="rf-statement-h">
+            Als het met IT te maken heeft, <em>staat het in RokaFlow.</em>
+          </h2>
+          <p className="rf-statement-sub">
+            Laptops, monitors, licenties, simkaarten, abonnementen, internetverbindingen
+            en contracten. Plus de medewerkers die ermee werken, van eerste werkdag
+            tot offboarding. Geen handleiding of implementatietraject nodig: registreren,
+            importeren, klaar.
+          </p>
+        </section>
+
+        {/* ── Features index ── */}
         <section className="rf-features">
           <div className="rf-feat-head">
-            <div className="rf-feat-tag">Wat doet RokaFlow?</div>
-            <h2 className="rf-feat-title">Alles wat uw IT-team nodig heeft</h2>
-            <p className="rf-feat-sub">
-              Van één medewerker tot honderden, RokaFlow houdt alles overzichtelijk.
-            </p>
+            <h2 className="rf-feat-title">Alles wat u bijhoudt</h2>
+            <button className="rf-feat-link" onClick={() => navigate('/pricing')}>
+              Bekijk prijzen <em>→</em>
+            </button>
           </div>
-          <div className="rf-feat-grid">
+          <div className="rf-feat-list">
             {FEATURES.map(f => (
-              <div key={f.n} className={`rf-feat-item ${
-                f.layout === 'wide' ? 'rf-feat-item--wide' : f.layout === 'full' ? 'rf-feat-item--full' : ''
-              }`}>
-                <div className="rf-feat-icon-wrap">{f.icon}</div>
-                <div>
-                  <div className="rf-feat-name">{f.name}</div>
-                  <div className="rf-feat-desc">{f.desc}</div>
-                </div>
+              <div key={f.n} className="rf-feat-row">
+                <span className="rf-feat-n">{f.n}</span>
+                <h3 className="rf-feat-name">{f.name}</h3>
+                <p className="rf-feat-desc">{f.desc}</p>
               </div>
             ))}
           </div>
         </section>
 
-        {/* ── MSP Transfer section ── */}
-        <section className="rf-msp-xfer">
-          <div className="rf-msp-xfer-inner" style={{ gridTemplateColumns: '1fr', maxWidth: 640, textAlign: 'center', gap: 16 }}>
-            <h2 className="rf-msp-xfer-h">Eenvoudig clients overdragen</h2>
-            <p className="rf-msp-xfer-p" style={{ margin: '0 auto 28px' }}>
-              Vanuit het MSP-dashboard kunt u bestaande klanten overnemen en overdragen — zonder handmatig werk.
-            </p>
-            <button className="rf-msp-xfer-link" style={{ margin: '0 auto' }} onClick={() => navigate('/pricing')}>
-              Bekijk MSP-abonnement <em>→</em>
-            </button>
-          </div>
+        {/* ── MSP ── */}
+        <section className="rf-msp">
+          <h2 className="rf-msp-h">Ook voor MSP's</h2>
+          <p className="rf-msp-p">
+            Beheer al uw klantorganisaties vanuit één omgeving, met dezelfde eenvoud.
+            Klanten overdragen of overnemen kost één bevestiging.
+          </p>
+          <button className="rf-msp-link" onClick={() => navigate('/pricing')}>
+            Bekijk MSP-abonnement <em>→</em>
+          </button>
         </section>
 
         {/* ── CTA band ── */}
         {!isLoggedIn && (
           <div className="rf-cta-band">
-            <div className="rf-cta-band-text">
-              <h2 className="rf-cta-band-h">Klaar om te beginnen?</h2>
-              <p className="rf-cta-band-sub">Gratis proefperiode</p>
-            </div>
+            <h2 className="rf-cta-band-h">Vandaag nog alles op een rij.</h2>
+            <p className="rf-cta-band-sub">30 dagen gratis uitproberen.</p>
             <div className="rf-cta-band-actions">
               <button className="rf-btn-white" onClick={handleRegister}>
                 Gratis starten <em>→</em>
