@@ -195,7 +195,7 @@ export function DeleteEmployeeModal({ userId, userName, onClose, onDeleted }: {
 
 // ── Employee list view ────────────────────────────────────────────────────────
 
-export function EmployeeListView({ teammates, loading, search, currentUserId, onSearch, onSelect, onAddEmployee, onDelete, onImported }: {
+export function EmployeeListView({ teammates, loading, search, currentUserId, onSearch, onSelect, onAddEmployee, onDelete, onImported, autoOpenImport, onAutoOpenImportHandled }: {
   teammates: ClientUserListItem[]
   loading: boolean
   search: string
@@ -205,9 +205,19 @@ export function EmployeeListView({ teammates, loading, search, currentUserId, on
   onAddEmployee: () => void
   onDelete: (id: string, name: string) => void
   onImported: () => void
+  autoOpenImport?: boolean
+  onAutoOpenImportHandled?: () => void
 }) {
   const [openMenu, setOpenMenu] = useState<string | null>(null)
   const [showImport, setShowImport] = useState(false)
+
+  // Vanuit de welkom-modal: direct de importwizard openen
+  useEffect(() => {
+    if (autoOpenImport) {
+      setShowImport(true)
+      onAutoOpenImportHandled?.()
+    }
+  }, [autoOpenImport, onAutoOpenImportHandled])
   const [statusFilter, setStatusFilter]     = useState('')
   const [afdelingFilter, setAfdelingFilter] = useState('')
 

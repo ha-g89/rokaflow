@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import {
   Users, LogOut, Laptop, Shield, Phone as PhoneIcon,
   ClipboardList, BarChart3, History, FileText,
-  Settings, Building2, MapPin, EthernetPort,
+  Settings, Building2, MapPin, EthernetPort, PhoneCall,
   ChevronDown, ChevronRight, Moon, Sun, ArrowLeftCircle,
 } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
@@ -23,6 +23,8 @@ import { TelefonieView, PhoneDetailFullView, SimCardDetailFullView } from './vie
 import { DepartmentsView } from './views/DepartmentsView'
 import { LocationsView } from './views/LocationsView'
 import { InternetConnectionsView } from './views/InternetConnectionsView'
+import { PhoneSystemsView } from './views/PhoneSystemsView'
+import { WelcomeModal, type WelcomeAction } from '@/components/WelcomeModal'
 import { EmployeeListView, EmployeeDetailView, DeleteEmployeeModal } from './views/EmployeesView'
 import { NotificationBell } from '@/components/NotificationBell'
 import { NotificationDropdown } from '@/components/NotificationDropdown'
@@ -39,6 +41,7 @@ type View =
   | 'employees' | 'employee-detail'
   | 'departments' | 'locations'
   | 'internet-connections'
+  | 'phone-systems'
   | 'hardware' | 'hardware-detail' | 'software' | 'software-detail' | 'license-detail' | 'phones' | 'phone-detail' | 'simcard-detail'
   | 'processes'
   | 'overviews' | 'history' | 'contracts'
@@ -50,6 +53,7 @@ const VIEW_TITLES: Record<View, string> = {
   departments:       'Afdelingen',
   locations:         'Locaties',
   'internet-connections': 'Internetverbinding',
+  'phone-systems':   'Vaste telefonie',
   hardware:          'Hardware',
   'hardware-detail': 'Hardware details',
   software:          'Software',
@@ -346,6 +350,26 @@ export default function ClientPortal() {
     fetchUsers()
   }
 
+  // Eenmalige welkom-modal voor nieuwe accounts
+  const [welcome, setWelcome] = useState<{ show: boolean; firstName: string }>({ show: false, firstName: '' })
+  useEffect(() => {
+    api.get<{ showWelcome: boolean; firstName: string }>('/portal/welcome-status')
+      .then(({ data }) => setWelcome({ show: data.showWelcome, firstName: data.firstName }))
+      .catch(() => { /* silent */ })
+  }, [])
+
+  const dismissWelcome = (target?: WelcomeAction) => {
+    setWelcome(w => ({ ...w, show: false }))
+    api.post('/portal/welcome-status/dismiss').catch(() => { /* silent */ })
+    if (target === 'employees-import') {
+      setPendingEmployeeImport(true)
+      handleNavClick('employees')
+    } else if (target) {
+      handleNavClick(target)
+    }
+  }
+  const [pendingEmployeeImport, setPendingEmployeeImport] = useState(false)
+
   const handleNavClick = (v: View) => {
     setView(v)
     if (v !== 'employee-detail') setSelectedUser(null)
@@ -505,6 +529,7 @@ export default function ClientPortal() {
 
             <SectionLabel label="Bedrijfsassets" />
             <NavItem icon={<EthernetPort size={14} />} label="Internetverbinding" active={view === 'internet-connections'} onClick={() => handleNavClick('internet-connections')} />
+            <NavItem icon={<PhoneCall size={14} />} label="Vaste telefonie" active={view === 'phone-systems'} onClick={() => handleNavClick('phone-systems')} />
             <NavItem icon={<FileText size={14} />}  label="Contracten"  active={view === 'contracts'} onClick={() => handleNavClick('contracts')} />
 
             <SectionLabel label="Assets" />
@@ -547,6 +572,8 @@ export default function ClientPortal() {
                 onAddEmployee={() => { fetchDepartmentOptions(); setShowAddEmployee(true) }}
                 onDelete={handleOpenDelete}
                 onImported={fetchUsers}
+                autoOpenImport={pendingEmployeeImport}
+                onAutoOpenImportHandled={() => setPendingEmployeeImport(false)}
               />
             )}
 
@@ -634,6 +661,7 @@ export default function ClientPortal() {
             {view === 'departments'  && <DepartmentsView />}
             {view === 'locations'    && <LocationsView />}
             {view === 'internet-connections' && <InternetConnectionsView />}
+            {view === 'phone-systems' && <PhoneSystemsView />}
             {view === 'overviews'    && <OverviewView />}
             {view === 'history'      && <HistoryView />}
             {view === 'processes'    && <ProcessesView />}
@@ -672,6 +700,13 @@ export default function ClientPortal() {
           onDeleted={handleEmployeeDeleted}
         />
       )}
+
+      <WelcomeModal
+        open={welcome.show}
+        firstName={welcome.firstName}
+        onClose={() => dismissWelcome()}
+        onAction={action => dismissWelcome(action)}
+      />
     </div>
   )
 }
