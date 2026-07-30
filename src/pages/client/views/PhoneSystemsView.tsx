@@ -15,6 +15,7 @@ import { ConfirmCancelModal } from '@/components/ui/ConfirmCancelModal'
 import { FilterSelect } from '@/components/ui/FilterSelect'
 import { useSort, SortHeader } from '@/components/ui/SortHeader'
 import { PhoneSystemModal } from '@/components/PhoneSystemModal'
+import { PhoneNumbersTab } from './PhoneNumbersTab'
 import type { PhoneSystemListItem } from '@/types/phoneSystem'
 import {
   PHONE_SYSTEM_TYPE_LABEL,
@@ -150,6 +151,7 @@ export function PhoneSystemsView() {
   const [detailTab, setDetailTab]     = useState<'notes' | 'history'>('notes')
   const [cancelTarget, setCancelTarget] = useState<PhoneSystemListItem | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<PhoneSystemListItem | null>(null)
+  const [mainTab, setMainTab]         = useState<'systems' | 'numbers'>('systems')
 
   const fetchSystems = async () => {
     setLoading(true)
@@ -202,7 +204,6 @@ export function PhoneSystemsView() {
     type:    s => PHONE_SYSTEM_TYPE_LABEL[s.type] ?? s.type,
     product: s => s.product,
     provider: s => s.provider || null,
-    plaats:  s => s.city || null,
     kosten:  s => s.monthlyCost ?? null,
     status:  s => PHONE_SYSTEM_STATUS_LABEL[s.status] ?? s.status,
   })
@@ -343,14 +344,38 @@ export function PhoneSystemsView() {
   }
 
   // ── Tabelweergave ────────────────────────────────────────────────────────────
+  const tabBar = (
+    <div className="flex gap-1 flex-shrink-0 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl w-fit">
+      {([
+        { key: 'systems', label: 'Licenties' },
+        { key: 'numbers', label: 'Telefoonnummers' },
+      ] as { key: 'systems' | 'numbers'; label: string }[]).map(t => (
+        <button
+          key={t.key}
+          onClick={() => setMainTab(t.key)}
+          className={`px-4 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+            mainTab === t.key
+              ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-sm'
+              : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+          }`}
+        >
+          {t.label}
+        </button>
+      ))}
+    </div>
+  )
+
   return (
     <div className="flex flex-col gap-4 h-full">
+      {mainTab === 'numbers' ? <PhoneNumbersTab tabs={tabBar} /> : (<>
       <div className="grid grid-cols-4 gap-3 flex-shrink-0">
         <StatCard label="Totaal"      value={totaal}      icon={<Package size={18} />} />
         <StatCard label="Actief"      value={actief}      icon={<CheckCircle2 size={18} />} tone="emerald" />
         <StatCard label="Aangevraagd" value={aangevraagd} icon={<Clock size={18} />} tone="blue" />
         <StatCard label="Opgezegd"    value={opgezegd}    icon={<XCircle size={18} />} tone="slate" />
       </div>
+
+      {tabBar}
 
       <div className="grid grid-cols-[1fr_20%] grid-rows-[auto_1fr] gap-x-4 gap-y-3 flex-1 min-h-0">
         <div className="flex items-center gap-2">
@@ -374,12 +399,11 @@ export function PhoneSystemsView() {
         <div />
 
         <Card className="overflow-hidden flex flex-col min-h-0">
-          <div className="grid grid-cols-[1fr_1.6fr_1.2fr_1.2fr_1fr_1fr] gap-3 px-4 py-2.5 bg-slate-50 dark:bg-slate-900/40 border-b border-slate-100 dark:border-slate-700 flex-shrink-0">
+          <div className="grid grid-cols-[1fr_1.6fr_1.2fr_1fr_1fr] gap-3 px-4 py-2.5 bg-slate-50 dark:bg-slate-900/40 border-b border-slate-100 dark:border-slate-700 flex-shrink-0">
             {([
               { label: 'Type', key: 'type' },
               { label: 'Product', key: 'product' },
               { label: 'Provider', key: 'provider' },
-              { label: 'Plaats', key: 'plaats' },
               { label: 'Kosten/mnd', key: 'kosten' },
               { label: 'Status', key: 'status' },
             ] as { label: string; key?: string }[]).map((h, i) => (
@@ -403,7 +427,7 @@ export function PhoneSystemsView() {
                     key={s.id}
                     onClick={() => setSelected(s)}
                     onDoubleClick={() => setDetailTarget(s)}
-                    className={`grid grid-cols-[1fr_1.6fr_1.2fr_1.2fr_1fr_1fr] gap-3 px-4 py-3 items-center cursor-pointer transition-colors hover:bg-slate-100 dark:hover:bg-slate-700/40 ${
+                    className={`grid grid-cols-[1fr_1.6fr_1.2fr_1fr_1fr] gap-3 px-4 py-3 items-center cursor-pointer transition-colors hover:bg-slate-100 dark:hover:bg-slate-700/40 ${
                       selected?.id === s.id ? 'bg-blue-50 dark:bg-blue-900/20 border-l-2 border-blue-500' : ''
                     }`}
                   >
@@ -413,7 +437,6 @@ export function PhoneSystemsView() {
                       {s.label && <p className="text-xs text-slate-400 dark:text-slate-500 truncate">{s.label}</p>}
                     </div>
                     <p className="text-xs text-slate-600 dark:text-slate-300 truncate">{s.provider || '—'}</p>
-                    <p className="text-xs text-slate-600 dark:text-slate-300 truncate">{s.city || '—'}</p>
                     <p className="text-xs text-slate-600 dark:text-slate-300 truncate tabular-nums">{fmtCurrency(s.monthlyCost)}</p>
                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium truncate ${PHONE_SYSTEM_STATUS_TONE[s.status] ?? 'bg-slate-100 text-slate-600'}`}>
                       {PHONE_SYSTEM_STATUS_LABEL[s.status] ?? s.status}
@@ -468,6 +491,7 @@ export function PhoneSystemsView() {
         onConfirm={() => { if (deleteTarget) handleDelete(deleteTarget.id); setDeleteTarget(null) }}
         itemName={deleteTarget?.product}
       />
+      </>)}
     </div>
   )
 }

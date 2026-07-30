@@ -17,3 +17,4 @@ export type NoteEntityType =
   | 'SimCard'
   | 'InternetConnection'
   | 'PhoneSystem'
+  | 'PhoneNumber'
