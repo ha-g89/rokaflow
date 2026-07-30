@@ -10,6 +10,8 @@ import { LoadingState } from '@/components/ui/LoadingState'
 import { StatCard } from '@/components/portal/PortalUI'
 import { ItemHistoryBlock } from '@/components/portal/AuditHistory'
 import { NotesPanel } from '@/components/NotesPanel'
+import { ConfirmDeleteModal } from '@/components/ui/ConfirmDeleteModal'
+import { ConfirmCancelModal } from '@/components/ui/ConfirmCancelModal'
 import { FilterSelect } from '@/components/ui/FilterSelect'
 import { useSort, SortHeader } from '@/components/ui/SortHeader'
 import { PhoneSystemModal } from '@/components/PhoneSystemModal'
@@ -146,6 +148,8 @@ export function PhoneSystemsView() {
   const [detailTarget, setDetailTarget] = useState<PhoneSystemListItem | null>(null)
   const [historyKey, setHistoryKey]   = useState(0)
   const [detailTab, setDetailTab]     = useState<'notes' | 'history'>('notes')
+  const [cancelTarget, setCancelTarget] = useState<PhoneSystemListItem | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<PhoneSystemListItem | null>(null)
 
   const fetchSystems = async () => {
     setLoading(true)
@@ -167,7 +171,6 @@ export function PhoneSystemsView() {
   }, [systems])
 
   const handleCancel = async (id: string) => {
-    if (!window.confirm('Deze centrale opzeggen?')) return
     setBusyId(id)
     try {
       await api.post(`/portal/phone-systems/${id}/cancel`)
@@ -178,7 +181,6 @@ export function PhoneSystemsView() {
   }
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm('Deze centrale verwijderen?')) return
     setBusyId(id)
     try {
       await api.delete(`/portal/phone-systems/${id}`)
@@ -271,7 +273,7 @@ export function PhoneSystemsView() {
             </button>
             {s.status !== 'Cancelled' && (
               <button
-                onClick={() => handleCancel(s.id)}
+                onClick={() => setCancelTarget(s)}
                 disabled={busyId === s.id}
                 className="flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-lg border border-amber-200 dark:border-amber-900/40 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors disabled:opacity-40"
               >
@@ -279,7 +281,7 @@ export function PhoneSystemsView() {
               </button>
             )}
             <button
-              onClick={() => handleDelete(s.id)}
+              onClick={() => setDeleteTarget(s)}
               disabled={busyId === s.id}
               className="flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-lg border border-red-200 dark:border-red-900/40 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors disabled:opacity-40"
             >
@@ -322,6 +324,19 @@ export function PhoneSystemsView() {
           onClose={() => { setShowModal(false); setEditTarget(null) }}
           onSuccess={() => { setShowModal(false); fetchSystems(); setHistoryKey(k => k + 1) }}
           system={editTarget}
+        />
+
+        <ConfirmCancelModal
+          open={!!cancelTarget}
+          onClose={() => setCancelTarget(null)}
+          onConfirm={() => { if (cancelTarget) handleCancel(cancelTarget.id); setCancelTarget(null) }}
+          itemName={cancelTarget?.product}
+        />
+        <ConfirmDeleteModal
+          open={!!deleteTarget}
+          onClose={() => setDeleteTarget(null)}
+          onConfirm={() => { if (deleteTarget) handleDelete(deleteTarget.id); setDeleteTarget(null) }}
+          itemName={deleteTarget?.product}
         />
       </div>
     )
@@ -415,8 +430,8 @@ export function PhoneSystemsView() {
             <PhoneSystemCompactPanel
               s={selected}
               onEdit={() => { setEditTarget(selected); setShowModal(true) }}
-              onCancel={() => handleCancel(selected.id)}
-              onDelete={() => handleDelete(selected.id)}
+              onCancel={() => setCancelTarget(selected)}
+              onDelete={() => setDeleteTarget(selected)}
               onExpand={() => setDetailTarget(selected)}
               busy={busyId === selected.id}
               historyKey={historyKey}
@@ -439,6 +454,19 @@ export function PhoneSystemsView() {
         onClose={() => { setShowModal(false); setEditTarget(null) }}
         onSuccess={() => { setShowModal(false); fetchSystems(); setHistoryKey(k => k + 1) }}
         system={editTarget}
+      />
+
+      <ConfirmCancelModal
+        open={!!cancelTarget}
+        onClose={() => setCancelTarget(null)}
+        onConfirm={() => { if (cancelTarget) handleCancel(cancelTarget.id); setCancelTarget(null) }}
+        itemName={cancelTarget?.product}
+      />
+      <ConfirmDeleteModal
+        open={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={() => { if (deleteTarget) handleDelete(deleteTarget.id); setDeleteTarget(null) }}
+        itemName={deleteTarget?.product}
       />
     </div>
   )
