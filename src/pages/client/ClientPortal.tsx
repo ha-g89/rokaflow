@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import {
   Users, LogOut, Laptop, Shield, Phone as PhoneIcon,
   ClipboardList, BarChart3, History, FileText,
-  Settings, Building2, MapPin, EthernetPort, PhoneCall,
+  Settings, Building2, MapPin, EthernetPort, PhoneCall, Ticket as TicketIcon, Disc,
   ChevronDown, ChevronRight, Moon, Sun, ArrowLeftCircle,
 } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
@@ -30,6 +30,7 @@ import { NotificationBell } from '@/components/NotificationBell'
 import { NotificationDropdown } from '@/components/NotificationDropdown'
 import type { NotificationDto } from '@/types/notification'
 import { ProcessesView } from './views/ProcessesView'
+import { TicketsTab } from './views/TicketsTab'
 import type { ClientUserListItem, ClientUserDetailResponse } from '@/types/clientUser'
 import type { LocationListItem } from '@/types/location'
 import type { DepartmentListItem } from '@/types/department'
@@ -43,7 +44,7 @@ type View =
   | 'internet-connections'
   | 'phone-systems'
   | 'hardware' | 'hardware-detail' | 'software' | 'software-detail' | 'license-detail' | 'phones' | 'phone-detail' | 'simcard-detail'
-  | 'processes'
+  | 'processes' | 'tickets'
   | 'overviews' | 'history' | 'contracts'
   | 'settings' | 'help'
 
@@ -63,6 +64,7 @@ const VIEW_TITLES: Record<View, string> = {
   'phone-detail':    'Telefoon details',
   'simcard-detail':  'Abonnement details',
   processes:         'Processen',
+  tickets:           'Tickets',
   overviews:         'Overzichten',
   history:           'Historie',
   contracts:         'Contracten',
@@ -97,6 +99,19 @@ export default function ClientPortal() {
 
   const [plan, setPlan] = useState<MyPlanDto | null>(null)
   const [planNotFound, setPlanNotFound] = useState(false)
+
+  // ── Open tickets badge ────────────────────────────────────────────────────
+  const [openTicketCount, setOpenTicketCount] = useState(0)
+  useEffect(() => {
+    const fetchTicketCount = () =>
+      api.get<{ open: number }>('/portal/tickets/count')
+        .then(({ data }) => setOpenTicketCount(data.open))
+        .catch(() => { /* silent */ })
+    fetchTicketCount()
+    const interval = setInterval(fetchTicketCount, 60000)
+    window.addEventListener('rf-tickets-changed', fetchTicketCount)
+    return () => { clearInterval(interval); window.removeEventListener('rf-tickets-changed', fetchTicketCount) }
+  }, [])
 
   // ── User menu + MSP ───────────────────────────────────────────────────────
   const [showUserMenu, setShowUserMenu] = useState(false)
@@ -318,6 +333,9 @@ export default function ClientPortal() {
         case 'Subscription':
           handleNavClick('phones')
           break
+        case 'Ticket':
+          handleNavClick('tickets')
+          break
       }
     } catch {
       // non-critical — gebruiker blijft op de huidige view staan
@@ -534,11 +552,12 @@ export default function ClientPortal() {
 
             <SectionLabel label="Assets" />
             <NavItem icon={<Laptop size={14} />}   label="Hardware"   active={hardwareActive}     onClick={() => handleNavClick('hardware')} />
-            <NavItem icon={<Shield size={14} />}   label="Software"   active={view === 'software'} onClick={() => handleNavClick('software')} />
+            <NavItem icon={<Disc size={14} />}     label="Software"   active={view === 'software'} onClick={() => handleNavClick('software')} />
             <NavItem icon={<PhoneIcon size={14} />} label="Telefonie" active={view === 'phones'}   onClick={() => handleNavClick('phones')} />
 
             <SectionLabel label="Processen" />
             <NavItem icon={<ClipboardList size={14} />} label="Checklist Templates" active={view === 'processes'} onClick={() => handleNavClick('processes')} />
+            <NavItem icon={<TicketIcon size={14} />} label="Tickets" active={view === 'tickets'} onClick={() => handleNavClick('tickets')} badge={openTicketCount} />
 
             <SectionLabel label="Rapportages" />
             <NavItem icon={<BarChart3 size={14} />} label="Overzichten" active={view === 'overviews'} onClick={() => handleNavClick('overviews')} />
@@ -665,6 +684,7 @@ export default function ClientPortal() {
             {view === 'overviews'    && <OverviewView />}
             {view === 'history'      && <HistoryView />}
             {view === 'processes'    && <ProcessesView />}
+            {view === 'tickets'      && <TicketsTab />}
 
             {(view === 'contracts' || view === 'help') && (
               <PlaceholderView title={VIEW_TITLES[view]} />

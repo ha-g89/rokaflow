@@ -1,13 +1,18 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import {
   Laptop, ClipboardList, History, Ticket, FileText,
-  Mail, Phone as PhoneIcon, LogOut, CheckCircle2, Smartphone, ShieldCheck, KeyRound, ChevronDown,
+  Mail, Phone as PhoneIcon, LogOut, CheckCircle2, Smartphone, ShieldCheck, KeyRound, ChevronDown, Plus,
 } from 'lucide-react'
 import api from '@/lib/axios'
 import { useAuthStore } from '@/store/authStore'
 import { LoadingState } from '@/components/ui/LoadingState'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { Card, CardContent } from '@/components/ui/Card'
+import { Modal } from '@/components/ui/Modal'
+import { Button } from '@/components/ui/Button'
+import { MyTicketModal } from '@/components/tickets/MyTicketModal'
+import type { TicketListItem, TicketDetailDto } from '@/types/ticket'
+import { TICKET_STATUS_LABEL, TICKET_STATUS_TONE, TICKET_CATEGORY_LABEL } from '@/types/ticket'
 import type { ClientUserDetailResponse } from '@/types/clientUser'
 import { STATUS_LABEL } from '@/types/clientUser'
 import { HARDWARE_STATUS_LABEL, HARDWARE_STATUS_TONE, HARDWARE_TYPE_LABEL } from '@/types/hardware'
@@ -18,6 +23,191 @@ import logo from '@/assets/RokaFlow_icon_dark_transparent.png'
 function fmtDate(d: string | null | undefined) {
   if (!d) return '—'
   return new Date(d).toLocaleDateString('nl-NL', { day: '2-digit', month: '2-digit', year: 'numeric' })
+}
+
+function fmtDateTime(d: string) {
+  return new Date(d).toLocaleString('nl-NL', {
+    day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit',
+  })
+}
+
+const field =
+  'w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900/60 dark:shadow-[inset_0_1px_3px_0_rgba(0,0,0,0.4)] text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-500/25 transition-colors'
+
+function TicketRow({ ticket, onClick, compact = false }: { ticket: TicketListItem; onClick: () => void; compact?: boolean }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`w-full flex items-center gap-2 text-left transition-colors ${
+        compact
+          ? 'rounded-lg px-2 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800/60'
+          : 'rounded-xl border border-slate-200 dark:border-slate-700/60 bg-slate-50 dark:bg-slate-900/60 px-3 py-2.5 hover:border-blue-300 dark:hover:border-blue-700'
+      }`}
+    >
+      <span className={`${compact ? 'text-xs' : 'text-sm'} font-semibold text-slate-800 dark:text-slate-100 flex-shrink-0`}>
+        #{ticket.ticketNumber}
+      </span>
+      <span className={`${compact ? 'text-xs' : 'text-sm'} text-slate-600 dark:text-slate-300 truncate`}>
+        {TICKET_CATEGORY_LABEL[ticket.category] ?? ticket.category}
+      </span>
+      <span className={`flex-shrink-0 text-xs px-2 py-0.5 rounded-full font-medium ${TICKET_STATUS_TONE[ticket.status] ?? 'bg-slate-100 text-slate-600'}`}>
+        {TICKET_STATUS_LABEL[ticket.status] ?? ticket.status}
+      </span>
+      <span className="ml-auto flex-shrink-0 text-[11px] text-slate-400 dark:text-slate-500">
+        {compact ? `door ${ticket.createdByName}` : fmtDate(ticket.createdAt)}
+      </span>
+    </button>
+  )
+}
+
+function MyTicketDetailModal({ ticketId, onClose, onChanged }: {
+  ticketId: string | null
+  onClose: () => void
+  onChanged: () => void
+}) {
+  const [detail, setDetail]     = useState<TicketDetailDto | null>(null)
+  const [loading, setLoading]   = useState(false)
+  const [apiError, setApiError] = useState<string | null>(null)
+  const [comment, setComment]   = useState('')
+  const [sending, setSending]   = useState(false)
+
+  const load = useCallback(async (id: string) => {
+    const r = await api.get<TicketDetailDto>(`/portal/me/tickets/${id}`)
+    setDetail(r.data)
+  }, [])
+
+  useEffect(() => {
+    if (ticketId) {
+      setDetail(null)
+      setApiError(null)
+      setComment('')
+      setLoading(true)
+      load(ticketId)
+        .catch(() => setApiError('Ticket kon niet worden geladen.'))
+        .finally(() => setLoading(false))
+    }
+  }, [ticketId, load])
+
+  const submitComment = async () => {
+    if (!detail || !comment.trim()) return
+    setApiError(null)
+    setSending(true)
+    try {
+      await api.post(`/portal/me/tickets/${detail.id}/comments`, { content: comment.trim() })
+      setComment('')
+      await load(detail.id)
+      onChanged()
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail
+      setApiError(msg ?? 'Reactie versturen mislukt.')
+    } finally {
+      setSending(false)
+    }
+  }
+
+  const closed = detail?.status === 'Closed'
+
+  return (
+    <Modal
+      open={!!ticketId}
+      onClose={onClose}
+      title={detail ? `Ticket #${detail.ticketNumber}` : 'Ticket'}
+      className="max-w-2xl"
+    >
+      {loading || !detail ? (
+        apiError ? (
+          <p className="text-xs text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg px-3 py-2">{apiError}</p>
+        ) : (
+          <LoadingState label="Ticket laden…" size="sm" />
+        )
+      ) : (
+        <div className="space-y-5">
+          {/* Kop */}
+          <div className="space-y-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                {TICKET_CATEGORY_LABEL[detail.category] ?? detail.category}
+              </span>
+              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${TICKET_STATUS_TONE[detail.status] ?? ''}`}>
+                {TICKET_STATUS_LABEL[detail.status] ?? detail.status}
+              </span>
+            </div>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Aangemaakt op {fmtDate(detail.createdAt)}
+            </p>
+            {detail.entityType && (
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Gekoppeld: <span className="font-medium text-slate-700 dark:text-slate-300">{detail.assetName ?? 'Gekoppeld item niet meer beschikbaar'}</span>
+              </p>
+            )}
+          </div>
+
+          {/* Omschrijving */}
+          <div className="rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700 px-3 py-2.5">
+            <p className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">{detail.description}</p>
+          </div>
+
+          {apiError && (
+            <p className="text-xs text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg px-3 py-2">{apiError}</p>
+          )}
+
+          {/* Conversatie — de medewerker (reporter) is hier de gebruiker: rechts/blauw */}
+          <div>
+            <p className="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wide mb-2">
+              Conversatie
+            </p>
+            {detail.comments.length === 0 ? (
+              <p className="text-xs text-slate-400 dark:text-slate-500">Nog geen reacties.</p>
+            ) : (
+              <div className="space-y-2">
+                {detail.comments.map(c => (
+                  <div key={c.id} className={`flex ${c.isFromReporter ? 'justify-end' : 'justify-start'}`}>
+                    <div className="max-w-[85%]">
+                      <p className={`text-[11px] text-slate-400 dark:text-slate-500 mb-0.5 ${c.isFromReporter ? 'text-right' : ''}`}>
+                        {c.isFromReporter ? 'U' : c.createdByName} · {fmtDateTime(c.createdAt)}
+                      </p>
+                      <div
+                        className={`rounded-lg px-3 py-2 text-sm whitespace-pre-wrap ${
+                          c.isFromReporter
+                            ? 'bg-blue-50 dark:bg-blue-900/20 text-slate-800 dark:text-slate-200'
+                            : 'bg-slate-100 dark:bg-slate-700/60 text-slate-800 dark:text-slate-200'
+                        }`}
+                      >
+                        {c.content}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {closed ? (
+              <p className="mt-3 text-xs text-slate-400 dark:text-slate-500 italic">Dit ticket is gesloten.</p>
+            ) : (
+              <div className="mt-3 space-y-2">
+                <textarea
+                  className={field}
+                  rows={3}
+                  placeholder="Schrijf een reactie…"
+                  value={comment}
+                  onChange={e => setComment(e.target.value)}
+                />
+                <div className="flex justify-end">
+                  <Button
+                    type="button"
+                    onClick={submitComment}
+                    disabled={sending || !comment.trim()}
+                  >
+                    {sending ? 'Versturen…' : 'Versturen'}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </Modal>
+  )
 }
 
 function Pill({ children, tone = 'default' }: { children: React.ReactNode; tone?: string }) {
@@ -116,11 +306,44 @@ export default function SelfServicePortal() {
   const [loading, setLoading] = useState(true)
   const [tab, setTab]         = useState<Tab>('assets')
 
+  const [myTickets, setMyTickets]       = useState<TicketListItem[]>([])
+  const [assetTickets, setAssetTickets] = useState<Record<string, TicketListItem[]>>({})
+  const [ticketAsset, setTicketAsset]   = useState<{ id: string; label: string } | null>(null)
+  const [detailTicketId, setDetailTicketId] = useState<string | null>(null)
+
+  const fetchMyTickets = useCallback(async () => {
+    try {
+      const r = await api.get<TicketListItem[]>('/portal/me/tickets')
+      setMyTickets(r.data)
+    } catch { /* stil negeren */ }
+  }, [])
+
+  const fetchAssetTickets = useCallback(async (hardwareIds: string[]) => {
+    const entries = await Promise.all(hardwareIds.map(async id => {
+      try {
+        const r = await api.get<TicketListItem[]>(`/portal/me/tickets?entityId=${id}`)
+        return [id, r.data] as const
+      } catch {
+        return [id, []] as const
+      }
+    }))
+    setAssetTickets(Object.fromEntries(entries))
+  }, [])
+
   useEffect(() => {
     api.get<ClientUserDetailResponse>('/portal/me/profile')
-      .then(r => setMe(r.data))
+      .then(r => {
+        setMe(r.data)
+        fetchAssetTickets(r.data.hardware.map(h => h.id))
+      })
       .finally(() => setLoading(false))
-  }, [])
+    fetchMyTickets()
+  }, [fetchMyTickets, fetchAssetTickets])
+
+  const refreshTickets = useCallback(() => {
+    fetchMyTickets()
+    if (me) fetchAssetTickets(me.hardware.map(h => h.id))
+  }, [me, fetchMyTickets, fetchAssetTickets])
 
   const status = me?.status as 'InService' | 'LeavePlanned' | 'Left' | 'StartPlanned' | undefined
   const statusTone = status === 'InService' ? 'good' : status === 'StartPlanned' ? 'info' : status === 'LeavePlanned' ? 'warn' : 'bad'
@@ -135,11 +358,12 @@ export default function SelfServicePortal() {
   const assetCount       = (me?.hardware.length ?? 0) + (me?.phones.length ?? 0) + licenseCount
   const checklistCount   = (me?.starterChecklist.length ?? 0) + (me?.leaverChecklist.length ?? 0)
   const historyCount     = me?.history.length ?? 0
+  const openTicketCount  = myTickets.filter(t => t.status === 'Open').length
 
   const TABS: { key: Tab; label: string; count: number }[] = [
     { key: 'assets',    label: 'Assets',     count: assetCount },
     { key: 'checklist', label: 'Checklist',  count: checklistCount },
-    { key: 'tickets',   label: 'Tickets',    count: 0 },
+    { key: 'tickets',   label: 'Tickets',    count: openTicketCount },
     { key: 'history',   label: 'Historie',   count: historyCount },
     { key: 'documents', label: 'Documenten', count: 0 },
   ]
@@ -211,7 +435,7 @@ export default function SelfServicePortal() {
 
               <div className="pt-5 border-t border-slate-100 dark:border-slate-800 grid grid-cols-2 gap-3">
                 <StatBox value={assetCount} label="Assets" />
-                <StatBox value={0} label="Open tickets" />
+                <StatBox value={openTicketCount} label="Open tickets" />
               </div>
             </div>
 
@@ -261,10 +485,30 @@ export default function SelfServicePortal() {
                                         {[h.brand, HARDWARE_TYPE_LABEL[h.type] ?? h.type, h.serialNumber ? `S/N: ${h.serialNumber}` : null].filter(Boolean).join(' · ')}
                                       </p>
                                     </div>
-                                    <span className={`flex-shrink-0 text-xs px-2 py-0.5 rounded-full font-medium ${HARDWARE_STATUS_TONE[h.status] ?? 'bg-slate-100 text-slate-600'}`}>
-                                      {HARDWARE_STATUS_LABEL[h.status] ?? h.status}
-                                    </span>
+                                    <div className="flex-shrink-0 flex items-center gap-2.5">
+                                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${HARDWARE_STATUS_TONE[h.status] ?? 'bg-slate-100 text-slate-600'}`}>
+                                        {HARDWARE_STATUS_LABEL[h.status] ?? h.status}
+                                      </span>
+                                      <button
+                                        onClick={() => setTicketAsset({ id: h.id, label: `${h.brand ?? ''} ${h.name}`.trim() })}
+                                        className="flex items-center gap-1 text-xs font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
+                                      >
+                                        <Plus size={12} /> Ticket
+                                      </button>
+                                    </div>
                                   </div>
+                                  {(assetTickets[h.id]?.length ?? 0) > 0 && (
+                                    <div className="mt-3 pt-2.5 border-t border-slate-200 dark:border-slate-700/60">
+                                      <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1.5">
+                                        Tickets op dit apparaat
+                                      </p>
+                                      <div className="space-y-1">
+                                        {assetTickets[h.id].map(t => (
+                                          <TicketRow key={t.id} ticket={t} compact onClick={() => setDetailTicketId(t.id)} />
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
                                 </div>
                               ))}
                             </div>
@@ -400,7 +644,15 @@ export default function SelfServicePortal() {
                 )}
 
                 {tab === 'tickets' && (
-                  <EmptyTab icon={<Ticket size={22} />} label="Binnenkort beschikbaar." />
+                  myTickets.length === 0 ? (
+                    <EmptyTab icon={<Ticket size={22} />} label="Geen tickets. Maak een ticket aan via een apparaat onder Assets." />
+                  ) : (
+                    <div className="space-y-2">
+                      {myTickets.map(t => (
+                        <TicketRow key={t.id} ticket={t} onClick={() => setDetailTicketId(t.id)} />
+                      ))}
+                    </div>
+                  )
                 )}
 
                 {tab === 'documents' && (
@@ -411,6 +663,21 @@ export default function SelfServicePortal() {
           </div>
         )}
       </div>
+
+      {ticketAsset && (
+        <MyTicketModal
+          open={!!ticketAsset}
+          onClose={() => setTicketAsset(null)}
+          onSuccess={() => { setTicketAsset(null); refreshTickets() }}
+          asset={ticketAsset}
+        />
+      )}
+
+      <MyTicketDetailModal
+        ticketId={detailTicketId}
+        onClose={() => setDetailTicketId(null)}
+        onChanged={refreshTickets}
+      />
     </div>
   )
 }

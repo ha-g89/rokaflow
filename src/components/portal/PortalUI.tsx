@@ -8,8 +8,8 @@ export function SectionLabel({ label }: { label: string }) {
   )
 }
 
-export function NavItem({ icon, label, active, onClick }: {
-  icon: React.ReactNode; label: string; active: boolean; onClick: () => void
+export function NavItem({ icon, label, active, onClick, badge }: {
+  icon: React.ReactNode; label: string; active: boolean; onClick: () => void; badge?: number
 }) {
   return (
     <button
@@ -20,6 +20,11 @@ export function NavItem({ icon, label, active, onClick }: {
     >
       <span className="flex-shrink-0">{icon}</span>
       <span className="truncate">{label}</span>
+      {badge != null && badge > 0 && (
+        <span className="ml-auto min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
+          {badge > 99 ? '99+' : badge}
+        </span>
+      )}
     </button>
   )
 }
@@ -57,6 +62,7 @@ export function StatCard({ label, value, icon, tone = 'default' }: {
     emerald: 'bg-emerald-100 text-emerald-600',
     blue:    'bg-blue-100 text-blue-600',
     amber:   'bg-amber-100 text-amber-600',
+    red:     'bg-red-100 text-red-600',
     slate:   'bg-slate-100 text-slate-400',
   }
   return (

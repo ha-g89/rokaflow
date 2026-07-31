@@ -3,7 +3,7 @@ import { useSort, SortHeader } from '@/components/ui/SortHeader'
 import { useState, useEffect, useCallback } from 'react'
 import {
   Laptop, Search, Plus, Package, Activity, Archive, XCircle,
-  Pencil, Trash2, StickyNote, History, Link2Off, User, Maximize2, ArrowLeft, PackageCheck, Upload,
+  Pencil, Trash2, StickyNote, History, Ticket, Link2Off, User, Maximize2, ArrowLeft, PackageCheck, Upload,
 } from 'lucide-react'
 import { ImportWizardModal } from '@/components/import/ImportWizardModal'
 import type { ImportHardwareRow, HardwareImportPreview } from '@/types/import'
@@ -18,6 +18,8 @@ import { HardwareModal } from '@/components/HardwareModal'
 import { ReceiveHardwareModal } from '@/components/ReceiveHardwareModal'
 import { EntityChecklistCard } from '@/components/EntityChecklistCard'
 import { NotesPanel } from '@/components/NotesPanel'
+import { AssetTicketsBlock } from '@/components/tickets/AssetTicketsBlock'
+import { NewTicketModal } from '@/components/tickets/NewTicketModal'
 import type { HardwareAssetListItem } from '@/types/hardware'
 import { HARDWARE_STATUS_LABEL, HARDWARE_STATUS_TONE, HARDWARE_TYPE_LABEL, HARDWARE_SPEC_FIELDS } from '@/types/hardware'
 import type { ClientUserListItem } from '@/types/clientUser'
@@ -55,7 +57,9 @@ function HardwareDetailPanel({ asset, teammates, onEdit, onDelete, onUnlink, onL
   const [linkUserId, setLinkUserId]         = useState('')
   const [linking, setLinking]               = useState(false)
   const [showReceive, setShowReceive]       = useState(false)
-  const [activeTab, setActiveTab]           = useState<'notes' | 'history'>('notes')
+  const [activeTab, setActiveTab]           = useState<'notes' | 'history' | 'tickets'>('notes')
+  const [showNewTicket, setShowNewTicket]   = useState(false)
+  const [ticketsRefreshKey, setTicketsRefreshKey] = useState(0)
 
   const handleUnlinkConfirm = async () => {
     setUnlinking(true)
@@ -265,6 +269,12 @@ function HardwareDetailPanel({ asset, teammates, onEdit, onDelete, onUnlink, onL
             >
               <History size={13} /> Historie
             </button>
+            <button
+              onClick={() => setActiveTab('tickets')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'tickets' ? 'bg-blue-600 text-white' : 'text-slate-500 hover:bg-slate-100'}`}
+            >
+              <Ticket size={13} /> Tickets
+            </button>
           </div>
           {activeTab === 'notes' && (
             <NotesPanel entityType="Hardware" entityId={asset.id} />
@@ -274,6 +284,14 @@ function HardwareDetailPanel({ asset, teammates, onEdit, onDelete, onUnlink, onL
               key={`${asset.id}-${historyKey}`}
               url={`/portal/hardware/${asset.id}/history`}
               subtitle={`${asset.brand} ${asset.name}`}
+            />
+          )}
+          {activeTab === 'tickets' && (
+            <AssetTicketsBlock
+              entityId={asset.id}
+              teammates={teammates.map(t => ({ id: t.id, name: `${t.firstName} ${t.lastName}`.trim() }))}
+              onCreateTicket={() => setShowNewTicket(true)}
+              refreshKey={ticketsRefreshKey}
             />
           )}
         </div>
@@ -293,6 +311,14 @@ function HardwareDetailPanel({ asset, teammates, onEdit, onDelete, onUnlink, onL
         onClose={() => setShowReceive(false)}
         onSuccess={() => { setShowReceive(false); onReceived() }}
         asset={asset}
+      />
+
+      <NewTicketModal
+        open={showNewTicket}
+        onClose={() => setShowNewTicket(false)}
+        onSuccess={() => { setShowNewTicket(false); setTicketsRefreshKey(k => k + 1) }}
+        hardware={[{ id: asset.id, label: `${asset.brand} ${asset.name}`.trim() }]}
+        presetEntityId={asset.id}
       />
     </Card>
   )
@@ -671,7 +697,9 @@ export function HardwareDetailFullView({ initialAsset, teammates, onBack, onDele
   const [linkUserId, setLinkUserId] = useState('')
   const [linking, setLinking]       = useState(false)
   const [historyKey, setHistoryKey] = useState(0)
-  const [activeTab, setActiveTab]   = useState<'notes' | 'history'>('notes')
+  const [activeTab, setActiveTab]   = useState<'notes' | 'history' | 'tickets'>('notes')
+  const [showNewTicket, setShowNewTicket] = useState(false)
+  const [ticketsRefreshKey, setTicketsRefreshKey] = useState(0)
 
   useEffect(() => {
     api.get<LocationListItem[]>('/portal/locations')
@@ -900,6 +928,9 @@ export function HardwareDetailFullView({ initialAsset, teammates, onBack, onDele
               <button onClick={() => setActiveTab('history')} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'history' ? 'bg-blue-600 text-white' : 'text-slate-500 hover:bg-slate-100'}`}>
                 <History size={13} /> Historie
               </button>
+              <button onClick={() => setActiveTab('tickets')} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'tickets' ? 'bg-blue-600 text-white' : 'text-slate-500 hover:bg-slate-100'}`}>
+                <Ticket size={13} /> Tickets
+              </button>
             </div>
             {activeTab === 'notes' && <NotesPanel entityType="Hardware" entityId={asset.id} />}
             {activeTab === 'history' && (
@@ -907,6 +938,14 @@ export function HardwareDetailFullView({ initialAsset, teammates, onBack, onDele
                 key={`${asset.id}-${historyKey}`}
                 url={`/portal/hardware/${asset.id}/history`}
                 subtitle={`${asset.brand} ${asset.name}`}
+              />
+            )}
+            {activeTab === 'tickets' && (
+              <AssetTicketsBlock
+                entityId={asset.id}
+                teammates={teammates.map(t => ({ id: t.id, name: `${t.firstName} ${t.lastName}`.trim() }))}
+                onCreateTicket={() => setShowNewTicket(true)}
+                refreshKey={ticketsRefreshKey}
               />
             )}
             <p className="text-[11px] text-slate-400 mt-3">Aangemaakt op {fmtDate(asset.createdAt)}</p>
@@ -935,6 +974,14 @@ export function HardwareDetailFullView({ initialAsset, teammates, onBack, onDele
         onClose={() => setShowReceive(false)}
         onSuccess={async () => { setShowReceive(false); await refresh() }}
         asset={asset}
+      />
+
+      <NewTicketModal
+        open={showNewTicket}
+        onClose={() => setShowNewTicket(false)}
+        onSuccess={() => { setShowNewTicket(false); setTicketsRefreshKey(k => k + 1) }}
+        hardware={[{ id: asset.id, label: `${asset.brand} ${asset.name}`.trim() }]}
+        presetEntityId={asset.id}
       />
     </div>
   )
