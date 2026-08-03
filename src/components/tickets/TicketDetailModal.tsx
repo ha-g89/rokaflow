@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { Mail } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { LoadingState } from '@/components/ui/LoadingState'
@@ -56,6 +57,7 @@ export function TicketDetailModal({ open, ticketId, teammates, onClose, onChange
 
   const [comment, setComment] = useState('')
   const [sendingComment, setSendingComment] = useState(false)
+  const [pendingStatus, setPendingStatus] = useState<string | null>(null)
 
   const loadDetail = useCallback(async (id: string) => {
     const r = await api.get<TicketDetailDto>(`/portal/tickets/${id}`)
@@ -70,6 +72,7 @@ export function TicketDetailModal({ open, ticketId, teammates, onClose, onChange
       setDetail(null)
       setApiError(null)
       setComment('')
+      setPendingStatus(null)
       setLoading(true)
       loadDetail(ticketId)
         .catch(() => setApiError('Ticket kon niet worden geladen.'))
@@ -179,7 +182,7 @@ export function TicketDetailModal({ open, ticketId, teammates, onClose, onChange
                 className={field}
                 value={status}
                 disabled={saving}
-                onChange={e => saveUpdate({ status: e.target.value, priority, assignee })}
+                onChange={e => { if (e.target.value !== status) setPendingStatus(e.target.value) }}
               >
                 {TICKET_STATUS_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
@@ -269,6 +272,42 @@ export function TicketDetailModal({ open, ticketId, teammates, onClose, onChange
 
           {/* Historie */}
           <HistoryBlock entityType="Ticket" entityId={detail.id} labelFn={ticketAuditLabel} />
+        </div>
+      )}
+
+      {/* Bevestiging statuswijziging (overlay binnen de modal) */}
+      {pendingStatus !== null && (
+        <div className="absolute inset-0 z-10 rounded-2xl bg-white/85 dark:bg-slate-900/85 flex items-start justify-center pt-24 px-6">
+          <div className="w-full max-w-sm bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-600 shadow-2xl p-6">
+            <div className="flex flex-col items-center text-center gap-4">
+              <div className="w-12 h-12 rounded-full bg-blue-50 dark:bg-blue-900/25 flex items-center justify-center">
+                <Mail size={22} className="text-blue-600 dark:text-blue-300" />
+              </div>
+              <div>
+                <p className="text-sm text-slate-700 dark:text-slate-200 leading-relaxed">
+                  Weet je zeker dat je de status wilt wijzigen naar{' '}
+                  <span className="font-semibold">
+                    "{TICKET_STATUS_OPTIONS.find(o => String(o.value) === pendingStatus)?.label ?? pendingStatus}"
+                  </span>?
+                </p>
+                <p className="text-xs text-slate-400 dark:text-slate-500 mt-1.5">
+                  De melder ontvangt hiervan automatisch een e-mail.
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-2 mt-6">
+              <Button variant="secondary" className="flex-1" onClick={() => setPendingStatus(null)}>
+                Annuleren
+              </Button>
+              <Button className="flex-1" onClick={() => {
+                const s = pendingStatus
+                setPendingStatus(null)
+                if (s !== null) saveUpdate({ status: s, priority, assignee })
+              }}>
+                Ja, wijzig status
+              </Button>
+            </div>
+          </div>
         </div>
       )}
     </Modal>

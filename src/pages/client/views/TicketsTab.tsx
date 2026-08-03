@@ -30,7 +30,7 @@ const STATUS_TABS: { key: string; label: string }[] = [
   { key: 'Closed',     label: 'Gesloten' },
 ]
 
-const GRID = 'grid-cols-[3.5rem_1.3fr_2fr_1.2fr_1fr_1.1fr_1.1fr_1fr]'
+const GRID = 'grid-cols-[3.5rem_1.2fr_1.8fr_1.1fr_1.1fr_0.9fr_1fr_1fr_0.9fr]'
 
 export function TicketsTab() {
   const [tickets, setTickets]     = useState<TicketListItem[]>([])
@@ -75,6 +75,7 @@ export function TicketsTab() {
     nr:          t => t.ticketNumber,
     category:    t => TICKET_CATEGORY_LABEL[t.category] ?? t.category,
     description: t => t.description,
+    reporter:    t => t.createdByName || null,
     asset:       t => t.assetName ?? null,
     priority:    t => TICKET_PRIORITY_VALUE[t.priority] ?? null,
     status:      t => TICKET_STATUS_VALUE[t.status] ?? null,
@@ -134,6 +135,7 @@ export function TicketsTab() {
             { label: '#',            key: 'nr' },
             { label: 'Categorie',    key: 'category' },
             { label: 'Omschrijving', key: 'description' },
+            { label: 'Melder',       key: 'reporter' },
             { label: 'Asset',        key: 'asset' },
             { label: 'Prioriteit',   key: 'priority' },
             { label: 'Status',       key: 'status' },
@@ -166,6 +168,7 @@ export function TicketsTab() {
                     <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 tabular-nums">#{t.ticketNumber}</p>
                     <p className="text-xs text-slate-600 dark:text-slate-300 truncate">{TICKET_CATEGORY_LABEL[t.category] ?? t.category}</p>
                     <p className="text-sm font-medium text-slate-800 dark:text-slate-100 truncate">{t.description}</p>
+                    <p className="text-xs text-slate-600 dark:text-slate-300 truncate">{t.createdByName || '—'}</p>
                     <p className="text-xs text-slate-600 dark:text-slate-300 truncate">{t.assetName ?? '—'}</p>
                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium truncate w-fit ${TICKET_PRIORITY_TONE[t.priority] ?? 'bg-slate-100 text-slate-600'}`}>
                       {TICKET_PRIORITY_LABEL[t.priority] ?? t.priority}
